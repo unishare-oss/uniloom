@@ -66,6 +66,7 @@ services:
       dockerfile: Dockerfile.web
       args:
         API_URL: http://api:3011
+        NEXT_PUBLIC_UNIAUTH_URL: https://oracle.tailcb9a25.ts.net
     restart: unless-stopped
     environment:
       API_URL: http://api:3011

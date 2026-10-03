@@ -157,6 +157,7 @@ jobs:
             ghcr.io/${{ env.OWNER }}/uniloom-web:sha-${{ github.sha }}${{ needs.changes.outputs.tag_suffix }}
           build-args: |
             API_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_API_URL || vars.API_URL || 'http://uniloom-api.uniloom.svc.cluster.local:3011' }}
+            NEXT_PUBLIC_UNIAUTH_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_UNIAUTH_URL || vars.UNIAUTH_URL || 'https://auth.psstee.dev' }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
