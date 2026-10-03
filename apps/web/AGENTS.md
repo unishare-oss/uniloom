@@ -27,8 +27,17 @@ Keep pages in `src/app`, reusable UI in `src/components`, and browser helpers in
 `src/lib`. Use Server Components by default and client components when browser
 behavior requires them. Keep access control and workflow rules in the API.
 
-The web app proxies `/api/*` to the Hono API through `next.config.ts`, so the
-session cookie will stay on the web host. Set `API_URL` (server); see `.env.example`.
+The web app proxies `/api/*` to the Hono API through `next.config.ts`, so Better
+Auth's callback and the `uniloom` session cookie stay on the web host. Sign in and out
+only through `src/lib/uniauth.ts`. `src/proxy.ts` redirects signed-out visitors on
+protected pages to `/login`; it only checks that the cookie exists, and the API does the
+real check. Set `API_URL` (server) and `NEXT_PUBLIC_UNIAUTH_URL` (build time); see
+`.env.example`.
+
+Call the API through `apiFetch` (`src/lib/api.ts`): a `403 consent_required` sends the
+user to `/consent`. `AuthBootstrap` in the layout reads the session on every page: it
+sends users without consent to `/consent` and runs the silent uniAuth check for
+signed-out visitors.
 There is no agent chat on the website: it is for reading, approving and reviewing.
 
 For web changes, run `bun run --cwd apps/web lint`, `typecheck`, and `build` as

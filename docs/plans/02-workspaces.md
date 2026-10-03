@@ -10,19 +10,19 @@ to which workspace with which role (MVP §3, §4).
 Left out: filling the switches from a mode preset (rules engine), routes, invites and
 sign-in. Later features add their own tables, one at a time:
 
-| #   | Feature                               | Tables                                         |
-| --- | ------------------------------------- | ---------------------------------------------- |
-| 2   | **Workspaces and people** (this plan) | `user`, `workspace`, `member`                  |
-| 3   | Items                                 | `state`, `item`, `item_block`                  |
-| 4   | Labels                                | `label_group`, `label`, `item_label`           |
-| 5   | Comments                              | `comment`                                      |
-| 6   | Checklist                             | `criterion`                                    |
-| 7   | Agent tokens and activity log         | `access_token`, `activity`                     |
-| 8   | Designs                               | `design`, `design_function`, `design_flow`     |
-| 9   | ADRs                                  | `adr`, `adr_item`                              |
-| 10  | Record                                | `commit`, `document`                           |
-| 11  | Planned vs actual                     | `commit_function`                              |
-| 12  | Sign-in and invites                   | `session`, `account`, `verification`, `invite` |
+| #   | Feature                               | Tables                                     |
+| --- | ------------------------------------- | ------------------------------------------ |
+| 2   | **Workspaces and people** (this plan) | `user`, `workspace`, `member`              |
+| 3   | Items                                 | `state`, `item`, `item_block`              |
+| 4   | Labels                                | `label_group`, `label`, `item_label`       |
+| 5   | Comments                              | `comment`                                  |
+| 6   | Checklist                             | `criterion`                                |
+| 7   | Agent tokens and activity log         | `access_token`, `activity`                 |
+| 8   | Designs                               | `design`, `design_function`, `design_flow` |
+| 9   | ADRs                                  | `adr`, `adr_item`                          |
+| 10  | Record                                | `commit`, `document`                       |
+| 11  | Planned vs actual                     | `commit_function`                          |
+| 12  | Invites (sign-in moved to plan 03)    | `invite`                                   |
 
 ## Done when
 

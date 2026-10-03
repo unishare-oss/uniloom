@@ -10,7 +10,10 @@ datasource db {
 // Tables are added one feature at a time; see docs/plans/. Rules that depend on a
 // workspace's switches live in the rules engine, not here.
 
-/// A person. Better Auth's user shape, so sign-in plugs in later without changing it.
+// Better Auth tables. People are matched by uniAuth `sub` through Account
+// (providerId "uniauth", accountId = sub), never by email.
+
+/// A person, as Better Auth stores them.
 model User {
   id             String    @id
   name           String
@@ -22,9 +25,59 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  sessions    Session[]
+  accounts    Account[]
   memberships Member[]
 
   @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
 
 enum WorkspaceMode {

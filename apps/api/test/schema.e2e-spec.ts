@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { prisma } from '../src/db.js';
+import { prisma } from '@/db/prisma.js';
 
 /** Invariants the database enforces on its own (docs/plans/02-workspaces.md). */
 describe('database schema (e2e)', () => {

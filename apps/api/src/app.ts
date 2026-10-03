@@ -1,14 +1,12 @@
 import { Hono } from 'hono';
-import { health } from './routes/health.js';
+import { healthRoutes } from '@/modules/health/health.routes.js';
+import { apiRoutes } from '@/routes/index.js';
 
-/** Builds the API. Routes live under `/api`, which the web app proxies. */
-export function createApp() {
-  const app = new Hono();
-  app.route('/health', health);
+/** The API. Everything under /api except health is in routes/index.ts. */
+export const app = new Hono();
 
-  const api = new Hono();
-  api.route('/health', health);
-  app.route('/api', api);
+// Health checks, for the cluster and through the web app's /api proxy.
+app.route('/health', healthRoutes);
+app.route('/api/health', healthRoutes);
 
-  return app;
-}
+app.route('/api', apiRoutes);
