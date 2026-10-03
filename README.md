@@ -22,15 +22,15 @@ Open <http://127.0.0.1:3013>. The API health endpoint is <http://localhost:3011/
 
 People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md) (OpenID Connect). The API uses Better Auth as the OIDC client and keeps Uniloom's own session; every `/api` route needs a session and acceptance of Uniloom's terms unless it is public (health, `/api/auth/*`, the uniAuth receivers) or `GET /api/me` / `POST /api/users/me/consent`. The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. The e2e tests do not need uniAuth: they start a mock provider.
 
-For development, uniAuth runs on the Oracle VM in `~/uniauth-dev` (server and Postgres in Docker, bound to the Tailscale IP) at <http://oracle.tailcb9a25.ts.net:3002>, with a local client for `http://127.0.0.1:3013`. Set in `apps/api/.env`:
+For development, uniAuth runs on the Oracle VM in `~/uniauth-dev` (server and Postgres in Docker, bound to the Tailscale IP), served over https by `tailscale serve` at <https://oracle.tailcb9a25.ts.net> (tailnet only), with a local client for `http://127.0.0.1:3013`. It must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification. Set in `apps/api/.env`:
 
 ```sh
-UNIAUTH_ISSUER="http://oracle.tailcb9a25.ts.net:3002/api/auth"
+UNIAUTH_ISSUER="https://oracle.tailcb9a25.ts.net/api/auth"
 UNIAUTH_CLIENT_ID="…"       # from the local client
 UNIAUTH_CLIENT_SECRET="…"   # from the local client
 ```
 
-and `NEXT_PUBLIC_UNIAUTH_URL="http://oracle.tailcb9a25.ts.net:3002"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013> (a loopback IP: local clients only redirect there). Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
+and `NEXT_PUBLIC_UNIAUTH_URL="https://oracle.tailcb9a25.ts.net"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013>, not `localhost:3013`: it must match `BETTER_AUTH_URL` and the client's registered redirect. Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
 
 To update that uniAuth, copy the source again and rebuild: `git -C ../uniAuth archive HEAD | ssh oracle 'rm -rf ~/uniauth-dev/src && mkdir ~/uniauth-dev/src && tar -x -C ~/uniauth-dev/src'`, then `ssh oracle 'cd ~/uniauth-dev && sudo docker compose up -d --build --wait server'`.
 
