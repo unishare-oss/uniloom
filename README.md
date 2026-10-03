@@ -4,7 +4,7 @@ Bun monorepo with a Next.js web app, a Hono API, Tailwind CSS, shadcn/ui, Prisma
 
 ## Start locally
 
-Requirements: Bun 1.4.2 and Docker. PostgreSQL runs in Docker; the web and API apps run with Bun.
+Requirements: Bun 1.4.2, the `ssh oracle` host, and Tailscale on the same tailnet as the Oracle VM (`oracle.tailcb9a25.ts.net`). PostgreSQL runs in Docker on the VM; the web and API apps run locally with Bun. No SSH tunnel is needed.
 
 ```sh
 bun install
@@ -16,7 +16,7 @@ bun run db:migrate
 bun run dev
 ```
 
-Open <http://127.0.0.1:3013>. The API health endpoint is <http://localhost:3011/health>. `bun run db:up` starts PostgreSQL from `docker-compose.yml` on `127.0.0.1:5434` (Unigym uses `5433`) and waits until it is healthy. Stop it with `bun run db:down`; the data stays in the `postgres_data` volume.
+Open <http://127.0.0.1:3013>. The API health endpoint is <http://localhost:3011/health>. `bun run db:up` copies `docker-compose.yml` to `~/uniloom` on the VM and starts PostgreSQL there, bound only to the VM's Tailscale IP on port `5434`: reachable from the tailnet, not from the internet. `DATABASE_URL` in `apps/api/.env.example` already points at it. Stop it with `bun run db:down`; the data stays in the `postgres_data` volume on the VM.
 
 ### Run everything in Docker
 
@@ -29,14 +29,15 @@ bun run down
 
 ## Structure
 
-| Path                               | Purpose                                         |
-| ---------------------------------- | ----------------------------------------------- |
-| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui     |
-| `apps/api`                         | Hono on Bun, Prisma schema and migrations       |
-| `skill`                            | Agent skill files, written after the MCP server |
-| `docker-compose.yml`               | PostgreSQL, migrations, API and web in Docker   |
-| `.github/workflows/`               | CI, image builds, release (see below)           |
-| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app       |
+| Path                               | Purpose                                              |
+| ---------------------------------- | ---------------------------------------------------- |
+| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui          |
+| `apps/api`                         | Hono on Bun, Prisma schema and migrations            |
+| `skill`                            | Agent skill files, written after the MCP server      |
+| `docs`                             | Plans, ADRs and tech debt                            |
+| `docker-compose.yml`               | PostgreSQL (on Oracle), plus migrations, API and web |
+| `.github/workflows/`               | CI, image builds, release (see below)                |
+| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app            |
 
 Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a migration with `bun run db:migrate`.
 

@@ -7,4 +7,71 @@ datasource db {
   provider = "postgresql"
 }
 
-// Models arrive with the data model slice (MVP.md §14, step 2).
+// Tables are added one feature at a time; see docs/plans/. Rules that depend on a
+// workspace's switches live in the rules engine, not here.
+
+/// A person. Better Auth's user shape, so sign-in plugs in later without changing it.
+model User {
+  id             String    @id
+  name           String
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
+  image          String?
+  /// When the user accepted Uniloom's Terms and Privacy Policy. Null until they do.
+  consentGivenAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  memberships Member[]
+
+  @@map("user")
+}
+
+enum WorkspaceMode {
+  STANDARD
+  GUIDED
+}
+
+enum Role {
+  OWNER
+  REVIEWER
+  MEMBER
+}
+
+/// A mode is a preset of the switch columns; owners can change switches afterwards.
+/// States are locked when `mode` is GUIDED, since its rules rely on them.
+/// When `checklistRequired` is on, a checklist has 3 to 6 items: fixed in code, not
+/// stored per workspace.
+model Workspace {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  name              String
+  /// Items are numbered `<keyPrefix>-<number>`, e.g. UG-12.
+  keyPrefix         String        @unique
+  mode              WorkspaceMode
+  checklistRequired Boolean
+  designRequired    Boolean
+  approvalRequired  Boolean
+  approverNotAuthor Boolean
+  plannedVsActual   Boolean
+  /// Next item number. Increment it in the same transaction that creates the item.
+  nextItemNumber    Int           @default(1)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  members Member[]
+
+  @@map("workspace")
+}
+
+model Member {
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role
+  createdAt   DateTime  @default(now())
+
+  @@id([workspaceId, userId])
+  @@index([userId])
+  @@map("member")
+}
