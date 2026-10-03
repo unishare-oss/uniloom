@@ -29,15 +29,14 @@ bun run down
 
 ## Structure
 
-| Path                               | Purpose                                               |
-| ---------------------------------- | ----------------------------------------------------- |
-| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui           |
-| `apps/api`                         | Hono on Bun, Prisma schema and migrations             |
-| `skill`                            | Agent skill files, written after the MCP server       |
-| `docker-compose.yml`               | PostgreSQL, migrations, API and web in Docker         |
-| `.github/workflows/ci.yml`         | Install, migration, lint, typecheck, tests, and build |
-| `.github/workflows/images.yml`     | Build and push `linux/arm64` images to GHCR           |
-| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app             |
+| Path                               | Purpose                                         |
+| ---------------------------------- | ----------------------------------------------- |
+| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui     |
+| `apps/api`                         | Hono on Bun, Prisma schema and migrations       |
+| `skill`                            | Agent skill files, written after the MCP server |
+| `docker-compose.yml`               | PostgreSQL, migrations, API and web in Docker   |
+| `.github/workflows/`               | CI, image builds, release (see below)           |
+| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app       |
 
 Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a migration with `bun run db:migrate`.
 
@@ -51,4 +50,22 @@ bun run --cwd apps/api test:e2e
 bun run build
 ```
 
-The Git pre-commit hook formats staged files and runs lint and typecheck. CI also builds both `linux/arm64` Docker images. `bun install` installs it in a Git checkout.
+The Git pre-commit hook formats staged files and runs lint and typecheck; the commit-msg hook checks [Conventional Commits](https://www.conventionalcommits.org) with commitlint. `bun install` installs both hooks in a Git checkout.
+
+## Branches, CI and releases
+
+Work goes into `dev` through pull requests; `dev` is merged into `main` to release. The pipeline follows Unishare's:
+
+| Workflow                    | When                        | What                                                                                                                                                                                                        |
+| --------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                    | push and PR to `main`/`dev` | Install, migrations, lint, typecheck, unit and e2e tests, build                                                                                                                                             |
+| `docker.yml`                | push to `main`/`dev`        | Builds only the changed images on native `linux/arm64` runners and pushes them to GHCR: `latest` + `sha-<commit>` from `main`, `dev` + `sha-<commit>-dev` from `dev`. Then writes the tag to `k8s-practice` |
+| `release.yml`               | after images on `main`      | semantic-release: version, `CHANGELOG.md`, GitHub release, and `v<version>` image tags                                                                                                                      |
+| `dependabot-auto-merge.yml` | Dependabot PRs to `main`    | Approves and auto-merges weekly dependency updates                                                                                                                                                          |
+| `codeql.yml`                | by hand                     | CodeQL analysis                                                                                                                                                                                             |
+
+Repository settings the pipeline reads:
+
+- Secrets `APP_ID`, `APP_PRIVATE_KEY`: the release bot. Without them the release is skipped.
+- Secrets `GITOPS_APP_ID`, `GITOPS_APP_PRIVATE_KEY`, and variables `GITOPS_VALUES_FILE` (main) / `GITOPS_VALUES_FILE_DEV` (dev): the values file in `k8s-practice` to write image tags into. Without the variable the deploy step is skipped.
+- Variables `API_URL` / `DEV_API_URL`: baked into the web image. Without them the Dockerfile defaults are used.

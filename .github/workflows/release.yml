@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Docker Images"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+      packages: write
+
+    steps:
+      # The release bot pushes the CHANGELOG commit and the tag. Skip, rather than
+      # fail, until its secrets are added to the repository.
+      - name: Check release bot secrets
+        id: bot
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+        run: |
+          if [ -z "$APP_ID" ]; then
+            echo "::notice::APP_ID / APP_PRIVATE_KEY are not set -- skipping the release."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate GitHub App token
+        if: steps.bot.outputs.ready == 'true'
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        if: steps.bot.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Bun
+        if: steps.bot.outputs.ready == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        if: steps.bot.outputs.ready == 'true'
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      # workflow_run jobs run on the default branch, so point semantic-release at main.
+      - name: Release
+        if: steps.bot.outputs.ready == 'true'
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          before=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          GITHUB_REF=refs/heads/main bunx semantic-release
+          after=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -n "$after" ] && [ "$after" != "$before" ]; then
+            echo "new_release_published=true" >> "$GITHUB_OUTPUT"
+            echo "new_release_version=${after#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag images with the release version
+        if: steps.semantic.outputs.new_release_published == 'true'
+        env:
+          VERSION: ${{ steps.semantic.outputs.new_release_version }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          for IMAGE in uniloom-api uniloom-web; do
+            SRC="ghcr.io/${OWNER}/${IMAGE}:sha-${SHA}"
+            if docker buildx imagetools inspect "$SRC" >/dev/null 2>&1; then
+              docker buildx imagetools create "$SRC" --tag "ghcr.io/${OWNER}/${IMAGE}:v${VERSION}"
+              echo "tagged ${IMAGE} v${VERSION} -> ${SRC}"
+            else
+              echo "no image at ${SRC} (this release didn't touch ${IMAGE}), skipping"
+            fi
+          done
