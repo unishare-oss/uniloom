@@ -36,6 +36,12 @@ contracts only when both workspaces actually need them.
 - Preserve unrelated local changes. Do not add secrets or print `.env` values.
 - Follow the nearest app guide and existing code patterns. Prefer direct, readable
   changes over speculative layers.
+- Keep it simple. Don't over-engineer: pick the plainest way the language, framework
+  or library already offers (e.g. Hono's `app.get('/path', handler)`), and avoid clever
+  abstractions, factories, generics or wrappers that a reader has to decode. If the
+  simple way and the fancy way both work, use the simple way.
+- Make code reusable only when it repeats: once something is written the same way three
+  times, extract a shared function or component. Not before.
 - `MVP.md` is the spec. Build in the order of its §14 and do not pull later slices
   forward.
 - The API owns Uniloom data, authorization and the workflow rules. The website and the
