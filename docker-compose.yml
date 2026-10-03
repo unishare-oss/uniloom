@@ -35,6 +35,11 @@ services:
       context: .
       dockerfile: Dockerfile.api
     restart: unless-stopped
+    # Auth settings (BETTER_AUTH_*, UNIAUTH_*) come from apps/api/.env. UNIAUTH_ISSUER must
+    # be reachable from inside the container (the VM's Tailscale address), not localhost.
+    env_file:
+      - path: apps/api/.env
+        required: false
     environment:
       DATABASE_URL: postgresql://uniloom:uniloom@db:5432/uniloom
       PORT: 3011
