@@ -14,7 +14,7 @@ uniloom/
 │   ├── api/             # Hono API on Bun, Prisma schema and migrations
 │   └── web/             # Next.js App Router application
 ├── skill/               # Agent skill files (SKILL.md, DESIGN.md, ...), written after the MCP server
-├── plans/               # Project plans
+├── docs/                # Plans, ADRs and tech debt (see docs/README.md)
 ├── .github/workflows/   # CI, image builds, release (see README.md)
 ├── docker-compose.yml   # Docker: PostgreSQL, migrations, API and web
 ├── MVP.md               # Product spec and build order
@@ -40,34 +40,36 @@ contracts only when both workspaces actually need them.
   forward.
 - The API owns Uniloom data, authorization and the workflow rules. The website and the
   MCP server call the same rule checks; never duplicate a rule in the web app.
-- For local database work, follow `README.md`: PostgreSQL runs in Docker through
-  `docker-compose.yml` (`bun run db:up`). Do not start a second database by default.
+- For database work, follow `README.md`: PostgreSQL runs in Docker on the Oracle VM
+  and is reached over Tailscale (`oracle.tailcb9a25.ts.net:5434`). Do not start a local
+  database by default.
 
 ## Checks
 
 Run the checks relevant to changed files. Root commands are `bun run lint`,
 `bun run typecheck`, `bun run test`, and `bun run build`.
 
-## Tracker: DoneWhen
+## Tracking: `docs/`
 
-Until Uniloom's MCP server works (MVP §14, step 4), DoneWhen is the issue tracker. Use
-its MCP tools (`mcp__donewhen__*`) and the `donewhen` skill. Load the skill before any
-ticket work.
+There is no issue tracker. Plans, ADRs and tech debt are Markdown files in `docs/`;
+`docs/README.md` has the formats.
 
-Flow: Triage → Backlog → Aligning → Ready → In Progress → Blocked → In Review → Done → Canceled.
+Flow for a plan: Aligning → Ready → In Progress → Blocked → In Review → Done → Canceled.
 
 Rules:
 
-- Ask me to confirm the title and scope before you create a ticket or an epic.
-- Give every ticket a done-when checklist of 3 to 6 items. Set it with `set_criteria`. Derive the items from the spec. Do not make generic items.
-- Tick each item with `check_criterion` the moment it is met. Do not wait for the end.
-- The checklist gates In Review and Done. If an item is not done, do not move the ticket.
-- If you cannot finish without me, move the ticket to Blocked. Write the reason in a comment.
-- I review all code. Never move a ticket to Done. Stop at In Review.
-- When you finish: `link_commit`, `set_issue_dev`, then `save_document` with what changed and how.
-
-Where things live:
-
-- Workspace: not created yet. Ask me for it before the first ticket.
-- Epics: one per MVP feature when it needs several tickets.
-- Labels: one `type` label for each ticket (`bug`, `feature`, `chore`, `tech-debt`).
+- Ask me to confirm the scope before you write a new plan.
+- Write the plan in `docs/plans/` before any code: scope, a done-when checklist of 3 to
+  6 items derived from the spec (no generic items), and a design with the meaningful
+  functions, what each does and why, and Mermaid flows.
+- Do not start code until I set the plan to Ready. Editing a Ready plan's design sends it
+  back to Aligning.
+- Tick each item the moment it is met. Do not wait for the end.
+- Every item must be ticked before In Review. If you cannot finish without me, set
+  Blocked and write the reason in the plan.
+- I review all code. Never set a plan to Done. Stop at In Review.
+- When you finish, fill in Changes: commits, what changed and how, planned vs actual.
+- Write an ADR in `docs/adr/` when a choice outlives one slice, as Proposed. I accept
+  it. Reference ADRs from plans instead of repeating the reasoning.
+- When you take a shortcut or find a problem you are not fixing now, add a file to
+  `docs/tech-debt/` and mention it in the plan.
