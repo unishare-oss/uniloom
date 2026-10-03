@@ -1,0 +1,2 @@
+# Vendored agent skills: kept byte-for-byte so skills-lock.json hashes match.
+.agents/
