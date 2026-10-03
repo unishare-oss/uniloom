@@ -1,6 +1,7 @@
 .git
 .github
 node_modules
+.bun-cache
 apps/*/node_modules
 apps/*/.next
 apps/*/dist
