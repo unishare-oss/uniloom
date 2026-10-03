@@ -1,0 +1,35 @@
+{
+  "name": "uniloom",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "bun run dev:api & bun run dev:web & wait",
+    "dev:api": "bun run --cwd apps/api dev",
+    "dev:web": "bun run --cwd apps/web dev",
+    "up": "docker compose up -d --build --wait",
+    "down": "docker compose down",
+    "build": "bun run --cwd apps/api build && bun run --cwd apps/web build",
+    "lint": "bun run --cwd apps/api lint && bun run --cwd apps/web lint",
+    "typecheck": "bun run --cwd apps/api typecheck && bun run --cwd apps/web typecheck",
+    "test": "bun run --cwd apps/api test",
+    "db:generate": "bun run --cwd apps/api db:generate",
+    "db:migrate": "bun run --cwd apps/api db:migrate",
+    "db:up": "docker compose up -d --wait db",
+    "db:down": "docker compose down",
+    "prepare": "simple-git-hooks"
+  },
+  "devDependencies": {
+    "lint-staged": "^16.2.0",
+    "prettier": "^3.4.2",
+    "simple-git-hooks": "^2.13.1"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "bunx lint-staged && bun run lint && bun run typecheck"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,json,css,md}": "prettier --write"
+  }
+}

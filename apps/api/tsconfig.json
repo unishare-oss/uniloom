@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "target": "ES2023",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "types": ["vitest/globals", "bun"]
+  },
+  "include": ["src", "test", "*.ts"]
+}

@@ -1,0 +1,36 @@
+name: Images
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.${{ matrix.app }}
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/unishare-oss/uniloom-${{ matrix.app }}:sha-${{ github.sha }}
+            ghcr.io/unishare-oss/uniloom-${{ matrix.app }}:latest
+          cache-from: type=gha,scope=uniloom-${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=uniloom-${{ matrix.app }}

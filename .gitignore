@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+coverage/
+.turbo/
+*.tsbuildinfo
+.env
+.env.local
+apps/*/.env
+apps/*/.env.local
+apps/api/src/generated/
+!**/.env.example
