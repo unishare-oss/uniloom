@@ -7,7 +7,9 @@ services:
       POSTGRES_USER: uniloom
       POSTGRES_PASSWORD: uniloom
     ports:
-      - "127.0.0.1:5434:5432"
+      # Loopback by default. On the Oracle VM, `bun run db:up` sets DB_HOST_IP to the VM's
+      # Tailscale IP, so only devices on the tailnet can reach it, never the internet.
+      - "${DB_HOST_IP:-127.0.0.1}:5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
