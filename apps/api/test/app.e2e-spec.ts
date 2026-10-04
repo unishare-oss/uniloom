@@ -68,6 +68,7 @@ describe('Uniloom API (e2e)', () => {
         'deleteItem',
         'getItem',
         'getMe',
+        'getWorkspace',
         'listDeletedItems',
         'listItems',
         'listWorkspaces',

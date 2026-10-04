@@ -23,3 +23,17 @@ export const workspaceSchema = z.object({
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
+
+export const stateSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  /** Stable key in Guided workspaces (`ready`, `in_review`, ...); null in Standard. */
+  key: z.string().nullable(),
+  category: z.enum(['BACKLOG', 'UNSTARTED', 'STARTED', 'DONE', 'CANCELED']),
+  position: z.number().int(),
+});
+
+/** A workspace with its states in board order. */
+export const workspaceDetailSchema = workspaceSchema.extend({
+  states: z.array(stateSchema),
+});

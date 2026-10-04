@@ -147,6 +147,45 @@ describe('workspaces (e2e)', () => {
     ]);
   });
 
+  it('returns a workspace with its states in board order, and 404s non-members', async () => {
+    const owner = await api.signInReady();
+    const stranger = await api.signInReady();
+    const created = (await read(
+      await create(owner.cookie, {
+        name: 'Board',
+        keyPrefix: freshPrefix(),
+        mode: 'STANDARD',
+      }),
+    )) as { id: string };
+
+    const res = await api.send(
+      'GET',
+      `/api/workspaces/${created.id}`,
+      owner.cookie,
+    );
+    expect(res.status).toBe(200);
+    const workspace = (await read(res)) as {
+      id: string;
+      states: { name: string; position: number; key: string | null }[];
+    };
+    expect(workspace.id).toBe(created.id);
+    expect(workspace.states.map((s) => s.name)).toEqual([
+      'To Do',
+      'In Progress',
+      'Done',
+    ]);
+    expect(workspace.states.map((s) => s.position)).toEqual([0, 1, 2]);
+
+    for (const [cookie, id] of [
+      [stranger.cookie, created.id],
+      [owner.cookie, randomUUID()],
+      [owner.cookie, 'not-a-uuid'],
+    ]) {
+      const miss = await api.send('GET', `/api/workspaces/${id}`, cookie);
+      expect(miss.status).toBe(404);
+    }
+  });
+
   it('lists only the workspaces the user belongs to', async () => {
     const mya = await api.signInReady();
     const kyaw = await api.signInReady();

@@ -7,12 +7,12 @@ import { PRESETS } from './workspace.presets.js';
  * The workspace, its mode's switches and states, and the creator as OWNER, together. null
  * if the key prefix is taken (the unique index decides, so concurrent creates are safe).
  */
-export async function createWorkspace(data: {
+export const createWorkspace = async (data: {
   name: string;
   keyPrefix: string;
   mode: WorkspaceMode;
   ownerId: string;
-}) {
+}) => {
   const preset = PRESETS[data.mode];
   return prisma.workspace
     .create({
@@ -38,24 +38,46 @@ export async function createWorkspace(data: {
         return null;
       throw error;
     });
-}
+};
 
-export function findWorkspacesForUser(userId: string) {
+export const findWorkspacesForUser = (userId: string) => {
   return prisma.workspace.findMany({
     where: { members: { some: { userId } } },
     orderBy: { createdAt: 'asc' },
   });
-}
+};
 
 /** The workspace, if `userId` is one of its members. */
-export function findWorkspaceForMember(workspaceId: string, userId: string) {
+export const findWorkspaceForMember = (workspaceId: string, userId: string) => {
   return prisma.workspace.findFirst({
     where: { id: workspaceId, members: { some: { userId } } },
   });
-}
+};
 
-export function isMember(workspaceId: string, userId: string) {
+export const isMember = (workspaceId: string, userId: string) => {
   return prisma.member
     .count({ where: { workspaceId, userId } })
     .then((count) => count > 0);
-}
+};
+
+/** The workspace with its states in board order, if `userId` is one of its members. */
+export const findWorkspaceDetailForMember = (
+  workspaceId: string,
+  userId: string,
+) => {
+  return prisma.workspace.findFirst({
+    where: { id: workspaceId, members: { some: { userId } } },
+    include: {
+      states: {
+        select: {
+          id: true,
+          name: true,
+          key: true,
+          category: true,
+          position: true,
+        },
+        orderBy: { position: 'asc' },
+      },
+    },
+  });
+};
