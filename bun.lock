@@ -25,6 +25,7 @@
         "dotenv": "^18.0.5",
         "hono": "^4.13.12",
         "jose": "^6",
+        "zod": "^4.6.5",
       },
       "devDependencies": {
         "@types/bun": "^1.4.2",

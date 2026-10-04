@@ -5,81 +5,29 @@ import {
   USER_DELETED_EVENT,
   USER_UPDATED_EVENT,
 } from '@/modules/uniauth/event-token.js';
-import { startMockUniauth, type MockProfile } from './support/mock-uniauth.js';
-import { loadApp, WEB_ORIGIN } from './support/test-app.js';
+import { startTestApi, WEB_ORIGIN, read } from './support/test-app.js';
 
-const CLIENT = { id: 'uniloom-test', secret: 'uniloom-test-secret' };
 const DAY_MS = 24 * 60 * 60 * 1000;
-const EMAIL_DOMAIN = `e2e-${randomUUID()}.example`;
 
 describe('Uniloom API (e2e)', () => {
-  let app: Awaited<ReturnType<typeof loadApp>>;
-  let uniauth: Awaited<ReturnType<typeof startMockUniauth>>;
+  let api: Awaited<ReturnType<typeof startTestApi>>;
+  let uniauth: typeof api.uniauth;
+  let call: typeof api.call;
+  let signIn: typeof api.signIn;
+  let newProfile: typeof api.newProfile;
 
   beforeAll(async () => {
-    uniauth = await startMockUniauth(CLIENT);
-    app = await loadApp(uniauth.issuer, CLIENT);
+    api = await startTestApi();
+    ({ uniauth, call, signIn, newProfile } = api);
   });
 
   afterAll(async () => {
     await prisma.user.deleteMany({
-      where: { email: { endsWith: `@${EMAIL_DOMAIN}` } },
+      where: { email: { endsWith: `@${api.emailDomain}` } },
     });
     await prisma.$disconnect();
-    await uniauth?.close();
+    await api?.close();
   });
-
-  function newProfile(overrides: Partial<MockProfile> = {}): MockProfile {
-    return {
-      sub: `u_${randomUUID()}`,
-      email: `${randomUUID()}@${EMAIL_DOMAIN}`,
-      name: 'Mya',
-      ...overrides,
-    };
-  }
-
-  /** A request to the API, as the web proxy would send it. */
-  const call = (path: string, init: RequestInit & { cookie?: string } = {}) => {
-    const { cookie, ...rest } = init;
-    const headers = new Headers(rest.headers);
-    if (cookie) headers.set('cookie', cookie);
-    return app.request(path, { ...rest, headers });
-  };
-
-  /** Runs the whole OIDC sign-in against the mock uniAuth and returns the session cookie. */
-  async function signIn(profile: MockProfile) {
-    uniauth.signInAs(profile);
-    const start = await call('/api/auth/sign-in/social', {
-      method: 'POST',
-      headers: { origin: WEB_ORIGIN, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        provider: 'uniauth',
-        callbackURL: `${WEB_ORIGIN}/`,
-      }),
-    });
-    expect(start.status).toBe(200);
-    const { url } = (await start.json()) as { url: string };
-    const authorize = await fetch(url, { redirect: 'manual' });
-    const callback = new URL(authorize.headers.get('location') ?? '');
-    expect(`${callback.origin}${callback.pathname}`).toBe(
-      `${WEB_ORIGIN}/api/auth/callback/uniauth`,
-    );
-
-    const done = await call(`${callback.pathname}${callback.search}`, {
-      cookie: start.headers
-        .getSetCookie()
-        .map((c) => c.split(';')[0])
-        .join('; '),
-    });
-    expect(done.status).toBe(302);
-    expect(done.headers.get('location')).toBe(`${WEB_ORIGIN}/`);
-
-    const setCookie = done.headers
-      .getSetCookie()
-      .find((c) => c.startsWith('uniloom.session_token='));
-    expect(setCookie).toBeDefined();
-    return { setCookie: setCookie!, cookie: setCookie!.split(';')[0] };
-  }
 
   const sessionFor = (email: string) =>
     prisma.session.findFirstOrThrow({ where: { user: { email } } });
@@ -110,7 +58,7 @@ describe('Uniloom API (e2e)', () => {
       });
 
       expect(res.status).toBe(400);
-      expect(((await res.json()) as { code: string }).code).toBe(
+      expect(((await read(res)) as { code: string }).code).toBe(
         'EMAIL_PASSWORD_SIGN_UP_DISABLED',
       );
       expect(await prisma.user.count({ where: { email } })).toBe(0);
@@ -222,7 +170,7 @@ describe('Uniloom API (e2e)', () => {
       const res = await call('/api/me', { cookie });
 
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({
+      expect(await read(res)).toEqual({
         id: expect.any(String),
         email: profile.email,
         emailVerified: true,
@@ -237,7 +185,7 @@ describe('Uniloom API (e2e)', () => {
 
       const res = await call('/api/me', { cookie });
 
-      expect(((await res.json()) as { image: unknown }).image).toBeNull();
+      expect(((await read(res)) as { image: unknown }).image).toBeNull();
     });
   });
 
@@ -366,7 +314,7 @@ describe('Uniloom API (e2e)', () => {
         picture: 'https://auth.psstee.dev/api/avatars/a.png',
       });
       await signIn(profile);
-      const newEmail = `${randomUUID()}@${EMAIL_DOMAIN}`;
+      const newEmail = `${randomUUID()}@${api.emailDomain}`;
 
       const token = await uniauth.signEvent(profile.sub, {
         [USER_UPDATED_EVENT]: {
@@ -416,11 +364,11 @@ describe('Uniloom API (e2e)', () => {
 
       const first = await consent(cookie);
       expect(first.status).toBe(200);
-      const { consentGivenAt } = (await first.json()) as {
+      const { consentGivenAt } = (await read(first)) as {
         consentGivenAt: string;
       };
       expect(Date.parse(consentGivenAt)).toBeGreaterThan(Date.now() - 60_000);
-      const second = (await (await consent(cookie)).json()) as {
+      const second = (await read(await consent(cookie))) as {
         consentGivenAt: string;
       };
       expect(second.consentGivenAt).toBe(consentGivenAt);
@@ -435,7 +383,7 @@ describe('Uniloom API (e2e)', () => {
 
       const blocked = await protectedRoute(cookie);
       expect(blocked.status).toBe(403);
-      expect(((await blocked.json()) as { code: string }).code).toBe(
+      expect(((await read(blocked)) as { code: string }).code).toBe(
         'consent_required',
       );
 
@@ -446,15 +394,15 @@ describe('Uniloom API (e2e)', () => {
     it('GET /api/me works without consent and shows consentGivenAt', async () => {
       const { cookie } = await signIn(newProfile());
 
-      const before = (await (await call('/api/me', { cookie })).json()) as {
+      const before = (await read(await call('/api/me', { cookie }))) as {
         consentGivenAt: unknown;
       };
       expect(before.consentGivenAt).toBeNull();
 
-      const given = (await (await consent(cookie)).json()) as {
+      const given = (await read(await consent(cookie))) as {
         consentGivenAt: string;
       };
-      const after = (await (await call('/api/me', { cookie })).json()) as {
+      const after = (await read(await call('/api/me', { cookie }))) as {
         consentGivenAt: string;
       };
       expect(after.consentGivenAt).toBe(given.consentGivenAt);
@@ -468,7 +416,7 @@ describe('Uniloom API (e2e)', () => {
       const session = await call('/api/auth/get-session', { cookie });
       expect(session.status).toBe(200);
       expect(
-        ((await session.json()) as { user: { consentGivenAt: unknown } }).user
+        ((await read(session)) as { user: { consentGivenAt: unknown } }).user
           .consentGivenAt,
       ).toBeNull();
       // Reaches the receiver: a bad token is its own 400, not the consent 403.
