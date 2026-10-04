@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { safeNext } from "@/lib/safe-next";
 import { signInWithUniauth, silentCheckDone } from "@/lib/uniauth";
 
-export default function Login() {
+const Login = () => {
   const [params] = useState(() => new URLSearchParams(window.location.search));
   const next = safeNext(params.get("next"));
   const error = params.get("error");
@@ -69,4 +69,6 @@ export default function Login() {
       </p>
     </main>
   );
-}
+};
+
+export default Login;

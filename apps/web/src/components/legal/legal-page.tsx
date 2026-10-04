@@ -2,13 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /** Layout for the Terms and Privacy pages. Reachable signed out. */
-export function LegalPage({
+export const LegalPage = ({
   title,
   children,
 }: {
   title: string;
   children: ReactNode;
-}) {
+}) => {
   return (
     <main className="mx-auto w-full max-w-2xl space-y-6 px-6 py-16">
       <Link href="/" className="text-sm text-muted-foreground hover:underline">
@@ -24,4 +24,4 @@ export function LegalPage({
       </div>
     </main>
   );
-}
+};

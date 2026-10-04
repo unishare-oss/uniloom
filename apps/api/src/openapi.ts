@@ -10,7 +10,7 @@ import {
  * (Orval). `data` is the shape inside the answer's `{ success, message, data }`, as in
  * Unishare: the web fetcher unwraps it.
  */
-export function describe(route: {
+export const describe = (route: {
   tag: string;
   /** Becomes the hook's name in the web app: getMe → useGetMe. */
   operationId: string;
@@ -19,7 +19,7 @@ export function describe(route: {
   body?: ZodType;
   data: ZodType;
   status?: 200 | 201;
-}) {
+}) => {
   return describeRoute({
     tags: [route.tag],
     operationId: route.operationId,
@@ -43,7 +43,7 @@ export function describe(route: {
       },
     },
   });
-}
+};
 
 /** Spec settings, shared by GET /api/openapi.json and `bun run api:spec`. */
 export const specOptions: Partial<GenerateSpecOptions> = {

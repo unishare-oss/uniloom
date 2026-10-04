@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { takeReturnTo } from "@/lib/uniauth";
 
 /** uniAuth errors land here. login_required = not signed in there: carry on signed out. */
-export default function AuthReturnPage() {
+const AuthReturnPage = () => {
   // Once only: takeReturnTo clears the stored URL, so a second run (React Strict Mode runs
   // effects twice in dev) would redirect to / over the first redirect.
   const started = useRef(false);
@@ -17,4 +17,6 @@ export default function AuthReturnPage() {
     else window.location.replace(`/login?error=${encodeURIComponent(error)}`);
   }, []);
   return null;
-}
+};
+
+export default AuthReturnPage;

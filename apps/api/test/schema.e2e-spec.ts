@@ -13,7 +13,7 @@ describe('database schema (e2e)', () => {
   });
 
   /** A Guided workspace, with the switches its mode preset will set. */
-  async function newWorkspace(keyPrefix = `T${randomUUID().slice(0, 8)}`) {
+  const newWorkspace = async (keyPrefix = `T${randomUUID().slice(0, 8)}`) => {
     const workspace = await prisma.workspace.create({
       data: {
         name: 'Schema test',
@@ -28,15 +28,15 @@ describe('database schema (e2e)', () => {
     });
     workspaceIds.push(workspace.id);
     return workspace;
-  }
+  };
 
-  async function newUser() {
+  const newUser = async () => {
     const id = randomUUID();
     userIds.push(id);
     return prisma.user.create({
       data: { id, name: 'Mya', email: `${id}@example.com` },
     });
-  }
+  };
 
   it('gives a new workspace a UUIDv7 id and starts numbering at 1', async () => {
     const workspace = await newWorkspace();

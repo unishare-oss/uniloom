@@ -8,7 +8,7 @@ const CLIENT = { id: 'uniloom-test', secret: 'uniloom-test-secret' };
  * Starts a mock uniAuth, points the auth settings at it, then imports the app (auth.ts reads
  * them on import). Returns helpers to call the API and sign people in.
  */
-export async function startTestApi() {
+export const startTestApi = async () => {
   const uniauth = await startMockUniauth(CLIENT);
   Object.assign(process.env, {
     BETTER_AUTH_URL: WEB_ORIGIN,
@@ -38,17 +38,17 @@ export async function startTestApi() {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
 
-  function newProfile(overrides: Partial<MockProfile> = {}): MockProfile {
+  const newProfile = (overrides: Partial<MockProfile> = {}): MockProfile => {
     return {
       sub: `u_${randomUUID()}`,
       email: `${randomUUID()}@${emailDomain}`,
       name: 'Mya',
       ...overrides,
     };
-  }
+  };
 
   /** Runs the whole OIDC sign-in against the mock uniAuth and returns the session cookie. */
-  async function signIn(profile: MockProfile) {
+  const signIn = async (profile: MockProfile) => {
     uniauth.signInAs(profile);
     const start = await call('/api/auth/sign-in/social', {
       method: 'POST',
@@ -80,16 +80,16 @@ export async function startTestApi() {
       .find((c) => c.startsWith('uniloom.session_token='));
     expect(setCookie).toBeDefined();
     return { setCookie: setCookie!, cookie: setCookie!.split(';')[0] };
-  }
+  };
 
   /** A signed-in user who has accepted the terms: ready for feature routes. */
-  async function signInReady(profile = newProfile()) {
+  const signInReady = async (profile = newProfile()) => {
     const session = await signIn(profile);
     expect(
       (await send('POST', '/api/users/me/consent', session.cookie)).status,
     ).toBe(200);
     return { ...session, profile };
-  }
+  };
 
   return {
     app,
@@ -102,13 +102,13 @@ export async function startTestApi() {
     signInReady,
     close: () => uniauth.close(),
   };
-}
+};
 
 /**
  * A response body: the `data` of a successful `{ success: true, message, data }`, or the
  * body as is (an error, or a Better Auth response).
  */
-export async function read<T = any>(res: Response): Promise<T> {
+export const read = async <T = any>(res: Response): Promise<T> => {
   const body = await res.json();
   return body?.success === true ? body.data : body;
-}
+};

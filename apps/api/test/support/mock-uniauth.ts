@@ -22,7 +22,10 @@ interface PendingCode {
  * A minimal OIDC provider standing in for uniAuth: discovery, authorize (always signed in as
  * `profile`), token (Basic client auth + PKCE) and JWKS. ID tokens are RS256-signed.
  */
-export async function startMockUniauth(client: { id: string; secret: string }) {
+export const startMockUniauth = async (client: {
+  id: string;
+  secret: string;
+}) => {
   const { publicKey, privateKey } = await generateKeyPair('RS256');
   const jwk: JWK = {
     ...(await exportJWK(publicKey)),
@@ -159,4 +162,4 @@ export async function startMockUniauth(client: { id: string; secret: string }) {
     },
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
-}
+};

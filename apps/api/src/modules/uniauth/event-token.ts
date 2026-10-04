@@ -21,11 +21,11 @@ export type EventVerifier = (
  * client, carrying exactly the expected event and no nonce (so an ID token can't pass as one).
  * It resolves to the uniAuth user id and the event's data, or null.
  */
-export function createEventVerifier(
+export const createEventVerifier = (
   issuer: string,
   audience: string,
   keys: JWTVerifyGetKey = createRemoteJWKSet(new URL(`${issuer}/jwks`)),
-): EventVerifier {
+): EventVerifier => {
   return async (token, event) => {
     try {
       const { payload } = await jwtVerify(token, keys, { issuer, audience });
@@ -43,4 +43,4 @@ export function createEventVerifier(
       return null;
     }
   };
-}
+};

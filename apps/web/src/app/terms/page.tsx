@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { LegalPage } from "@/components/legal-page";
+import { LegalPage } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = { title: "Terms of Service · Uniloom" };
 
-export default function TermsPage() {
+const TermsPage = () => {
   return (
     <LegalPage title="Terms of Service">
       <h2>Using Uniloom</h2>
@@ -23,4 +23,6 @@ export default function TermsPage() {
       </p>
     </LegalPage>
   );
-}
+};
+
+export default TermsPage;

@@ -40,6 +40,8 @@ contracts only when both workspaces actually need them.
   or library already offers (e.g. Hono's `app.get('/path', handler)`), and avoid clever
   abstractions, factories, generics or wrappers that a reader has to decode. If the
   simple way and the fancy way both work, use the simple way.
+- Write functions as arrow functions (`const name = () => {}`), never `function name()`.
+  Lint enforces it (`func-style`, `prefer-arrow-callback`).
 - Make code reusable only when it repeats: once something is written the same way three
   times, extract a shared function or component. Not before.
 - `MVP.md` is the spec. Build in the order of its §14 and do not pull later slices
