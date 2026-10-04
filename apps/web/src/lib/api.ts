@@ -8,7 +8,8 @@ export function goToConsent() {
 
 /**
  * fetch for Uniloom's API. A 403 consent_required (the user hasn't accepted the terms yet)
- * sends them to /consent. The response is returned either way.
+ * sends them to /consent. The response is returned either way. Successful bodies are
+ * `{ success: true, message, data }`; errors are `{ success: false, statusCode, code, message }`.
  */
 export async function apiFetch(path: string, init?: RequestInit) {
   const response = await fetch(path, init);

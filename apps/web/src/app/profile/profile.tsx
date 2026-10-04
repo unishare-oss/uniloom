@@ -26,7 +26,7 @@ export default function Profile() {
         if (response.status === 401)
           return window.location.replace("/login?next=%2Fprofile");
         if (!response.ok) return setError(true);
-        setMe((await response.json()) as Me);
+        setMe(((await response.json()) as { data: Me }).data);
       })
       .catch(() => setError(true));
   }, []);

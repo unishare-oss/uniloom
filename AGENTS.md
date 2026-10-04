@@ -50,6 +50,32 @@ contracts only when both workspaces actually need them.
   and is reached over Tailscale (`oracle.tailcb9a25.ts.net:5434`). Do not start a local
   database by default.
 
+## Independent review
+
+After implementing and running the checks, and before reporting the work as done, run
+the `code-reviewer` agent (`.claude/agents/code-reviewer.md`) on the change: give it the
+base branch to diff against and the plan's path, nothing about how or why you built it.
+It starts with a fresh context and no memory, so its review is unbiased. Fix the findings
+you agree with, rerun the checks, and include its verdict and findings (fixed or not, and
+why) in your report.
+
+## Reporting finished work
+
+When you finish implementing something, end with a summary that always includes:
+
+- **Architecture decisions:** each decision made, and who made it (the user, you, or
+  both), e.g. "you chose soft delete for items; I kept the membership check in services".
+- **Trade-offs:** what each decision gives up, and what was left out on purpose.
+- **What was built, by priority:** group the list into P0 (the feature can't be used
+  without it), P1 (needed soon, but the main flow works without it) and P2 (safety net or
+  rarely used), with one line on why each sits where it does:
+  - backend: every new or changed endpoint (method, path, who may call it) with a
+    one-line description and its main error codes;
+  - frontend: every new or changed page or feature (route, what the user sees and can do);
+  - which ones to build on next (e.g. which the web app or MCP tools need first).
+- **Status:** checks run and their results, what is committed or pushed, and anything
+  still open.
+
 ## Checks
 
 Run the checks relevant to changed files. Root commands are `bun run lint`,

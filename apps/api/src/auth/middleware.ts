@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from 'hono';
+import { apiError } from '@/http.js';
 import { auth } from './auth.js';
 
 /**
@@ -10,8 +11,7 @@ export const requireSession: MiddlewareHandler = async (c, next) => {
     headers: c.req.raw.headers,
     returnHeaders: true,
   });
-  if (!session)
-    return c.json({ statusCode: 401, message: 'Unauthorized' }, 401);
+  if (!session) throw apiError(401, 'unauthorized', 'Sign in first');
   c.set('user', session.user);
   await next();
   for (const cookie of headers.getSetCookie())
@@ -23,15 +23,11 @@ export const requireSession: MiddlewareHandler = async (c, next) => {
  * consent_required until the user has accepted them. Runs after requireSession.
  */
 export const requireConsent: MiddlewareHandler = async (c, next) => {
-  if (!c.var.user.consentGivenAt) {
-    return c.json(
-      {
-        statusCode: 403,
-        code: 'consent_required',
-        message: "Accept Uniloom's Terms and Privacy Policy first",
-      },
+  if (!c.var.user.consentGivenAt)
+    throw apiError(
       403,
+      'consent_required',
+      "Accept Uniloom's Terms and Privacy Policy first",
     );
-  }
   await next();
 };
