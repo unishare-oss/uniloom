@@ -16,15 +16,26 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 apps/web/
 ├── public/             # Static assets
 ├── src/
-│   ├── app/            # App Router pages, layout, and global CSS
-│   ├── components/     # Feature components and shared UI primitives
-│   │   └── ui/         # shadcn-style UI components
+│   ├── app/            # Routes only: page.tsx, layout.tsx, and global CSS (theme tokens)
+│   │   └── w/[workspaceId]/   # Board, items/[itemId], trash (inside the app shell)
+│   ├── components/     # Every component, one folder per feature; providers.tsx
+│   │   ├── auth/       # Login, consent, session bootstrap (consent redirect, silent check)
+│   │   ├── board/      # Board, its columns and draggable item cards
+│   │   ├── items/      # Item detail, new-item dialog, trash, kind/priority/state icons
+│   │   ├── legal/      # Layout for the terms and privacy pages
+│   │   ├── markdown/   # Markdown renderer and its Mermaid diagrams
+│   │   ├── shell/      # App shell: sidebar and layout for signed-in pages
+│   │   ├── user/       # Profile, avatar and theme switch
+│   │   ├── workspaces/ # Workspace list, new-workspace dialog, workspace chip
+│   │   └── ui/         # shadcn components (Base UI), added with `bunx shadcn add`
+│   ├── hooks/          # React hooks (shadcn's use-mobile)
 │   ├── lib/            # Browser utilities
 └── AGENTS.md
 ```
 
-Keep pages in `src/app`, reusable UI in `src/components`, and browser helpers in
-`src/lib`. Use Server Components by default and client components when browser
+`src/app` holds only routing files: a `page.tsx` reads the route params and renders a
+component from `src/components/<feature>/`, one component per file. Browser helpers go
+in `src/lib`. Use Server Components by default and client components when browser
 behavior requires them. Keep access control and workflow rules in the API.
 
 The web app proxies `/api/*` to the Hono API through `next.config.ts`, so Better
@@ -43,6 +54,13 @@ queries take the data with `select: (r) => r.data`; mutations get `{ data, messa
 The generated folder is not committed. `AuthBootstrap` in the layout reads the session on every page: it
 sends users without consent to `/consent` and runs the silent uniAuth check for
 signed-out visitors.
+Look and parts (ADR-0005): colours only through the CSS variables in `globals.css` (light
+and dark), never hard-coded; shadcn components from `src/components/ui/` (add more with
+`bunx shadcn add`); icons only from `lucide-react`; `KindIcon`, `PriorityIcon` and
+`StateLozenge` (`src/components/items/item-meta.tsx`) wherever an item's kind, priority or state
+shows; `Markdown` (`src/components/markdown/markdown.tsx`) for any Markdown, with Mermaid diagrams.
+Signed-in pages render inside `AppShell`. A 401 from the API sends the user to `/login`
+and back (the fetcher does it).
 There is no agent chat on the website: it is for reading, approving and reviewing.
 
 For web changes, run `bun run --cwd apps/web lint`, `typecheck`, and `build` as

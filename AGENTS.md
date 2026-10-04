@@ -92,6 +92,10 @@ Flow for a plan: Aligning → Ready → In Progress → Blocked → In Review �
 Rules:
 
 - Ask me to confirm the scope before you write a new plan.
+- Keep each plan small: at most 6 done-when items. If a feature I propose needs more,
+  don't squeeze it into one plan: propose splitting it into two or three smaller
+  features, each its own plan, and let me confirm the split. One big plan makes an AI
+  agent lose track and invent things.
 - Write the plan in `docs/plans/` before any code: scope, a done-when checklist of 3 to
   6 items derived from the spec (no generic items), and a design with the meaningful
   functions, what each does and why, and Mermaid flows.
