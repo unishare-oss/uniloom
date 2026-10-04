@@ -14,9 +14,12 @@ apps/api/
 │   ├── modules/             # One folder per feature (see below)
 │   │   ├── health/          # health.routes.ts
 │   │   ├── users/           # /api/me, consent
+│   │   ├── workspaces/      # workspaces, mode presets, membership
+│   │   ├── items/           # items, states, blocked-by
 │   │   └── uniauth/         # uniAuth receivers and event tokens
 │   ├── auth/                # Better Auth (`auth`), session and consent middleware
 │   ├── db/                  # prisma.ts: the Prisma client and connection
+│   ├── http.ts              # apiError, parseBody, idParam: errors and input
 │   ├── rules/               # Workflow rules engine, shared by REST and MCP (later)
 │   ├── mcp/                 # MCP server; its tools call module services (later)
 │   ├── generated/prisma/    # Generated client; never edit manually
@@ -61,6 +64,21 @@ consent_required` until the user accepts Uniloom's terms. Mount new feature rout
 the end. Read the signed-in user with `c.var.user`. Map uniAuth people by `sub` through
 `account`, never by email.
 
+Responses, errors and input, from `src/http.ts` (the same shape as Unishare's API):
+
+- Answer successes with `apiSuccess(c, data, message?, status?)`:
+  `{ success: true, message, data }`. `message` defaults to `'OK'`; give one for actions
+  (`'UG-12 created'`). Deletes answer 200 with `data: null`, not 204.
+- Throw `apiError(status, code, message)` from a service, handler or middleware; the API
+  answers `{ success: false, statusCode, code, message }`. Use a stable snake_case `code`
+  the web app can match; the message is for people.
+- Better Auth's `/api/auth/*` and the uniAuth receivers keep their own formats.
+- Read JSON bodies with `parseBody(c, schema)` (zod, from `<feature>.schema.ts`); bad input
+  answers 400 `invalid_input`. Read id path params with `idParam(c, name)`: a non-uuid is
+  404, since nothing can have that id.
+- Answer 404, not 403, when the user isn't a member of the workspace, so ids don't reveal
+  what exists.
+
 ## Responsibilities
 
 - Handlers parse request data, read the signed-in user, and shape responses.
@@ -73,6 +91,8 @@ the end. Read the signed-in user with `c.var.user`. Map uniAuth people by `sub` 
 
 ## Data and Verification
 
+- Items are soft-deleted (`deletedAt`). Their repository filters deleted rows out of every
+  lookup; keep it that way when adding queries. Other rows are hard-deleted.
 - Change `prisma/schema.prisma` and add a migration for schema changes. Regenerate
   the Prisma client; never edit `src/generated/prisma` or an applied migration.
 - Keep tests close to behavior under `src/` (`*.spec.ts`); use `test/` for end-to-end
