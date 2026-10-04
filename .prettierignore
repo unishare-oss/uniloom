@@ -1,2 +1,4 @@
 # Vendored agent skills: kept byte-for-byte so skills-lock.json hashes match.
 .agents/
+# Written by bun run api:spec; must match the generator byte for byte (CI checks it).
+apps/web/openapi.json

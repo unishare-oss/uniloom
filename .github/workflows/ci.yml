@@ -34,6 +34,11 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run db:generate
       - run: bun run --cwd apps/api db:deploy
+      # The committed OpenAPI spec must match the API; regenerate with `bun run api:spec`.
+      - run: bun run api:spec
+      - run: git diff --exit-code apps/web/openapi.json
+      # The web app's typed client is generated from it, not committed.
+      - run: bun run api:generate
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test

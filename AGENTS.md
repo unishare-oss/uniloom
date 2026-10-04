@@ -52,12 +52,11 @@ contracts only when both workspaces actually need them.
 
 ## Independent review
 
-After implementing and running the checks, and before reporting the work as done, run
-the `code-reviewer` agent (`.claude/agents/code-reviewer.md`) on the change: give it the
-base branch to diff against and the plan's path, nothing about how or why you built it.
-It starts with a fresh context and no memory, so its review is unbiased. Fix the findings
-you agree with, rerun the checks, and include its verdict and findings (fixed or not, and
-why) in your report.
+Do not run a review yourself. The user runs the `code-reviewer` agent
+(`.claude/agents/code-reviewer.md`) or another reviewer such as Codex when they want one.
+Run it only when the user asks: then give it the base branch to diff against and the
+plan's path, nothing about how or why you built it, fix the findings you agree with,
+rerun the checks, and report its verdict and findings (fixed or not, and why).
 
 ## Reporting finished work
 

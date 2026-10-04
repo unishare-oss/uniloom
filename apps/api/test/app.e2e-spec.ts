@@ -48,6 +48,45 @@ describe('Uniloom API (e2e)', () => {
     );
   });
 
+  describe('OpenAPI', () => {
+    it('serves the spec with every web route and nothing else', async () => {
+      const res = await call('/api/openapi.json');
+      expect(res.status).toBe(200);
+      const spec = (await res.json()) as {
+        openapi: string;
+        paths: Record<string, Record<string, { operationId: string }>>;
+      };
+      expect(spec.openapi).toBe('3.1.0');
+      const operations = Object.values(spec.paths)
+        .flatMap((ops) => Object.values(ops).map((op) => op.operationId))
+        .sort();
+      expect(operations).toEqual([
+        'acceptTerms',
+        'addBlocker',
+        'createItem',
+        'createWorkspace',
+        'deleteItem',
+        'getItem',
+        'getMe',
+        'listDeletedItems',
+        'listItems',
+        'listWorkspaces',
+        'removeBlocker',
+        'restoreItem',
+        'updateItem',
+      ]);
+      expect(
+        Object.keys(spec.paths).some((p) => /auth|uniauth|health/.test(p)),
+      ).toBe(false);
+    });
+
+    it('serves the docs page without a session', async () => {
+      const res = await call('/api/docs');
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toContain('text/html');
+    });
+  });
+
   describe('Better Auth config', () => {
     it('has no email and password sign-up', async () => {
       const email = `signup-${randomUUID()}@example.com`;

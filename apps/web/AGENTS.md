@@ -34,8 +34,13 @@ protected pages to `/login`; it only checks that the cookie exists, and the API 
 real check. Set `API_URL` (server) and `NEXT_PUBLIC_UNIAUTH_URL` (build time); see
 `.env.example`.
 
-Call the API through `apiFetch` (`src/lib/api.ts`): a `403 consent_required` sends the
-user to `/consent`. `AuthBootstrap` in the layout reads the session on every page: it
+Call the API only through the hooks Orval generates in `src/lib/api/generated/` (from
+`openapi.json`; run `bun run api:generate` after pulling or after `bun run api:spec`), never
+with hand-written `fetch`. They all go through `src/lib/api/fetcher.ts`, as in Unishare:
+queries take the data with `select: (r) => r.data`; mutations get `{ data, message, … }` in
+`onSuccess`; failures throw `ApiError` (`message`, `code`, `status`), shown with
+`toast.error(err.message)` (sonner). A `403 consent_required` sends the user to `/consent`.
+The generated folder is not committed. `AuthBootstrap` in the layout reads the session on every page: it
 sends users without consent to `/consent` and runs the silent uniAuth check for
 signed-out visitors.
 There is no agent chat on the website: it is for reading, approving and reviewing.
