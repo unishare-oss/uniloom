@@ -3,22 +3,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { goToLogin } from "@/lib/api";
 import { ApiError } from "@/lib/api/fetcher";
 import { useAcceptTerms } from "@/lib/api/generated/users/users";
 import { authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-next";
 import { signOutEverywhere } from "@/lib/uniauth";
 
-/** Back to login, then here again with the same `next`. */
-function goToLogin() {
-  const { pathname, search } = window.location;
-  window.location.replace(
-    `/login?next=${encodeURIComponent(`${pathname}${search}`)}`,
-  );
-}
-
 /** Signing in through uniAuth is not agreeing to Uniloom's terms: this asks once. */
-export default function Consent() {
+const Consent = () => {
   const [next] = useState(() =>
     safeNext(new URLSearchParams(window.location.search).get("next")),
   );
@@ -86,4 +79,6 @@ export default function Consent() {
       </div>
     </main>
   );
-}
+};
+
+export default Consent;
