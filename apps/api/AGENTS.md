@@ -19,7 +19,8 @@ apps/api/
 │   │   └── uniauth/         # uniAuth receivers and event tokens
 │   ├── auth/                # Better Auth (`auth`), session and consent middleware
 │   ├── db/                  # prisma.ts: the Prisma client and connection
-│   ├── http.ts              # apiError, parseBody, idParam: errors and input
+│   ├── http.ts              # apiSuccess, apiError, parseBody, idParam
+│   ├── openapi.ts           # describe() for routes, spec options
 │   ├── rules/               # Workflow rules engine, shared by REST and MCP (later)
 │   ├── mcp/                 # MCP server; its tools call module services (later)
 │   ├── generated/prisma/    # Generated client; never edit manually
@@ -63,6 +64,13 @@ mounted after `requireConsent` needs both: `401` without a session, `403
 consent_required` until the user accepts Uniloom's terms. Mount new feature routers at
 the end. Read the signed-in user with `c.var.user`. Map uniAuth people by `sub` through
 `account`, never by email.
+
+OpenAPI: describe every route the web app calls with `describe({ tag, operationId, summary,
+pathParams?, body?, data, status? })` from `src/openapi.ts`, placed before its handler in
+the routes file. `operationId` becomes the web hook's name (`getMe` → `useGetMe`), so keep
+it stable. After changing a route or a schema, run `bun run api:spec` and commit
+`apps/web/openapi.json`; CI fails if it is stale. The spec is served at `/api/openapi.json`
+and readable at `/api/docs`.
 
 Responses, errors and input, from `src/http.ts` (the same shape as Unishare's API):
 

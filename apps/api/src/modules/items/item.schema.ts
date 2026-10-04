@@ -22,3 +22,43 @@ export const updateItemSchema = z.object({
 });
 
 export const addBlockerSchema = z.object({ blockerId: z.uuid() });
+
+const kind = z.enum(['PROJECT', 'ISSUE', 'SUB_ISSUE', 'FEATURE', 'SLICE']);
+
+export const itemSchema = z.object({
+  id: z.uuid(),
+  key: z.string(),
+  workspaceId: z.uuid(),
+  kind,
+  title: z.string(),
+  description: z.string(),
+  state: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    key: z.string().nullable(),
+    category: z.enum(['BACKLOG', 'UNSTARTED', 'STARTED', 'DONE', 'CANCELED']),
+  }),
+  priority,
+  assigneeId: z.string().nullable(),
+  parentId: z.uuid().nullable(),
+  createdById: z.string().nullable(),
+  /** Ids of the items this one waits on. */
+  blockedBy: z.array(z.uuid()),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+});
+
+export const itemRowSchema = z.object({
+  id: z.uuid(),
+  key: z.string(),
+  kind,
+  title: z.string(),
+  state: z.object({ id: z.uuid(), name: z.string() }),
+  priority,
+  assigneeId: z.string().nullable(),
+  parentId: z.uuid().nullable(),
+});
+
+export const deletedItemRowSchema = itemRowSchema.extend({
+  deletedAt: z.iso.datetime(),
+});
