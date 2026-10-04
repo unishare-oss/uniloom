@@ -152,6 +152,109 @@ describe('items (e2e)', () => {
     });
   });
 
+  describe('response shape', () => {
+    it('wraps a success in { success, message, data } and an error in { success, statusCode, code, message }', async () => {
+      const w = await workspace('GUIDED');
+      const created = await api.send(
+        'POST',
+        `/api/workspaces/${w.id}/items`,
+        w.cookie,
+        {
+          kind: 'FEATURE',
+          title: 'Sign-in',
+        },
+      );
+      expect(await created.json()).toEqual({
+        success: true,
+        message: `${w.keyPrefix}-1 created`,
+        data: expect.objectContaining({
+          key: `${w.keyPrefix}-1`,
+          title: 'Sign-in',
+        }),
+      });
+
+      const refused = await api.send(
+        'POST',
+        `/api/workspaces/${w.id}/items`,
+        w.cookie,
+        { kind: 'SLICE', title: 'S' },
+      );
+      expect(await refused.json()).toEqual({
+        success: false,
+        statusCode: 400,
+        code: 'invalid_kind',
+        message: expect.any(String),
+      });
+    });
+
+    it('answers an unknown /api route with the error envelope', async () => {
+      const w = await workspace('STANDARD');
+      const res = await api.send('GET', '/api/nothing-here', w.cookie);
+      expect(res.status).toBe(404);
+      expect(await res.json()).toMatchObject({
+        success: false,
+        code: 'not_found',
+      });
+    });
+  });
+
+  describe('updating with rules', () => {
+    it('moves a slice to another feature, and refuses itself, foreign and wrong-kind parents', async () => {
+      const w = await workspace('GUIDED');
+      const other = await workspace('GUIDED');
+      const f1 = (await w.add({ kind: 'FEATURE', title: 'F1' })).body;
+      const f2 = (await w.add({ kind: 'FEATURE', title: 'F2' })).body;
+      const slice = (
+        await w.add({ kind: 'SLICE', title: 'S', parentId: f1.id })
+      ).body;
+      const foreign = (await other.add({ kind: 'FEATURE', title: 'X' })).body;
+      const patch = async (id: string, body: object) => {
+        const res = await api.send('PATCH', `/api/items/${id}`, w.cookie, body);
+        return { status: res.status, body: await read(res) };
+      };
+
+      expect(await patch(slice.id, { parentId: f2.id })).toMatchObject({
+        status: 200,
+        body: { parentId: f2.id },
+      });
+      expect((await patch(slice.id, { parentId: slice.id })).body.code).toBe(
+        'invalid_parent',
+      );
+      expect((await patch(slice.id, { parentId: foreign.id })).body.code).toBe(
+        'invalid_parent',
+      );
+      expect((await patch(slice.id, { parentId: null })).body.code).toBe(
+        'invalid_kind',
+      );
+      expect((await patch(f1.id, { parentId: f2.id })).body.code).toBe(
+        'invalid_kind',
+      );
+    });
+
+    it('refuses a foreign state or a non-member assignee, and can unassign', async () => {
+      const w = await workspace('STANDARD');
+      const other = await workspace('STANDARD');
+      const item = (await w.add({ kind: 'ISSUE', title: 'I' })).body;
+      const foreign = (await other.add({ kind: 'ISSUE', title: 'X' })).body;
+      const outsider = await api.signInReady();
+      const outsiderId = (
+        await read(await api.send('GET', '/api/me', outsider.cookie))
+      ).id;
+      const me = (await read(await api.send('GET', '/api/me', w.cookie))).id;
+      const patch = async (body: object) =>
+        read(await api.send('PATCH', `/api/items/${item.id}`, w.cookie, body));
+
+      expect((await patch({ stateId: foreign.state.id })).code).toBe(
+        'invalid_state',
+      );
+      expect((await patch({ assigneeId: outsiderId })).code).toBe(
+        'invalid_assignee',
+      );
+      expect((await patch({ assigneeId: me })).assigneeId).toBe(me);
+      expect((await patch({ assigneeId: null })).assigneeId).toBeNull();
+    });
+  });
+
   describe('updating and deleting', () => {
     it('moves an item to another state and assigns it', async () => {
       const w = await workspace('STANDARD');
@@ -366,6 +469,42 @@ describe('items (e2e)', () => {
         await api.send('GET', `/api/items/${a.id}`, w.cookie),
       )) as Item;
       expect(after.blockedBy).toEqual([]);
+    });
+
+    it('lets only one of two opposite links sent at the same time through', async () => {
+      const w = await workspace('STANDARD');
+      const a = (await w.add({ kind: 'ISSUE', title: 'A' })).body;
+      const b = (await w.add({ kind: 'ISSUE', title: 'B' })).body;
+      const results = await Promise.all([
+        api.send('POST', `/api/items/${a.id}/blockers`, w.cookie, {
+          blockerId: b.id,
+        }),
+        api.send('POST', `/api/items/${b.id}/blockers`, w.cookie, {
+          blockerId: a.id,
+        }),
+      ]);
+      expect(results.map((r) => r.status).sort((x, y) => x - y)).toEqual([
+        201, 409,
+      ]);
+      expect(
+        await prisma.itemBlock.count({
+          where: { blockedId: { in: [a.id, b.id] } },
+        }),
+      ).toBe(1);
+    });
+
+    it('answers two identical links sent at the same time with 201 and 409, never 500', async () => {
+      const w = await workspace('STANDARD');
+      const a = (await w.add({ kind: 'ISSUE', title: 'A' })).body;
+      const b = (await w.add({ kind: 'ISSUE', title: 'B' })).body;
+      const link = () =>
+        api.send('POST', `/api/items/${a.id}/blockers`, w.cookie, {
+          blockerId: b.id,
+        });
+      const results = await Promise.all([link(), link()]);
+      expect(results.map((r) => r.status).sort((x, y) => x - y)).toEqual([
+        201, 409,
+      ]);
     });
 
     it('refuses self (400), duplicates (409) and cycles (409)', async () => {

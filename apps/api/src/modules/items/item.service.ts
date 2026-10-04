@@ -11,7 +11,7 @@ import {
 import {
   countChildren,
   createItem,
-  createLink,
+  createLinkChecked,
   deleteItem,
   deleteLink,
   findFirstState,
@@ -20,7 +20,6 @@ import {
   findState,
   listDeletedItems,
   listItems,
-  listLinks,
   restoreItem,
   updateItem,
 } from './item.repository.js';
@@ -279,18 +278,20 @@ export async function addBlocker(
       'invalid_blocker',
       'The blocker must be an item in this workspace',
     );
-  const links = await listLinks(item.workspaceId);
-  if (
-    links.some((link) => link.blockedId === id && link.blockerId === blockerId)
-  )
-    throw apiError(409, 'already_blocked', 'It already waits on that item');
-  if (wouldCreateCycle(links, id, blockerId))
-    throw apiError(
-      409,
-      'blocking_cycle',
-      'That would make the items wait on each other',
-    );
-  await createLink(id, blockerId);
+  await createLinkChecked(item.workspaceId, id, blockerId, (links) => {
+    if (
+      links.some(
+        (link) => link.blockedId === id && link.blockerId === blockerId,
+      )
+    )
+      throw apiError(409, 'already_blocked', 'It already waits on that item');
+    if (wouldCreateCycle(links, id, blockerId))
+      throw apiError(
+        409,
+        'blocking_cycle',
+        'That would make the items wait on each other',
+      );
+  });
   return getItem(id, userId);
 }
 

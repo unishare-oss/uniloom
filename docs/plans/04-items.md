@@ -1,6 +1,6 @@
 # 04: Items
 
-Status: In Review
+Status: In Progress
 
 ## Scope
 
@@ -24,7 +24,8 @@ moves (checklists, designs, approval), roles beyond OWNER, invites.
 - [x] Items get sequential `KEY-n` numbers per workspace, also under concurrent creates
 - [x] Kind/parent rules per mode and blocked-by rules return the documented errors
 - [x] Non-members get 404 on every workspace and item route
-- [ ] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included
+- [ ] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included (local checks pass;
+      CI runs once the branch is pushed)
 
 ## Design
 
@@ -104,6 +105,15 @@ flowchart LR
 - Membership is checked by an explicit `requireMember` / `loadItem` call in every item
   service function. A declarative check is recorded as
   [TD-001](../tech-debt/001-declarative-membership-check.md).
+- Adding a blocker checks duplicates and cycles and inserts the link in one transaction
+  with the workspace row locked, so concurrent requests can't create a loop or a 500.
+  A concurrent create-under / delete of the same parent is TD-002
+  ([002-parent-delete-race](../tech-debt/002-parent-delete-race.md)).
+- Items can be created or moved straight into any state of their workspace. When the
+  workflow gates arrive (checklists, designs, approval), they must cover create with
+  `stateId` as well as `PATCH`, or creation would bypass them.
+- `app.notFound` and `app.onError` keep the envelope for unknown routes and unexpected
+  errors; a unique-index conflict that slips past a service check answers 409 `conflict`.
 - Blocked-by is information only for now: it doesn't move items or gate state changes.
 - Items are soft-deleted: `DELETE` sets `item.deletedAt` and removes the item's blocked-by
   links; the row stays. Every lookup in `item.repository.ts` skips deleted items, so they
@@ -115,8 +125,24 @@ flowchart LR
 
 ## Changes
 
-- Migrations `items` (with the `item_block_not_self` CHECK), `workspace_checklist_limits` and
-  `item_soft_delete`.
-- `apps/api/src/modules/workspaces/*`, `apps/api/src/modules/items/*`, `apps/api/src/http.ts`.
-- `test/support/test-app.ts` now holds the shared sign-in helpers (`startTestApi`).
-- Tests: 19 unit tests for the rules; e2e for workspaces (5) and items (14).
+Commits: `93131b0` (response envelope, shared test helpers), `f840993` (workspaces and
+items), plus the fixes from the independent review.
+
+- Migrations `items` (with the `item_block_not_self` CHECK), `workspace_checklist_limits`
+  and `item_soft_delete`.
+- `apps/api/src/modules/workspaces/*`, `apps/api/src/modules/items/*`, `apps/api/src/http.ts`,
+  `apps/api/src/app.ts` (`notFound`, `onError`).
+- `test/support/test-app.ts` holds the shared sign-in helpers (`startTestApi`, `read`).
+- Tests: 19 unit tests for the rules; e2e for workspaces (6) and items (20).
+
+Planned vs actual:
+
+- Planned and built: the three tables, presets, the workspace and item routes, the kind,
+  parent, state, assignee and blocked-by rules, membership on every route.
+- Extra: soft delete with trash and restore (asked for during the work, so a person can
+  undo an agent's delete); the `{ success, message, data }` envelope (matches Unishare);
+  the `checklistMin` / `checklistMax` columns the workspaces migration had missed;
+  `notFound` / `onError`.
+- Changed: validation uses zod through a small `parseBody` helper instead of
+  `@hono/zod-validator`; the item rules live in `item.service.ts` as planned.
+- Deferred: the parent delete race (TD-002); a declarative membership check (TD-001).

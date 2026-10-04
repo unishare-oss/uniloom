@@ -116,16 +116,26 @@ export function findFirstState(workspaceId: string) {
   });
 }
 
-/** Every "waits on" link between items of the workspace. */
-export function listLinks(workspaceId: string) {
-  return prisma.itemBlock.findMany({
-    where: { blocked: { workspaceId } },
-    select: { blockedId: true, blockerId: true },
+/**
+ * Adds "blocked waits on blocker" once `check` accepts the workspace's current links. The
+ * workspace row is locked for the whole transaction, so two concurrent adds can't both
+ * pass the check (e.g. A→B and B→A, which together would be a loop).
+ */
+export function createLinkChecked(
+  workspaceId: string,
+  blockedId: string,
+  blockerId: string,
+  check: (links: { blockedId: string; blockerId: string }[]) => void,
+) {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM "workspace" WHERE "id" = ${workspaceId}::uuid FOR UPDATE`;
+    const links = await tx.itemBlock.findMany({
+      where: { blocked: { workspaceId } },
+      select: { blockedId: true, blockerId: true },
+    });
+    check(links);
+    await tx.itemBlock.create({ data: { blockedId, blockerId } });
   });
-}
-
-export function createLink(blockedId: string, blockerId: string) {
-  return prisma.itemBlock.create({ data: { blockedId, blockerId } });
 }
 
 export function deleteLink(blockedId: string, blockerId: string) {

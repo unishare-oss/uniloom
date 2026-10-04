@@ -2,7 +2,6 @@ import { apiError } from '@/http.js';
 import type { WorkspaceMode } from '@/generated/prisma/enums.js';
 import {
   createWorkspace as insertWorkspace,
-  findWorkspaceByKeyPrefix,
   findWorkspaceForMember,
   findWorkspacesForUser,
   isMember,
@@ -13,13 +12,14 @@ export async function createWorkspace(
   userId: string,
   input: { name: string; keyPrefix: string; mode: WorkspaceMode },
 ) {
-  if (await findWorkspaceByKeyPrefix(input.keyPrefix))
+  const workspace = await insertWorkspace({ ...input, ownerId: userId });
+  if (!workspace)
     throw apiError(
       409,
       'key_prefix_taken',
       `${input.keyPrefix} is already used`,
     );
-  return insertWorkspace({ ...input, ownerId: userId });
+  return workspace;
 }
 
 export function listWorkspaces(userId: string) {

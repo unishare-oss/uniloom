@@ -135,6 +135,18 @@ describe('workspaces (e2e)', () => {
     expect(await read(bad)).toMatchObject({ code: 'invalid_input' });
   });
 
+  it('answers 409, not 500, when two creates race for the same key prefix', async () => {
+    const { cookie } = await api.signInReady();
+    const keyPrefix = freshPrefix();
+    const results = await Promise.all([
+      create(cookie, { name: 'A', keyPrefix, mode: 'STANDARD' }),
+      create(cookie, { name: 'B', keyPrefix, mode: 'STANDARD' }),
+    ]);
+    expect(results.map((r) => r.status).sort((x, y) => x - y)).toEqual([
+      201, 409,
+    ]);
+  });
+
   it('lists only the workspaces the user belongs to', async () => {
     const mya = await api.signInReady();
     const kyaw = await api.signInReady();
