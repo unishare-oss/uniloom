@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { apiFetch } from "@/lib/api";
+import { ApiError } from "@/lib/api/fetcher";
+import { useAcceptTerms } from "@/lib/api/generated/users/users";
 import { authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-next";
 import { signOutEverywhere } from "@/lib/uniauth";
@@ -21,8 +23,21 @@ export default function Consent() {
     safeNext(new URLSearchParams(window.location.search).get("next")),
   );
   const [ready, setReady] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const acceptTerms = useAcceptTerms({
+    mutation: {
+      onSuccess: () => window.location.replace(next),
+      onError: (err) => {
+        if (err instanceof ApiError && err.status === 401) return goToLogin();
+        toast.error(
+          err instanceof ApiError
+            ? err.message
+            : "Couldn't reach Uniloom. Check your connection and try again.",
+        );
+      },
+    },
+  });
+  const busy = acceptTerms.isPending || signingOut;
 
   useEffect(() => {
     void authClient.getSession().then(({ data }) => {
@@ -32,22 +47,6 @@ export default function Consent() {
       setReady(true);
     });
   }, [next]);
-
-  async function agree() {
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await apiFetch("/api/users/me/consent", {
-        method: "POST",
-      });
-      if (response.ok) return window.location.replace(next);
-      if (response.status === 401) return goToLogin();
-      setError("Something went wrong. Please try again.");
-    } catch {
-      setError("Couldn't reach Uniloom. Check your connection and try again.");
-    }
-    setBusy(false);
-  }
 
   if (!ready) return null;
   return (
@@ -69,16 +68,8 @@ export default function Consent() {
           Uniloom&rsquo;s own.
         </p>
       </div>
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      )}
       <div className="flex flex-col gap-2">
-        <Button size="lg" disabled={busy} onClick={() => void agree()}>
+        <Button size="lg" disabled={busy} onClick={() => acceptTerms.mutate()}>
           I agree
         </Button>
         <Button
@@ -86,7 +77,7 @@ export default function Consent() {
           variant="ghost"
           disabled={busy}
           onClick={() => {
-            setBusy(true);
+            setSigningOut(true);
             void signOutEverywhere();
           }}
         >
