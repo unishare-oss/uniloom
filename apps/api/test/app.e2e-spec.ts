@@ -63,6 +63,8 @@ describe('Uniloom API (e2e)', () => {
       expect(operations).toEqual([
         'acceptTerms',
         'addBlocker',
+        'addMember',
+        'changeMemberRole',
         'createItem',
         'createProject',
         'deleteItem',
@@ -71,8 +73,10 @@ describe('Uniloom API (e2e)', () => {
         'getProject',
         'listDeletedItems',
         'listItems',
+        'listMembers',
         'listProjects',
         'removeBlocker',
+        'removeMember',
         'restoreItem',
         'updateItem',
       ]);

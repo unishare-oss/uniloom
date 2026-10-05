@@ -33,7 +33,10 @@ export const stateSchema = z.object({
   position: z.number().int(),
 });
 
-/** A project with its states in board order. */
+/** A project with its states in board order and what the caller may do in it. */
 export const projectDetailSchema = projectSchema.extend({
   states: z.array(stateSchema),
+  role: z.enum(['OWNER', 'REVIEWER', 'MEMBER']),
+  /** Whether the caller may add, change or remove members (owners). */
+  canManageMembers: z.boolean(),
 });
