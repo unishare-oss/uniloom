@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { LegalPage } from "@/components/legal-page";
+import { LegalPage } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = { title: "Privacy Policy · Uniloom" };
 
-export default function PrivacyPage() {
+const PrivacyPage = () => {
   return (
     <LegalPage title="Privacy Policy">
       <h2>What we keep</h2>
@@ -25,4 +25,6 @@ export default function PrivacyPage() {
       </p>
     </LegalPage>
   );
-}
+};
+
+export default PrivacyPage;

@@ -25,7 +25,7 @@ export const AVATAR_HOSTS = [
 ] as const;
 
 /** Whether next/image may load this avatar. Any other host shows initials instead. */
-export function isAllowedAvatar(src: string) {
+export const isAllowedAvatar = (src: string) => {
   let url: URL;
   try {
     url = new URL(src);
@@ -41,9 +41,9 @@ export function isAllowedAvatar(src: string) {
       url.port === port &&
       url.pathname.startsWith(pathname.replace(/\*\*$/, "")),
   );
-}
+};
 
 /** Next 16 won't optimize images from local addresses, so a local uniAuth's load directly. */
-export function isLocalAvatar(src: string) {
+export const isLocalAvatar = (src: string) => {
   return new URL(src).hostname === "localhost";
-}
+};

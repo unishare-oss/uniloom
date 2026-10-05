@@ -39,11 +39,11 @@ const ALLOWED_PARENTS: Record<
 };
 
 /** Why `kind` under `parentKind` isn't allowed in `mode`, or null when it is. */
-export function kindError(
+export const kindError = (
   mode: WorkspaceMode,
   kind: ItemKind,
   parentKind: ItemKind | null,
-) {
+) => {
   const parents = ALLOWED_PARENTS[mode][kind];
   if (!parents) return `${mode} workspaces have no ${kind} items`;
   if (!parents.includes(parentKind))
@@ -51,17 +51,17 @@ export function kindError(
       ? `a ${kind} can't be under a ${parentKind}`
       : `a ${kind} needs a parent (${parents.filter(Boolean).join(' or ')})`;
   return null;
-}
+};
 
 /**
  * Whether adding "blocked waits on blocker" closes a loop: following the existing
  * "waits on" links from `blocker` reaches `blocked`.
  */
-export function wouldCreateCycle(
+export const wouldCreateCycle = (
   links: { blockedId: string; blockerId: string }[],
   blockedId: string,
   blockerId: string,
-) {
+) => {
   const seen = new Set<string>();
   const queue = [blockerId];
   while (queue.length > 0) {
@@ -73,7 +73,7 @@ export function wouldCreateCycle(
       if (link.blockedId === current) queue.push(link.blockerId);
   }
   return false;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Views
@@ -81,7 +81,7 @@ export function wouldCreateCycle(
 type ItemRow = NonNullable<Awaited<ReturnType<typeof findItem>>>;
 
 /** One item, as the API returns it. */
-function toItem(row: ItemRow) {
+const toItem = (row: ItemRow) => {
   return {
     id: row.id,
     key: `${row.workspace.keyPrefix}-${row.number}`,
@@ -98,10 +98,10 @@ function toItem(row: ItemRow) {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
-}
+};
 
 /** A slim row for lists. */
-function toListRow(row: ItemRow) {
+const toListRow = (row: ItemRow) => {
   return {
     id: row.id,
     key: `${row.workspace.keyPrefix}-${row.number}`,
@@ -112,27 +112,27 @@ function toListRow(row: ItemRow) {
     assigneeId: row.assigneeId,
     parentId: row.parentId,
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Workflows
 
 /** The item, or 404 when it doesn't exist or the user isn't in its workspace. */
-async function loadItem(id: string, userId: string) {
+const loadItem = async (id: string, userId: string) => {
   const item = await findItem(id);
   if (!item) throw apiError(404, 'not_found', 'Item not found');
   await requireMember(item.workspaceId, userId);
   return item;
-}
+};
 
 /** Checks a new parent: same workspace, not the item itself, and allowed for its kind. */
-async function checkParent(
+const checkParent = async (
   workspaceId: string,
   mode: WorkspaceMode,
   kind: ItemKind,
   parentId: string | null,
   itemId?: string,
-) {
+) => {
   const parent = parentId ? await findItem(parentId) : null;
   if (
     parentId &&
@@ -145,9 +145,9 @@ async function checkParent(
     );
   const error = kindError(mode, kind, parent?.kind ?? null);
   if (error) throw apiError(400, 'invalid_kind', error);
-}
+};
 
-async function checkState(workspaceId: string, stateId: string) {
+const checkState = async (workspaceId: string, stateId: string) => {
   const state = await findState(stateId);
   if (!state || state.workspaceId !== workspaceId)
     throw apiError(
@@ -155,23 +155,26 @@ async function checkState(workspaceId: string, stateId: string) {
       'invalid_state',
       'The state must belong to this workspace',
     );
-}
+};
 
-async function checkAssignee(workspaceId: string, assigneeId: string) {
+const checkAssignee = async (workspaceId: string, assigneeId: string) => {
   if (!(await isWorkspaceMember(workspaceId, assigneeId)))
     throw apiError(
       400,
       'invalid_assignee',
       'The assignee must be a member of this workspace',
     );
-}
+};
 
-export async function listWorkspaceItems(workspaceId: string, userId: string) {
+export const listWorkspaceItems = async (
+  workspaceId: string,
+  userId: string,
+) => {
   await requireMember(workspaceId, userId);
   return (await listItems(workspaceId)).map(toListRow);
-}
+};
 
-export async function createWorkspaceItem(
+export const createWorkspaceItem = async (
   workspaceId: string,
   userId: string,
   input: {
@@ -183,7 +186,7 @@ export async function createWorkspaceItem(
     assigneeId?: string | null;
     stateId?: string;
   },
-) {
+) => {
   const workspace = await requireMember(workspaceId, userId);
   await checkParent(
     workspaceId,
@@ -197,13 +200,13 @@ export async function createWorkspaceItem(
   return toItem(
     await createItem({ ...input, workspaceId, stateId, createdById: userId }),
   );
-}
+};
 
-export async function getItem(id: string, userId: string) {
+export const getItem = async (id: string, userId: string) => {
   return toItem(await loadItem(id, userId));
-}
+};
 
-export async function updateWorkspaceItem(
+export const updateWorkspaceItem = async (
   id: string,
   userId: string,
   input: {
@@ -214,7 +217,7 @@ export async function updateWorkspaceItem(
     assigneeId?: string | null;
     stateId?: string;
   },
-) {
+) => {
   const item = await loadItem(id, userId);
   if (input.parentId !== undefined)
     await checkParent(
@@ -227,47 +230,47 @@ export async function updateWorkspaceItem(
   if (input.stateId) await checkState(item.workspaceId, input.stateId);
   if (input.assigneeId) await checkAssignee(item.workspaceId, input.assigneeId);
   return toItem(await updateItem(id, input));
-}
+};
 
 /** Deletes an item. One with children can't be deleted: move or delete them first. */
-export async function removeItem(id: string, userId: string) {
+export const removeItem = async (id: string, userId: string) => {
   await loadItem(id, userId);
   if ((await countChildren(id)) > 0)
     throw apiError(409, 'has_children', 'Delete or move its child items first');
   await deleteItem(id);
-}
+};
 
 /** The workspace's trash, so a person can find what to restore. */
-export async function listWorkspaceDeletedItems(
+export const listWorkspaceDeletedItems = async (
   workspaceId: string,
   userId: string,
-) {
+) => {
   await requireMember(workspaceId, userId);
   return (await listDeletedItems(workspaceId)).map((row) => ({
     ...toListRow(row),
     deletedAt: row.deletedAt,
   }));
-}
+};
 
 /**
  * Brings a deleted item back with its key and fields (not its old blocked-by links). A
  * deleted parent must be restored first, so nothing points at a hidden item.
  */
-export async function restoreWorkspaceItem(id: string, userId: string) {
+export const restoreWorkspaceItem = async (id: string, userId: string) => {
   const item = await findDeletedItem(id);
   if (!item) throw apiError(404, 'not_found', 'Deleted item not found');
   await requireMember(item.workspaceId, userId);
   if (item.parentId && !(await findItem(item.parentId)))
     throw apiError(409, 'parent_deleted', 'Restore its parent first');
   return toItem(await restoreItem(id));
-}
+};
 
 /** Records that the item waits on `blockerId`. */
-export async function addBlocker(
+export const addBlocker = async (
   id: string,
   userId: string,
   blockerId: string,
-) {
+) => {
   const item = await loadItem(id, userId);
   if (blockerId === id)
     throw apiError(400, 'self_block', "An item can't wait on itself");
@@ -293,13 +296,13 @@ export async function addBlocker(
       );
   });
   return getItem(id, userId);
-}
+};
 
-export async function removeBlocker(
+export const removeBlocker = async (
   id: string,
   userId: string,
   blockerId: string,
-) {
+) => {
   await loadItem(id, userId);
   await deleteLink(id, blockerId);
-}
+};

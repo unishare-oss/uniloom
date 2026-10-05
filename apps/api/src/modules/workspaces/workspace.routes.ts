@@ -1,8 +1,16 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { describe } from '@/openapi.js';
-import { getWorkspaces, postWorkspace } from './workspace.handlers.js';
-import { createWorkspaceSchema, workspaceSchema } from './workspace.schema.js';
+import {
+  getWorkspaceById,
+  getWorkspaces,
+  postWorkspace,
+} from './workspace.handlers.js';
+import {
+  createWorkspaceSchema,
+  workspaceDetailSchema,
+  workspaceSchema,
+} from './workspace.schema.js';
 
 /** The signed-in user's workspaces. */
 export const workspaceRoutes = new Hono();
@@ -28,4 +36,15 @@ workspaceRoutes.get(
     data: z.array(workspaceSchema),
   }),
   getWorkspaces,
+);
+workspaceRoutes.get(
+  '/:workspaceId',
+  describe({
+    tag: 'workspaces',
+    operationId: 'getWorkspace',
+    summary: 'A workspace with its states in board order',
+    pathParams: ['workspaceId'],
+    data: workspaceDetailSchema,
+  }),
+  getWorkspaceById,
 );

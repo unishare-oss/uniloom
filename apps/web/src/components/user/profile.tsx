@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Avatar } from "@/components/avatar";
+import { Avatar } from "@/components/user/avatar";
+import { ThemeSwitch } from "@/components/user/theme-switch";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/fetcher";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import { signOutEverywhere, uniauthAccountURL } from "@/lib/uniauth";
 
 /** Who is signed in. Name, email and avatar are uniAuth's: they're edited there. */
-export default function Profile() {
+const Profile = () => {
   // A 403 consent_required is handled by the fetcher (→ /consent).
   const { data: me, error } = useGetMe({
     query: { select: (r) => r.data, retry: false },
@@ -22,7 +23,7 @@ export default function Profile() {
 
   if (error && !signedOut) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
+      <main className="mx-auto flex w-full max-w-md flex-col px-6 py-16">
         <p role="alert" className="text-sm text-destructive">
           Couldn&rsquo;t load your profile. Please refresh the page.
         </p>
@@ -31,7 +32,7 @@ export default function Profile() {
   }
   if (!me) return null;
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-8 px-6 py-16">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-8 px-6 py-16">
       <div className="flex items-center gap-4">
         <Avatar name={me.name} image={me.image} />
         <div className="min-w-0">
@@ -42,6 +43,7 @@ export default function Profile() {
       <p className="text-sm text-muted-foreground">
         Your name, email and picture come from your uniAuth account.
       </p>
+      <ThemeSwitch />
       <div className="flex flex-col gap-2">
         <a
           href={uniauthAccountURL(`${window.location.origin}/profile`)}
@@ -63,4 +65,6 @@ export default function Profile() {
       </div>
     </main>
   );
-}
+};
+
+export default Profile;

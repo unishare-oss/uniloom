@@ -39,7 +39,7 @@ describe('items (e2e)', () => {
   });
 
   /** A signed-in owner with a new workspace in `mode`. */
-  async function workspace(mode: 'GUIDED' | 'STANDARD') {
+  const workspace = async (mode: 'GUIDED' | 'STANDARD') => {
     const owner = await api.signInReady();
     const keyPrefix = freshPrefix();
     const res = await api.send('POST', '/api/workspaces', owner.cookie, {
@@ -61,7 +61,7 @@ describe('items (e2e)', () => {
       };
     };
     return { id, keyPrefix, cookie: owner.cookie, add };
-  }
+  };
 
   describe('creating', () => {
     it('numbers items per workspace and starts them in the first state', async () => {

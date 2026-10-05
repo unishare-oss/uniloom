@@ -21,7 +21,7 @@ const NO_CONSENT_NEEDED = (path: string) =>
  * - Signed out → a silent check on uniAuth, at most once per 10 minutes. They come back to
  *   the same page signed in or still signed out.
  */
-export function AuthBootstrap() {
+export const AuthBootstrap = () => {
   const pathname = usePathname();
   // Once per page: a second sign-in start would make the code exchange fail with
   // invalid_grant (React Strict Mode runs effects twice in dev).
@@ -41,4 +41,4 @@ export function AuthBootstrap() {
     });
   }, [pathname]);
   return null;
-}
+};

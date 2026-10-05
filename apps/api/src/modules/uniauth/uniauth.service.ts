@@ -8,18 +8,21 @@ import {
 // Each applies a uniAuth event to Uniloom's copy of a person. An unknown sub is a no-op.
 
 /** Back-channel logout: uniAuth signed the person out everywhere. */
-export async function endSessions(sub: string) {
+export const endSessions = async (sub: string) => {
   const userId = await findUserIdBySub(sub);
   if (userId) await deleteSessions(userId);
-}
+};
 
-export async function deleteUser(sub: string) {
+export const deleteUser = async (sub: string) => {
   const userId = await findUserIdBySub(sub);
   if (userId) await deleteUserById(userId);
-}
+};
 
 /** Refreshes name, email and avatar. An empty name or email keeps the current one. */
-export async function updateUser(sub: string, data: Record<string, unknown>) {
+export const updateUser = async (
+  sub: string,
+  data: Record<string, unknown>,
+) => {
   const userId = await findUserIdBySub(sub);
   if (!userId) return;
   const { name, email, email_verified, picture } = data;
@@ -32,4 +35,4 @@ export async function updateUser(sub: string, data: Record<string, unknown>) {
       emailVerified: email_verified,
     }),
   });
-}
+};

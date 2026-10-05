@@ -40,6 +40,8 @@ contracts only when both workspaces actually need them.
   or library already offers (e.g. Hono's `app.get('/path', handler)`), and avoid clever
   abstractions, factories, generics or wrappers that a reader has to decode. If the
   simple way and the fancy way both work, use the simple way.
+- Write functions as arrow functions (`const name = () => {}`), never `function name()`.
+  Lint enforces it (`func-style`, `prefer-arrow-callback`).
 - Make code reusable only when it repeats: once something is written the same way three
   times, extract a shared function or component. Not before.
 - `MVP.md` is the spec. Build in the order of its §14 and do not pull later slices
@@ -90,6 +92,10 @@ Flow for a plan: Aligning → Ready → In Progress → Blocked → In Review �
 Rules:
 
 - Ask me to confirm the scope before you write a new plan.
+- Keep each plan small: at most 6 done-when items. If a feature I propose needs more,
+  don't squeeze it into one plan: propose splitting it into two or three smaller
+  features, each its own plan, and let me confirm the split. One big plan makes an AI
+  agent lose track and invent things.
 - Write the plan in `docs/plans/` before any code: scope, a done-when checklist of 3 to
   6 items derived from the spec (no generic items), and a design with the meaningful
   functions, what each does and why, and Mermaid flows.

@@ -11,10 +11,10 @@ import { deleteUser, endSessions, updateUser } from './uniauth.service.js';
 const verifyEvent = createEventVerifier(UNIAUTH_ISSUER, UNIAUTH_CLIENT_ID);
 
 /** The verified event from a form field, or null for a missing or invalid token. */
-async function readEvent(c: Context, field: string, event: string) {
+const readEvent = async (c: Context, field: string, event: string) => {
   const token = (await c.req.parseBody())[field];
   return typeof token === 'string' ? verifyEvent(token, event) : null;
-}
+};
 
 export const backchannelLogout = async (c: Context) => {
   const event = await readEvent(c, 'logout_token', LOGOUT_EVENT);

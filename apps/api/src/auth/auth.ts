@@ -16,7 +16,7 @@ export interface AuthEnv {
 }
 
 /** Reads the auth settings. The API refuses to start without any of them. */
-export function readAuthEnv(env = process.env): AuthEnv {
+export const readAuthEnv = (env = process.env): AuthEnv => {
   const required = (key: string) => {
     const value = env[key];
     if (!value) throw new Error(`Missing ${key}`);
@@ -29,7 +29,7 @@ export function readAuthEnv(env = process.env): AuthEnv {
     uniauthClientId: required('UNIAUTH_CLIENT_ID'),
     uniauthClientSecret: required('UNIAUTH_CLIENT_SECRET'),
   };
-}
+};
 
 const DAY = 60 * 60 * 24;
 const env = readAuthEnv();
@@ -97,6 +97,6 @@ export const auth = betterAuth({
 /** The signed-in user, with Uniloom's additional field. */
 export type SessionUser = (typeof auth)['$Infer']['Session']['user'];
 
-function noAvatarAsNull<T extends { image?: string | null }>(data: T): T {
+const noAvatarAsNull = <T extends { image?: string | null }>(data: T): T => {
   return data.image === '' ? { ...data, image: null } : data;
-}
+};
