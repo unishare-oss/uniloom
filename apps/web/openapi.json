@@ -106,13 +106,13 @@
         }
       }
     },
-    "/api/workspaces": {
+    "/api/projects": {
       "post": {
-        "operationId": "createWorkspace",
+        "operationId": "createProject",
         "tags": [
-          "workspaces"
+          "projects"
         ],
-        "summary": "Create a workspace with its mode's states; you become its owner",
+        "summary": "Create a project with its mode's states; you become its owner",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -149,7 +149,7 @@
         },
         "responses": {
           "201": {
-            "description": "Create a workspace with its mode's states; you become its owner",
+            "description": "Create a project with its mode's states; you become its owner",
             "content": {
               "application/json": {
                 "schema": {
@@ -251,15 +251,15 @@
         }
       },
       "get": {
-        "operationId": "listWorkspaces",
+        "operationId": "listProjects",
         "tags": [
-          "workspaces"
+          "projects"
         ],
-        "summary": "Your workspaces",
+        "summary": "Your projects",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Your workspaces",
+            "description": "Your projects",
             "content": {
               "application/json": {
                 "schema": {
@@ -364,16 +364,16 @@
         }
       }
     },
-    "/api/workspaces/{workspaceId}": {
+    "/api/projects/{projectId}": {
       "get": {
-        "operationId": "getWorkspace",
+        "operationId": "getProject",
         "tags": [
-          "workspaces"
+          "projects"
         ],
-        "summary": "A workspace with its states in board order",
+        "summary": "A project with its states in board order",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -384,7 +384,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A workspace with its states in board order",
+            "description": "A project with its states in board order",
             "content": {
               "application/json": {
                 "schema": {
@@ -531,16 +531,16 @@
         }
       }
     },
-    "/api/workspaces/{workspaceId}/items": {
+    "/api/projects/{projectId}/items": {
       "get": {
         "operationId": "listItems",
         "tags": [
           "items"
         ],
-        "summary": "The workspace's items",
+        "summary": "The project's items",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -551,7 +551,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The workspace's items",
+            "description": "The project's items",
             "content": {
               "application/json": {
                 "schema": {
@@ -570,9 +570,8 @@
                       "kind": {
                         "type": "string",
                         "enum": [
-                          "PROJECT",
-                          "ISSUE",
-                          "SUB_ISSUE",
+                          "TASK",
+                          "SUBTASK",
                           "FEATURE",
                           "SLICE"
                         ]
@@ -651,7 +650,7 @@
         "summary": "Create an item",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -670,9 +669,8 @@
                   "kind": {
                     "type": "string",
                     "enum": [
-                      "PROJECT",
-                      "ISSUE",
-                      "SUB_ISSUE",
+                      "TASK",
+                      "SUBTASK",
                       "FEATURE",
                       "SLICE"
                     ]
@@ -749,7 +747,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -757,9 +755,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -861,7 +858,7 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
@@ -881,16 +878,16 @@
         }
       }
     },
-    "/api/workspaces/{workspaceId}/items/deleted": {
+    "/api/projects/{projectId}/items/deleted": {
       "get": {
         "operationId": "listDeletedItems",
         "tags": [
           "items"
         ],
-        "summary": "The workspace's trash: deleted items, newest first",
+        "summary": "The project's trash: deleted items, newest first",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -901,7 +898,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The workspace's trash: deleted items, newest first",
+            "description": "The project's trash: deleted items, newest first",
             "content": {
               "application/json": {
                 "schema": {
@@ -920,9 +917,8 @@
                       "kind": {
                         "type": "string",
                         "enum": [
-                          "PROJECT",
-                          "ISSUE",
-                          "SUB_ISSUE",
+                          "TASK",
+                          "SUBTASK",
                           "FEATURE",
                           "SLICE"
                         ]
@@ -1034,7 +1030,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1042,9 +1038,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1146,7 +1141,7 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
@@ -1257,7 +1252,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1265,9 +1260,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1369,7 +1363,7 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
@@ -1453,7 +1447,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1461,9 +1455,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1565,7 +1558,7 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
@@ -1639,7 +1632,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1647,9 +1640,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1751,7 +1743,7 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",

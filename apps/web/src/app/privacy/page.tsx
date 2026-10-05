@@ -11,7 +11,7 @@ const PrivacyPage = () => {
         From uniAuth: your name, email address, whether the email is verified,
         and your profile picture. Uniloom also keeps your sign-in sessions, when
         you accepted these terms, and the work you and your agent record in your
-        workspaces.
+        projects.
       </p>
       <h2>Why</h2>
       <p>

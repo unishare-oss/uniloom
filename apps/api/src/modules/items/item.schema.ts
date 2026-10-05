@@ -3,7 +3,7 @@ import { z } from 'zod';
 const priority = z.enum(['URGENT', 'HIGH', 'MEDIUM', 'LOW', 'NONE']);
 
 export const createItemSchema = z.object({
-  kind: z.enum(['PROJECT', 'ISSUE', 'SUB_ISSUE', 'FEATURE', 'SLICE']),
+  kind: z.enum(['TASK', 'SUBTASK', 'FEATURE', 'SLICE']),
   title: z.string().trim().min(1).max(200),
   description: z.string().max(50_000).optional(),
   parentId: z.uuid().nullish(),
@@ -23,12 +23,12 @@ export const updateItemSchema = z.object({
 
 export const addBlockerSchema = z.object({ blockerId: z.uuid() });
 
-const kind = z.enum(['PROJECT', 'ISSUE', 'SUB_ISSUE', 'FEATURE', 'SLICE']);
+const kind = z.enum(['TASK', 'SUBTASK', 'FEATURE', 'SLICE']);
 
 export const itemSchema = z.object({
   id: z.uuid(),
   key: z.string(),
-  workspaceId: z.uuid(),
+  projectId: z.uuid(),
   kind,
   title: z.string(),
   description: z.string(),

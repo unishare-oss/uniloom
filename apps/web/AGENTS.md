@@ -17,7 +17,7 @@ apps/web/
 ├── public/             # Static assets
 ├── src/
 │   ├── app/            # Routes only: page.tsx, layout.tsx, and global CSS (theme tokens)
-│   │   └── w/[workspaceId]/   # Board, items/[itemId], trash (inside the app shell)
+│   │   └── p/[projectId]/   # Board, items/[itemId], trash (inside the app shell)
 │   ├── components/     # Every component, one folder per feature; providers.tsx
 │   │   ├── auth/       # Login, consent, session bootstrap (consent redirect, silent check)
 │   │   ├── board/      # Board, its columns and draggable item cards
@@ -26,7 +26,7 @@ apps/web/
 │   │   ├── markdown/   # Markdown renderer and its Mermaid diagrams
 │   │   ├── shell/      # App shell: sidebar and layout for signed-in pages
 │   │   ├── user/       # Profile, avatar and theme switch
-│   │   ├── workspaces/ # Workspace list, new-workspace dialog, workspace chip
+│   │   ├── projects/   # Project list, new-project dialog, project chip
 │   │   └── ui/         # shadcn components (Base UI), added with `bunx shadcn add`
 │   ├── hooks/          # React hooks (shadcn's use-mobile)
 │   ├── lib/            # Browser utilities

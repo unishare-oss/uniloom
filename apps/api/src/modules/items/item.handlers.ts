@@ -7,37 +7,34 @@ import {
 } from './item.schema.js';
 import {
   addBlocker,
-  createWorkspaceItem,
+  createProjectItem,
   getItem,
-  listWorkspaceItems,
+  listProjectItems,
   removeBlocker,
-  listWorkspaceDeletedItems,
+  listProjectDeletedItems,
   removeItem,
-  restoreWorkspaceItem,
-  updateWorkspaceItem,
+  restoreProjectItem,
+  updateProjectItem,
 } from './item.service.js';
 
-export const getWorkspaceItems = async (c: Context) =>
-  apiSuccess(
-    c,
-    await listWorkspaceItems(idParam(c, 'workspaceId'), c.var.user.id),
-  );
+export const getProjectItems = async (c: Context) =>
+  apiSuccess(c, await listProjectItems(idParam(c, 'projectId'), c.var.user.id));
 
 export const getDeletedItems = async (c: Context) =>
   apiSuccess(
     c,
-    await listWorkspaceDeletedItems(idParam(c, 'workspaceId'), c.var.user.id),
+    await listProjectDeletedItems(idParam(c, 'projectId'), c.var.user.id),
   );
 
 export const postRestoreItem = async (c: Context) => {
-  const item = await restoreWorkspaceItem(idParam(c, 'id'), c.var.user.id);
+  const item = await restoreProjectItem(idParam(c, 'id'), c.var.user.id);
   return apiSuccess(c, item, `${item.key} restored`);
 };
 
-export const postWorkspaceItem = async (c: Context) => {
-  const workspaceId = idParam(c, 'workspaceId');
+export const postProjectItem = async (c: Context) => {
+  const projectId = idParam(c, 'projectId');
   const input = await parseBody(c, createItemSchema);
-  const item = await createWorkspaceItem(workspaceId, c.var.user.id, input);
+  const item = await createProjectItem(projectId, c.var.user.id, input);
   return apiSuccess(c, item, `${item.key} created`, 201);
 };
 
@@ -47,7 +44,7 @@ export const getItemById = async (c: Context) =>
 export const patchItem = async (c: Context) => {
   const id = idParam(c, 'id');
   const input = await parseBody(c, updateItemSchema);
-  const item = await updateWorkspaceItem(id, c.var.user.id, input);
+  const item = await updateProjectItem(id, c.var.user.id, input);
   return apiSuccess(c, item, `${item.key} updated`);
 };
 

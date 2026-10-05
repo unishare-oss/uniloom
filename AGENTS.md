@@ -110,3 +110,5 @@ Rules:
   it. Reference ADRs from plans instead of repeating the reasoning.
 - When you take a shortcut or find a problem you are not fixing now, add a file to
   `docs/tech-debt/` and mention it in the plan.
+- A plan that adds a rule also adds its cases to the seed (`apps/api/scripts/seed.ts`),
+  with item titles that say what to try and what should happen.

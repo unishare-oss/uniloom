@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-// The same key always gets the same colour (the theme's chart colours), so a workspace is
+// The same key always gets the same colour (the theme's chart colours), so a project is
 // easy to spot.
 const COLOURS = [
   "bg-chart-1",
@@ -15,8 +15,8 @@ const colourFor = (key: string) => {
   return COLOURS[sum % COLOURS.length];
 };
 
-/** A workspace's key prefix (UL) on its colour. */
-export const WorkspaceChip = ({
+/** A project's key prefix (UL) on its colour. */
+export const ProjectChip = ({
   keyPrefix,
   className,
 }: {

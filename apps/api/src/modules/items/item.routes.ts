@@ -6,11 +6,11 @@ import {
   deleteItemById,
   getDeletedItems,
   getItemById,
-  getWorkspaceItems,
+  getProjectItems,
   patchItem,
   postBlocker,
   postRestoreItem,
-  postWorkspaceItem,
+  postProjectItem,
 } from './item.handlers.js';
 import {
   addBlockerSchema,
@@ -21,40 +21,40 @@ import {
   updateItemSchema,
 } from './item.schema.js';
 
-/** Work items: listed and created per workspace, then addressed by id. */
+/** Work items: listed and created per project, then addressed by id. */
 export const itemRoutes = new Hono();
 
 itemRoutes.get(
-  '/workspaces/:workspaceId/items',
+  '/projects/:projectId/items',
   describe({
     tag: 'items',
     operationId: 'listItems',
-    summary: "The workspace's items",
-    pathParams: ['workspaceId'],
+    summary: "The project's items",
+    pathParams: ['projectId'],
     data: z.array(itemRowSchema),
   }),
-  getWorkspaceItems,
+  getProjectItems,
 );
 itemRoutes.post(
-  '/workspaces/:workspaceId/items',
+  '/projects/:projectId/items',
   describe({
     tag: 'items',
     operationId: 'createItem',
     summary: 'Create an item',
-    pathParams: ['workspaceId'],
+    pathParams: ['projectId'],
     body: createItemSchema,
     data: itemSchema,
     status: 201,
   }),
-  postWorkspaceItem,
+  postProjectItem,
 );
 itemRoutes.get(
-  '/workspaces/:workspaceId/items/deleted',
+  '/projects/:projectId/items/deleted',
   describe({
     tag: 'items',
     operationId: 'listDeletedItems',
-    summary: "The workspace's trash: deleted items, newest first",
-    pathParams: ['workspaceId'],
+    summary: "The project's trash: deleted items, newest first",
+    pathParams: ['projectId'],
     data: z.array(deletedItemRowSchema),
   }),
   getDeletedItems,

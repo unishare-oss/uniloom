@@ -2,12 +2,12 @@ import { apiError } from '@/http.js';
 import type {
   ItemKind,
   Priority,
-  WorkspaceMode,
+  ProjectMode,
 } from '@/generated/prisma/enums.js';
 import {
-  isWorkspaceMember,
+  isProjectMember,
   requireMember,
-} from '@/modules/workspaces/workspace.service.js';
+} from '@/modules/projects/project.service.js';
 import {
   countChildren,
   createItem,
@@ -29,23 +29,23 @@ import {
 
 /** For each kind a mode allows: the kinds its parent may have (null = no parent). */
 const ALLOWED_PARENTS: Record<
-  WorkspaceMode,
+  ProjectMode,
   Partial<Record<ItemKind, (ItemKind | null)[]>>
 > = {
   // Two levels: a slice belongs to a feature.
   GUIDED: { FEATURE: [null], SLICE: ['FEATURE'] },
-  // Three levels: an issue may sit in a project; a sub-issue belongs to an issue.
-  STANDARD: { PROJECT: [null], ISSUE: [null, 'PROJECT'], SUB_ISSUE: ['ISSUE'] },
+  // Two levels: a subtask belongs to a task.
+  STANDARD: { TASK: [null], SUBTASK: ['TASK'] },
 };
 
 /** Why `kind` under `parentKind` isn't allowed in `mode`, or null when it is. */
 export const kindError = (
-  mode: WorkspaceMode,
+  mode: ProjectMode,
   kind: ItemKind,
   parentKind: ItemKind | null,
 ) => {
   const parents = ALLOWED_PARENTS[mode][kind];
-  if (!parents) return `${mode} workspaces have no ${kind} items`;
+  if (!parents) return `${mode} projects have no ${kind} items`;
   if (!parents.includes(parentKind))
     return parentKind
       ? `a ${kind} can't be under a ${parentKind}`
@@ -84,8 +84,8 @@ type ItemRow = NonNullable<Awaited<ReturnType<typeof findItem>>>;
 const toItem = (row: ItemRow) => {
   return {
     id: row.id,
-    key: `${row.workspace.keyPrefix}-${row.number}`,
-    workspaceId: row.workspaceId,
+    key: `${row.project.keyPrefix}-${row.number}`,
+    projectId: row.projectId,
     kind: row.kind,
     title: row.title,
     description: row.description,
@@ -104,7 +104,7 @@ const toItem = (row: ItemRow) => {
 const toListRow = (row: ItemRow) => {
   return {
     id: row.id,
-    key: `${row.workspace.keyPrefix}-${row.number}`,
+    key: `${row.project.keyPrefix}-${row.number}`,
     kind: row.kind,
     title: row.title,
     state: { id: row.state.id, name: row.state.name },
@@ -117,18 +117,18 @@ const toListRow = (row: ItemRow) => {
 // ---------------------------------------------------------------------------
 // Workflows
 
-/** The item, or 404 when it doesn't exist or the user isn't in its workspace. */
+/** The item, or 404 when it doesn't exist or the user isn't in its project. */
 const loadItem = async (id: string, userId: string) => {
   const item = await findItem(id);
   if (!item) throw apiError(404, 'not_found', 'Item not found');
-  await requireMember(item.workspaceId, userId);
+  await requireMember(item.projectId, userId);
   return item;
 };
 
-/** Checks a new parent: same workspace, not the item itself, and allowed for its kind. */
+/** Checks a new parent: same project, not the item itself, and allowed for its kind. */
 const checkParent = async (
-  workspaceId: string,
-  mode: WorkspaceMode,
+  projectId: string,
+  mode: ProjectMode,
   kind: ItemKind,
   parentId: string | null,
   itemId?: string,
@@ -136,46 +136,43 @@ const checkParent = async (
   const parent = parentId ? await findItem(parentId) : null;
   if (
     parentId &&
-    (!parent || parent.workspaceId !== workspaceId || parentId === itemId)
+    (!parent || parent.projectId !== projectId || parentId === itemId)
   )
     throw apiError(
       400,
       'invalid_parent',
-      'The parent must be another item in this workspace',
+      'The parent must be another item in this project',
     );
   const error = kindError(mode, kind, parent?.kind ?? null);
   if (error) throw apiError(400, 'invalid_kind', error);
 };
 
-const checkState = async (workspaceId: string, stateId: string) => {
+const checkState = async (projectId: string, stateId: string) => {
   const state = await findState(stateId);
-  if (!state || state.workspaceId !== workspaceId)
+  if (!state || state.projectId !== projectId)
     throw apiError(
       400,
       'invalid_state',
-      'The state must belong to this workspace',
+      'The state must belong to this project',
     );
 };
 
-const checkAssignee = async (workspaceId: string, assigneeId: string) => {
-  if (!(await isWorkspaceMember(workspaceId, assigneeId)))
+const checkAssignee = async (projectId: string, assigneeId: string) => {
+  if (!(await isProjectMember(projectId, assigneeId)))
     throw apiError(
       400,
       'invalid_assignee',
-      'The assignee must be a member of this workspace',
+      'The assignee must be a member of this project',
     );
 };
 
-export const listWorkspaceItems = async (
-  workspaceId: string,
-  userId: string,
-) => {
-  await requireMember(workspaceId, userId);
-  return (await listItems(workspaceId)).map(toListRow);
+export const listProjectItems = async (projectId: string, userId: string) => {
+  await requireMember(projectId, userId);
+  return (await listItems(projectId)).map(toListRow);
 };
 
-export const createWorkspaceItem = async (
-  workspaceId: string,
+export const createProjectItem = async (
+  projectId: string,
   userId: string,
   input: {
     kind: ItemKind;
@@ -187,18 +184,18 @@ export const createWorkspaceItem = async (
     stateId?: string;
   },
 ) => {
-  const workspace = await requireMember(workspaceId, userId);
+  const project = await requireMember(projectId, userId);
   await checkParent(
-    workspaceId,
-    workspace.mode,
+    projectId,
+    project.mode,
     input.kind,
     input.parentId ?? null,
   );
-  if (input.stateId) await checkState(workspaceId, input.stateId);
-  if (input.assigneeId) await checkAssignee(workspaceId, input.assigneeId);
-  const stateId = input.stateId ?? (await findFirstState(workspaceId)).id;
+  if (input.stateId) await checkState(projectId, input.stateId);
+  if (input.assigneeId) await checkAssignee(projectId, input.assigneeId);
+  const stateId = input.stateId ?? (await findFirstState(projectId)).id;
   return toItem(
-    await createItem({ ...input, workspaceId, stateId, createdById: userId }),
+    await createItem({ ...input, projectId, stateId, createdById: userId }),
   );
 };
 
@@ -206,7 +203,7 @@ export const getItem = async (id: string, userId: string) => {
   return toItem(await loadItem(id, userId));
 };
 
-export const updateWorkspaceItem = async (
+export const updateProjectItem = async (
   id: string,
   userId: string,
   input: {
@@ -221,14 +218,14 @@ export const updateWorkspaceItem = async (
   const item = await loadItem(id, userId);
   if (input.parentId !== undefined)
     await checkParent(
-      item.workspaceId,
-      item.workspace.mode,
+      item.projectId,
+      item.project.mode,
       item.kind,
       input.parentId,
       id,
     );
-  if (input.stateId) await checkState(item.workspaceId, input.stateId);
-  if (input.assigneeId) await checkAssignee(item.workspaceId, input.assigneeId);
+  if (input.stateId) await checkState(item.projectId, input.stateId);
+  if (input.assigneeId) await checkAssignee(item.projectId, input.assigneeId);
   return toItem(await updateItem(id, input));
 };
 
@@ -240,13 +237,13 @@ export const removeItem = async (id: string, userId: string) => {
   await deleteItem(id);
 };
 
-/** The workspace's trash, so a person can find what to restore. */
-export const listWorkspaceDeletedItems = async (
-  workspaceId: string,
+/** The project's trash, so a person can find what to restore. */
+export const listProjectDeletedItems = async (
+  projectId: string,
   userId: string,
 ) => {
-  await requireMember(workspaceId, userId);
-  return (await listDeletedItems(workspaceId)).map((row) => ({
+  await requireMember(projectId, userId);
+  return (await listDeletedItems(projectId)).map((row) => ({
     ...toListRow(row),
     deletedAt: row.deletedAt,
   }));
@@ -256,10 +253,10 @@ export const listWorkspaceDeletedItems = async (
  * Brings a deleted item back with its key and fields (not its old blocked-by links). A
  * deleted parent must be restored first, so nothing points at a hidden item.
  */
-export const restoreWorkspaceItem = async (id: string, userId: string) => {
+export const restoreProjectItem = async (id: string, userId: string) => {
   const item = await findDeletedItem(id);
   if (!item) throw apiError(404, 'not_found', 'Deleted item not found');
-  await requireMember(item.workspaceId, userId);
+  await requireMember(item.projectId, userId);
   if (item.parentId && !(await findItem(item.parentId)))
     throw apiError(409, 'parent_deleted', 'Restore its parent first');
   return toItem(await restoreItem(id));
@@ -275,13 +272,13 @@ export const addBlocker = async (
   if (blockerId === id)
     throw apiError(400, 'self_block', "An item can't wait on itself");
   const blocker = await findItem(blockerId);
-  if (!blocker || blocker.workspaceId !== item.workspaceId)
+  if (!blocker || blocker.projectId !== item.projectId)
     throw apiError(
       400,
       'invalid_blocker',
-      'The blocker must be an item in this workspace',
+      'The blocker must be an item in this project',
     );
-  await createLinkChecked(item.workspaceId, id, blockerId, (links) => {
+  await createLinkChecked(item.projectId, id, blockerId, (links) => {
     if (
       links.some(
         (link) => link.blockedId === id && link.blockerId === blockerId,

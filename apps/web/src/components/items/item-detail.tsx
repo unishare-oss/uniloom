@@ -57,7 +57,7 @@ import type {
   GetItem200,
   UpdateItemBody,
 } from "@/lib/api/generated/uniloomAPI.schemas";
-import { useGetWorkspace } from "@/lib/api/generated/workspaces/workspaces";
+import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { formatDate, timeAgo } from "@/lib/time";
 
 const NO_PARENT = "none";
@@ -164,10 +164,10 @@ const Description = ({
 
 /** One item: its fields, what it waits on, and delete. */
 export const ItemDetail = ({
-  workspaceId,
+  projectId,
   itemId,
 }: {
-  workspaceId: string;
+  projectId: string;
   itemId: string;
 }) => {
   const router = useRouter();
@@ -175,27 +175,26 @@ export const ItemDetail = ({
   const { data: item, error } = useGetItem(itemId, {
     query: { select: (r) => r.data, retry: false },
   });
-  const { data: workspace, error: workspaceError } = useGetWorkspace(
-    workspaceId,
-    { query: { select: (r) => r.data } },
-  );
-  const { data: items, error: itemsError } = useListItems(workspaceId, {
+  const { data: project, error: projectError } = useGetProject(projectId, {
+    query: { select: (r) => r.data },
+  });
+  const { data: items, error: itemsError } = useListItems(projectId, {
     query: { select: (r) => r.data },
   });
   const [blockerKey, setBlockerKey] = useState("");
-  // An item opened under another workspace's URL (the API already checked you may see
-  // it): go to its own workspace, so its states, parents and sidebar match.
-  const elsewhere = item && item.workspaceId !== workspaceId;
+  // An item opened under another project's URL (the API already checked you may see
+  // it): go to its own project, so its states, parents and sidebar match.
+  const elsewhere = item && item.projectId !== projectId;
   useEffect(() => {
     if (item && elsewhere)
-      router.replace(`/w/${item.workspaceId}/items/${item.id}`);
+      router.replace(`/p/${item.projectId}/items/${item.id}`);
   }, [item, elsewhere, router]);
 
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(itemId) }),
       queryClient.invalidateQueries({
-        queryKey: getListItemsQueryKey(workspaceId),
+        queryKey: getListItemsQueryKey(projectId),
       }),
     ]);
   const onError = (err: { message: string }) => toast.error(err.message);
@@ -217,25 +216,25 @@ export const ItemDetail = ({
       onSuccess: async (res) => {
         toast.success(successMessage(res));
         await queryClient.invalidateQueries({
-          queryKey: getListItemsQueryKey(workspaceId),
+          queryKey: getListItemsQueryKey(projectId),
         });
         void queryClient.invalidateQueries({
-          queryKey: getListDeletedItemsQueryKey(workspaceId),
+          queryKey: getListDeletedItemsQueryKey(projectId),
         });
-        router.push(`/w/${workspaceId}`);
+        router.push(`/p/${projectId}`);
       },
       onError,
     },
   });
 
   // Any of the three failing is an error, never an endless skeleton.
-  const loadError = error ?? workspaceError ?? itemsError;
+  const loadError = error ?? projectError ?? itemsError;
   if (loadError && !elsewhere) {
     return (
       <main className="flex flex-col items-start gap-3 px-6 py-12">
         <p role="alert">{loadError.message}</p>
         <Link
-          href={`/w/${workspaceId}`}
+          href={`/p/${projectId}`}
           className="text-primary underline underline-offset-4"
         >
           Back to the board
@@ -243,7 +242,7 @@ export const ItemDetail = ({
       </main>
     );
   }
-  if (!item || !workspace || !items || elsewhere) {
+  if (!item || !project || !items || elsewhere) {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
         <Skeleton className="h-5 w-40" />
@@ -272,7 +271,7 @@ export const ItemDetail = ({
     );
   };
   const byId = new Map(items.map((row) => [row.id, row]));
-  const states = workspace.states;
+  const states = project.states;
   const category = (stateId: string) =>
     states.find((s) => s.id === stateId)?.category;
   const parents = [
@@ -289,7 +288,7 @@ export const ItemDetail = ({
         className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
       >
         <Link
-          href={`/w/${workspaceId}`}
+          href={`/p/${projectId}`}
           className="rounded-sm transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           Board
@@ -342,7 +341,7 @@ export const ItemDetail = ({
                   >
                     {blocker && <KindIcon kind={blocker.kind} />}
                     <Link
-                      href={`/w/${workspaceId}/items/${blockerId}`}
+                      href={`/p/${projectId}/items/${blockerId}`}
                       className="flex min-w-0 flex-1 items-center gap-2.5 rounded-sm outline-none hover:underline focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span className="shrink-0 text-xs font-semibold text-muted-foreground">
@@ -378,7 +377,7 @@ export const ItemDetail = ({
                   const key = blockerKey.trim().toUpperCase();
                   const blocker = items.find((row) => row.key === key);
                   if (!blocker)
-                    return void toast.error(`No item ${key} in this workspace`);
+                    return void toast.error(`No item ${key} in this project`);
                   addBlocker.mutate({
                     id: item.id,
                     data: { blockerId: blocker.id },
@@ -387,7 +386,7 @@ export const ItemDetail = ({
               >
                 <Input
                   aria-label="Item this one waits on"
-                  placeholder={`Wait on another item, e.g. ${workspace.keyPrefix}-1`}
+                  placeholder={`Wait on another item, e.g. ${project.keyPrefix}-1`}
                   value={blockerKey}
                   onChange={(event) => setBlockerKey(event.target.value)}
                   className="h-9"

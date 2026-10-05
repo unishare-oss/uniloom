@@ -8,7 +8,7 @@ const freshPrefix = () =>
     String.fromCharCode(65 + Math.floor(Math.random() * 26)),
   ).join('');
 
-describe('workspaces (e2e)', () => {
+describe('projects (e2e)', () => {
   let api: Awaited<ReturnType<typeof startTestApi>>;
 
   beforeAll(async () => {
@@ -16,7 +16,7 @@ describe('workspaces (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.workspace.deleteMany({
+    await prisma.project.deleteMany({
       where: {
         members: {
           some: { user: { email: { endsWith: `@${api.emailDomain}` } } },
@@ -31,15 +31,15 @@ describe('workspaces (e2e)', () => {
   });
 
   const create = (cookie: string, body: unknown) =>
-    api.send('POST', '/api/workspaces', cookie, body);
+    api.send('POST', '/api/projects', cookie, body);
 
   it('needs a session and consent', async () => {
-    expect((await api.call('/api/workspaces')).status).toBe(401);
+    expect((await api.call('/api/projects')).status).toBe(401);
     const { cookie } = await api.signIn(api.newProfile());
-    expect((await api.send('GET', '/api/workspaces', cookie)).status).toBe(403);
+    expect((await api.send('GET', '/api/projects', cookie)).status).toBe(403);
   });
 
-  it('creates a Guided workspace with its 9 states and switches, owned by the creator', async () => {
+  it('creates a Guided project with its 9 states and switches, owned by the creator', async () => {
     const { cookie, profile } = await api.signInReady();
     const res = await create(cookie, {
       name: 'Loom',
@@ -47,10 +47,10 @@ describe('workspaces (e2e)', () => {
       mode: 'GUIDED',
     });
     expect(res.status).toBe(201);
-    const workspace = (await read(res)) as { id: string };
+    const project = (await read(res)) as { id: string };
 
-    const saved = await prisma.workspace.findUniqueOrThrow({
-      where: { id: workspace.id },
+    const saved = await prisma.project.findUniqueOrThrow({
+      where: { id: project.id },
       include: {
         states: { orderBy: { position: 'asc' } },
         members: { include: { user: true } },
@@ -86,7 +86,7 @@ describe('workspaces (e2e)', () => {
     ]);
   });
 
-  it('creates a Standard workspace with To Do, In Progress, Done and no switches', async () => {
+  it('creates a Standard project with To Do, In Progress, Done and no switches', async () => {
     const { cookie } = await api.signInReady();
     const res = await create(cookie, {
       name: 'Tracker',
@@ -95,7 +95,7 @@ describe('workspaces (e2e)', () => {
     });
     const { id } = (await read(res)) as { id: string };
 
-    const saved = await prisma.workspace.findUniqueOrThrow({
+    const saved = await prisma.project.findUniqueOrThrow({
       where: { id },
       include: { states: { orderBy: { position: 'asc' } } },
     });
@@ -147,7 +147,7 @@ describe('workspaces (e2e)', () => {
     ]);
   });
 
-  it('returns a workspace with its states in board order, and 404s non-members', async () => {
+  it('returns a project with its states in board order, and 404s non-members', async () => {
     const owner = await api.signInReady();
     const stranger = await api.signInReady();
     const created = (await read(
@@ -160,33 +160,33 @@ describe('workspaces (e2e)', () => {
 
     const res = await api.send(
       'GET',
-      `/api/workspaces/${created.id}`,
+      `/api/projects/${created.id}`,
       owner.cookie,
     );
     expect(res.status).toBe(200);
-    const workspace = (await read(res)) as {
+    const project = (await read(res)) as {
       id: string;
       states: { name: string; position: number; key: string | null }[];
     };
-    expect(workspace.id).toBe(created.id);
-    expect(workspace.states.map((s) => s.name)).toEqual([
+    expect(project.id).toBe(created.id);
+    expect(project.states.map((s) => s.name)).toEqual([
       'To Do',
       'In Progress',
       'Done',
     ]);
-    expect(workspace.states.map((s) => s.position)).toEqual([0, 1, 2]);
+    expect(project.states.map((s) => s.position)).toEqual([0, 1, 2]);
 
     for (const [cookie, id] of [
       [stranger.cookie, created.id],
       [owner.cookie, randomUUID()],
       [owner.cookie, 'not-a-uuid'],
     ]) {
-      const miss = await api.send('GET', `/api/workspaces/${id}`, cookie);
+      const miss = await api.send('GET', `/api/projects/${id}`, cookie);
       expect(miss.status).toBe(404);
     }
   });
 
-  it('lists only the workspaces the user belongs to', async () => {
+  it('lists only the projects the user belongs to', async () => {
     const mya = await api.signInReady();
     const kyaw = await api.signInReady();
     const name = `Mine-${randomUUID()}`;
@@ -197,10 +197,10 @@ describe('workspaces (e2e)', () => {
     });
 
     const mine = (await read(
-      await api.send('GET', '/api/workspaces', mya.cookie),
+      await api.send('GET', '/api/projects', mya.cookie),
     )) as { name: string }[];
     const theirs = (await read(
-      await api.send('GET', '/api/workspaces', kyaw.cookie),
+      await api.send('GET', '/api/projects', kyaw.cookie),
     )) as { name: string }[];
     expect(mine.map((w) => w.name)).toContain(name);
     expect(theirs.map((w) => w.name)).not.toContain(name);

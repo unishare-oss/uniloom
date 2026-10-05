@@ -8,7 +8,7 @@ datasource db {
 }
 
 // Tables are added one feature at a time; see docs/plans/. Rules that depend on a
-// workspace's switches live in the rules engine, not here.
+// project's switches live in the rules engine, not here.
 
 // Better Auth tables. People are matched by uniAuth `sub` through Account
 // (providerId "uniauth", accountId = sub), never by email.
@@ -82,7 +82,7 @@ model Verification {
   @@map("verification")
 }
 
-enum WorkspaceMode {
+enum ProjectMode {
   STANDARD
   GUIDED
 }
@@ -96,13 +96,13 @@ enum Role {
 /// A mode is a preset of the switch columns; owners can change switches afterwards.
 /// States are locked when `mode` is GUIDED, since its rules rely on them.
 /// When `checklistRequired` is on, a checklist has 3 to 6 items: fixed in code, not
-/// stored per workspace.
-model Workspace {
+/// stored per project.
+model Project {
   id                String        @id @default(uuid(7)) @db.Uuid
   name              String
   /// Items are numbered `<keyPrefix>-<number>`, e.g. UG-12.
   keyPrefix         String        @unique
-  mode              WorkspaceMode
+  mode              ProjectMode
   checklistRequired Boolean
   /// Fewest done-when items per checklist; null = no limit. Guided preset: 3 (recommended).
   checklistMin      Int?
@@ -121,18 +121,18 @@ model Workspace {
   states  State[]
   items   Item[]
 
-  @@map("workspace")
+  @@map("project")
 }
 
 model Member {
-  workspaceId String    @db.Uuid
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId String    @db.Uuid
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   role        Role
   createdAt   DateTime  @default(now())
 
-  @@id([workspaceId, userId])
+  @@id([projectId, userId])
   @@index([userId])
   @@map("member")
 }
@@ -148,13 +148,13 @@ enum StateCategory {
   CANCELED
 }
 
-/// A board column. Each workspace gets its mode's states when it is created. Guided
+/// A board column. Each project gets its mode's states when it is created. Guided
 /// states carry a stable `key` (triage, backlog, aligning, ready, in_progress, blocked,
 /// in_review, done, canceled) that the rules use.
 model State {
   id          String        @id @default(uuid(7)) @db.Uuid
-  workspaceId String        @db.Uuid
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId String        @db.Uuid
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name        String
   key         String?
   category    StateCategory
@@ -162,16 +162,15 @@ model State {
 
   items Item[]
 
-  @@unique([workspaceId, name])
-  @@unique([workspaceId, key])
+  @@unique([projectId, name])
+  @@unique([projectId, key])
   @@map("state")
 }
 
-/// Guided: FEATURE → SLICE. Standard: PROJECT → ISSUE → SUB_ISSUE.
+/// Guided: FEATURE → SLICE. Standard: TASK → SUBTASK.
 enum ItemKind {
-  PROJECT
-  ISSUE
-  SUB_ISSUE
+  TASK
+  SUBTASK
   FEATURE
   SLICE
 }
@@ -187,14 +186,14 @@ enum Priority {
 /// A piece of work, shown as `<keyPrefix>-<number>` (UG-12).
 model Item {
   id          String    @id @default(uuid(7)) @db.Uuid
-  workspaceId String    @db.Uuid
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId String    @db.Uuid
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   number      Int
   kind        ItemKind
   title       String
   /// Markdown, may contain Mermaid diagrams.
   description String    @default("")
-  /// NoAction: a state in use can't be deleted, but a workspace delete still cascades.
+  /// NoAction: a state in use can't be deleted, but a project delete still cascades.
   stateId     String    @db.Uuid
   state       State     @relation(fields: [stateId], references: [id], onDelete: NoAction)
   priority    Priority  @default(NONE)
@@ -214,8 +213,8 @@ model Item {
   blockedBy ItemBlock[] @relation("BlockedItem")
   blocking  ItemBlock[] @relation("BlockerItem")
 
-  @@unique([workspaceId, number])
-  @@index([workspaceId, stateId, deletedAt])
+  @@unique([projectId, number])
+  @@index([projectId, stateId, deletedAt])
   @@index([parentId])
   @@index([assigneeId])
   @@map("item")

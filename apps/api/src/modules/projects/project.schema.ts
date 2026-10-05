@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
-export const createWorkspaceSchema = z.object({
+export const createProjectSchema = z.object({
   name: z.string().trim().min(1).max(100),
   /** Items are numbered <keyPrefix>-<n>, e.g. UG-12. */
   keyPrefix: z.string().regex(/^[A-Z]{2,5}$/, '2 to 5 uppercase letters'),
   mode: z.enum(['STANDARD', 'GUIDED']),
 });
 
-export const workspaceSchema = z.object({
+export const projectSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   keyPrefix: z.string(),
@@ -27,13 +27,13 @@ export const workspaceSchema = z.object({
 export const stateSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  /** Stable key in Guided workspaces (`ready`, `in_review`, ...); null in Standard. */
+  /** Stable key in Guided projects (`ready`, `in_review`, ...); null in Standard. */
   key: z.string().nullable(),
   category: z.enum(['BACKLOG', 'UNSTARTED', 'STARTED', 'DONE', 'CANCELED']),
   position: z.number().int(),
 });
 
-/** A workspace with its states in board order. */
-export const workspaceDetailSchema = workspaceSchema.extend({
+/** A project with its states in board order. */
+export const projectDetailSchema = projectSchema.extend({
   states: z.array(stateSchema),
 });

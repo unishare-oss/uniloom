@@ -16,16 +16,16 @@ import {
   useListDeletedItems,
   useRestoreItem,
 } from "@/lib/api/generated/items/items";
-import { useGetWorkspace } from "@/lib/api/generated/workspaces/workspaces";
+import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { timeAgo } from "@/lib/time";
 
 /** Deleted items, newest first, each with Restore. */
-export const Trash = ({ workspaceId }: { workspaceId: string }) => {
+export const Trash = ({ projectId }: { projectId: string }) => {
   const queryClient = useQueryClient();
-  const { data: deleted, error } = useListDeletedItems(workspaceId, {
+  const { data: deleted, error } = useListDeletedItems(projectId, {
     query: { select: (r) => r.data },
   });
-  const { data: workspace } = useGetWorkspace(workspaceId, {
+  const { data: project } = useGetProject(projectId, {
     query: { select: (r) => r.data },
   });
   const restore = useRestoreItem({
@@ -34,10 +34,10 @@ export const Trash = ({ workspaceId }: { workspaceId: string }) => {
         toast.success(successMessage(res));
         await Promise.all([
           queryClient.invalidateQueries({
-            queryKey: getListDeletedItemsQueryKey(workspaceId),
+            queryKey: getListDeletedItemsQueryKey(projectId),
           }),
           queryClient.invalidateQueries({
-            queryKey: getListItemsQueryKey(workspaceId),
+            queryKey: getListItemsQueryKey(projectId),
           }),
         ]);
       },
@@ -45,7 +45,7 @@ export const Trash = ({ workspaceId }: { workspaceId: string }) => {
     },
   });
   const category = (stateId: string) =>
-    workspace?.states.find((s) => s.id === stateId)?.category;
+    project?.states.find((s) => s.id === stateId)?.category;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8">

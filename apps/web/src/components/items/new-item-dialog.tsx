@@ -36,7 +36,7 @@ import {
   useCreateItem,
 } from "@/lib/api/generated/items/items";
 import type {
-  GetWorkspace200,
+  GetProject200,
   ListItems200Item,
 } from "@/lib/api/generated/uniloomAPI.schemas";
 
@@ -47,16 +47,16 @@ const NO_PARENT = "none";
  * API checks which kinds may sit under which.
  */
 export const NewItemDialog = ({
-  workspace,
+  project,
   items,
   trigger,
 }: {
-  workspace: GetWorkspace200;
+  project: GetProject200;
   items: ListItems200Item[];
   trigger: ReactElement;
 }) => {
   const queryClient = useQueryClient();
-  const kinds = KINDS_BY_MODE[workspace.mode];
+  const kinds = KINDS_BY_MODE[project.mode];
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<ItemKind>(kinds[0]!);
   const [title, setTitle] = useState("");
@@ -67,7 +67,7 @@ export const NewItemDialog = ({
     mutation: {
       onSuccess: async (res) => {
         await queryClient.invalidateQueries({
-          queryKey: getListItemsQueryKey(workspace.id),
+          queryKey: getListItemsQueryKey(project.id),
         });
         toast.success(successMessage(res));
         setOpen(false);
@@ -96,7 +96,7 @@ export const NewItemDialog = ({
           onSubmit={(event) => {
             event.preventDefault();
             create.mutate({
-              workspaceId: workspace.id,
+              projectId: project.id,
               data: {
                 kind,
                 title: title.trim(),

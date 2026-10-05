@@ -1,6 +1,6 @@
 # 05: Typed API client (OpenAPI → Orval → TanStack Query)
 
-Status: In Progress
+Status: In Review
 
 ## Scope
 
@@ -30,8 +30,7 @@ spec's info).
       with message, code and status; `consent_required` still redirects
 - [x] CI fails when `openapi.json` is stale, and generates the client before
       lint/typecheck/build
-- [ ] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included (local checks
-      pass; CI runs once the branch is pushed)
+- [x] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included
 
 ## Design
 
@@ -70,4 +69,15 @@ flowchart LR
 
 ## Changes
 
-To fill in when the work is committed.
+Commits: `706865a` (API spec), `a8ab710` (web client). Merged in PR #6.
+
+- API: `src/openapi.ts` (`describe`, `specOptions`), schemas in each module's
+  `*.schema.ts`, every web-facing route described, `scripts/openapi.ts` for
+  `bun run api:spec`, and `/api/openapi.json` and `/api/docs` served from `app.ts`.
+- Web: `orval.config.ts`, the committed `openapi.json`, `customFetch` and `ApiError` in
+  `lib/api/fetcher.ts`, and `Providers` with the query client and toaster. `/profile`
+  and `/consent` use the generated hooks; the hand-written `lib/api.ts` is gone.
+- CI: checks that `openapi.json` is fresh and generates the client before lint,
+  typecheck and build. The generated client is gitignored.
+
+Planned vs actual: as planned.

@@ -24,7 +24,7 @@ describe('items (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.workspace.deleteMany({
+    await prisma.project.deleteMany({
       where: {
         members: {
           some: { user: { email: { endsWith: `@${api.emailDomain}` } } },
@@ -38,11 +38,11 @@ describe('items (e2e)', () => {
     await api?.close();
   });
 
-  /** A signed-in owner with a new workspace in `mode`. */
-  const workspace = async (mode: 'GUIDED' | 'STANDARD') => {
+  /** A signed-in owner with a new project in `mode`. */
+  const project = async (mode: 'GUIDED' | 'STANDARD') => {
     const owner = await api.signInReady();
     const keyPrefix = freshPrefix();
-    const res = await api.send('POST', '/api/workspaces', owner.cookie, {
+    const res = await api.send('POST', '/api/projects', owner.cookie, {
       name: 'W',
       keyPrefix,
       mode,
@@ -51,7 +51,7 @@ describe('items (e2e)', () => {
     const add = async (body: Record<string, unknown>) => {
       const created = await api.send(
         'POST',
-        `/api/workspaces/${id}/items`,
+        `/api/projects/${id}/items`,
         owner.cookie,
         body,
       );
@@ -64,8 +64,8 @@ describe('items (e2e)', () => {
   };
 
   describe('creating', () => {
-    it('numbers items per workspace and starts them in the first state', async () => {
-      const w = await workspace('GUIDED');
+    it('numbers items per project and starts them in the first state', async () => {
+      const w = await project('GUIDED');
       const first = await w.add({ kind: 'FEATURE', title: 'Sign-in' });
       const second = await w.add({ kind: 'FEATURE', title: 'Board' });
 
@@ -78,10 +78,10 @@ describe('items (e2e)', () => {
     });
 
     it('gives concurrent creates distinct numbers', async () => {
-      const w = await workspace('STANDARD');
+      const w = await project('STANDARD');
       const created = await Promise.all(
         Array.from({ length: 10 }, (_, i) =>
-          w.add({ kind: 'ISSUE', title: `Issue ${i}` }),
+          w.add({ kind: 'TASK', title: `Task ${i}` }),
         ),
       );
       expect(created.every((c) => c.status === 201)).toBe(true);
@@ -90,7 +90,7 @@ describe('items (e2e)', () => {
     });
 
     it('enforces Guided kinds: feature → slice only', async () => {
-      const w = await workspace('GUIDED');
+      const w = await project('GUIDED');
       const feature = (await w.add({ kind: 'FEATURE', title: 'F' })).body;
 
       expect(
@@ -100,27 +100,28 @@ describe('items (e2e)', () => {
       const orphan = await w.add({ kind: 'SLICE', title: 'S' });
       expect(orphan.status).toBe(400);
       expect(orphan.body.code).toBe('invalid_kind');
-      expect((await w.add({ kind: 'ISSUE', title: 'I' })).body.code).toBe(
+      expect((await w.add({ kind: 'TASK', title: 'I' })).body.code).toBe(
         'invalid_kind',
       );
     });
 
-    it('enforces Standard kinds: project → issue → sub-issue', async () => {
-      const w = await workspace('STANDARD');
-      const project = (await w.add({ kind: 'PROJECT', title: 'P' })).body;
-      const issue = (
-        await w.add({ kind: 'ISSUE', title: 'I', parentId: project.id })
+    it('enforces Standard kinds: task → subtask', async () => {
+      const w = await project('STANDARD');
+      const task = (await w.add({ kind: 'TASK', title: 'T' })).body;
+      const subtask = (
+        await w.add({ kind: 'SUBTASK', title: 'S', parentId: task.id })
       ).body;
 
+      expect(subtask.parentId).toBe(task.id);
+      expect((await w.add({ kind: 'SUBTASK', title: 'S' })).body.code).toBe(
+        'invalid_kind',
+      );
       expect(
-        (await w.add({ kind: 'ISSUE', title: 'Loose issue' })).status,
-      ).toBe(201);
+        (await w.add({ kind: 'TASK', title: 'T', parentId: task.id })).body
+          .code,
+      ).toBe('invalid_kind');
       expect(
-        (await w.add({ kind: 'SUB_ISSUE', title: 'S', parentId: issue.id }))
-          .status,
-      ).toBe(201);
-      expect(
-        (await w.add({ kind: 'SUB_ISSUE', title: 'S', parentId: project.id }))
+        (await w.add({ kind: 'SUBTASK', title: 'S', parentId: subtask.id }))
           .body.code,
       ).toBe('invalid_kind');
       expect((await w.add({ kind: 'FEATURE', title: 'F' })).body.code).toBe(
@@ -128,25 +129,31 @@ describe('items (e2e)', () => {
       );
     });
 
+    it('refuses the removed PROJECT kind (400)', async () => {
+      const w = await project('STANDARD');
+      const res = await w.add({ kind: 'PROJECT', title: 'P' });
+      expect(res.status).toBe(400);
+    });
+
     it('refuses a parent, state or assignee from elsewhere (400)', async () => {
-      const w = await workspace('STANDARD');
-      const other = await workspace('STANDARD');
-      const foreign = (await other.add({ kind: 'PROJECT', title: 'P' })).body;
+      const w = await project('STANDARD');
+      const other = await project('STANDARD');
+      const foreign = (await other.add({ kind: 'TASK', title: 'T' })).body;
       const outsider = await api.signInReady();
       const outsiderId = (await read(
         await api.send('GET', '/api/me', outsider.cookie),
       )) as { id: string };
 
       expect(
-        (await w.add({ kind: 'ISSUE', title: 'I', parentId: foreign.id })).body
+        (await w.add({ kind: 'TASK', title: 'I', parentId: foreign.id })).body
           .code,
       ).toBe('invalid_parent');
       expect(
-        (await w.add({ kind: 'ISSUE', title: 'I', stateId: foreign.state.id }))
+        (await w.add({ kind: 'TASK', title: 'I', stateId: foreign.state.id }))
           .body.code,
       ).toBe('invalid_state');
       expect(
-        (await w.add({ kind: 'ISSUE', title: 'I', assigneeId: outsiderId.id }))
+        (await w.add({ kind: 'TASK', title: 'I', assigneeId: outsiderId.id }))
           .body.code,
       ).toBe('invalid_assignee');
     });
@@ -154,10 +161,10 @@ describe('items (e2e)', () => {
 
   describe('response shape', () => {
     it('wraps a success in { success, message, data } and an error in { success, statusCode, code, message }', async () => {
-      const w = await workspace('GUIDED');
+      const w = await project('GUIDED');
       const created = await api.send(
         'POST',
-        `/api/workspaces/${w.id}/items`,
+        `/api/projects/${w.id}/items`,
         w.cookie,
         {
           kind: 'FEATURE',
@@ -175,7 +182,7 @@ describe('items (e2e)', () => {
 
       const refused = await api.send(
         'POST',
-        `/api/workspaces/${w.id}/items`,
+        `/api/projects/${w.id}/items`,
         w.cookie,
         { kind: 'SLICE', title: 'S' },
       );
@@ -188,7 +195,7 @@ describe('items (e2e)', () => {
     });
 
     it('answers an unknown /api route with the error envelope', async () => {
-      const w = await workspace('STANDARD');
+      const w = await project('STANDARD');
       const res = await api.send('GET', '/api/nothing-here', w.cookie);
       expect(res.status).toBe(404);
       expect(await res.json()).toMatchObject({
@@ -200,8 +207,8 @@ describe('items (e2e)', () => {
 
   describe('updating with rules', () => {
     it('moves a slice to another feature, and refuses itself, foreign and wrong-kind parents', async () => {
-      const w = await workspace('GUIDED');
-      const other = await workspace('GUIDED');
+      const w = await project('GUIDED');
+      const other = await project('GUIDED');
       const f1 = (await w.add({ kind: 'FEATURE', title: 'F1' })).body;
       const f2 = (await w.add({ kind: 'FEATURE', title: 'F2' })).body;
       const slice = (
@@ -232,10 +239,10 @@ describe('items (e2e)', () => {
     });
 
     it('refuses a foreign state or a non-member assignee, and can unassign', async () => {
-      const w = await workspace('STANDARD');
-      const other = await workspace('STANDARD');
-      const item = (await w.add({ kind: 'ISSUE', title: 'I' })).body;
-      const foreign = (await other.add({ kind: 'ISSUE', title: 'X' })).body;
+      const w = await project('STANDARD');
+      const other = await project('STANDARD');
+      const item = (await w.add({ kind: 'TASK', title: 'I' })).body;
+      const foreign = (await other.add({ kind: 'TASK', title: 'X' })).body;
       const outsider = await api.signInReady();
       const outsiderId = (
         await read(await api.send('GET', '/api/me', outsider.cookie))
@@ -257,10 +264,10 @@ describe('items (e2e)', () => {
 
   describe('updating and deleting', () => {
     it('moves an item to another state and assigns it', async () => {
-      const w = await workspace('STANDARD');
-      const item = (await w.add({ kind: 'ISSUE', title: 'I' })).body;
+      const w = await project('STANDARD');
+      const item = (await w.add({ kind: 'TASK', title: 'I' })).body;
       const states = await prisma.state.findMany({
-        where: { workspaceId: w.id },
+        where: { projectId: w.id },
         orderBy: { position: 'asc' },
       });
       const me = (await read(await api.send('GET', '/api/me', w.cookie))) as {
@@ -281,7 +288,7 @@ describe('items (e2e)', () => {
     });
 
     it('refuses to delete an item that has children (409), then deletes once they are gone', async () => {
-      const w = await workspace('GUIDED');
+      const w = await project('GUIDED');
       const feature = (await w.add({ kind: 'FEATURE', title: 'F' })).body;
       const slice = (
         await w.add({ kind: 'SLICE', title: 'S', parentId: feature.id })
@@ -309,12 +316,12 @@ describe('items (e2e)', () => {
 
   describe('soft delete', () => {
     it('hides a deleted item everywhere but keeps its row', async () => {
-      const w = await workspace('STANDARD');
-      const project = (await w.add({ kind: 'PROJECT', title: 'P' })).body;
+      const w = await project('STANDARD');
+      const parent = (await w.add({ kind: 'TASK', title: 'Parent' })).body;
       const gone = (
-        await w.add({ kind: 'ISSUE', title: 'Gone', parentId: project.id })
+        await w.add({ kind: 'SUBTASK', title: 'Gone', parentId: parent.id })
       ).body;
-      const other = (await w.add({ kind: 'ISSUE', title: 'Other' })).body;
+      const other = (await w.add({ kind: 'TASK', title: 'Other' })).body;
       await api.send('POST', `/api/items/${other.id}/blockers`, w.cookie, {
         blockerId: gone.id,
       });
@@ -332,7 +339,7 @@ describe('items (e2e)', () => {
         (await api.send('GET', `/api/items/${gone.id}`, w.cookie)).status,
       ).toBe(404);
       const rows = await read(
-        await api.send('GET', `/api/workspaces/${w.id}/items`, w.cookie),
+        await api.send('GET', `/api/projects/${w.id}/items`, w.cookie),
       );
       expect(rows.map((r: { id: string }) => r.id)).not.toContain(gone.id);
       expect(
@@ -340,14 +347,14 @@ describe('items (e2e)', () => {
           .blockedBy,
       ).toEqual([]);
       expect(
-        (await w.add({ kind: 'SUB_ISSUE', title: 'S', parentId: gone.id })).body
+        (await w.add({ kind: 'SUBTASK', title: 'S', parentId: gone.id })).body
           .code,
       ).toBe('invalid_parent');
       // …its parent can now be deleted, and its number is never reused…
       expect(
-        (await api.send('DELETE', `/api/items/${project.id}`, w.cookie)).status,
+        (await api.send('DELETE', `/api/items/${parent.id}`, w.cookie)).status,
       ).toBe(200);
-      expect((await w.add({ kind: 'ISSUE', title: 'Next' })).body.key).toBe(
+      expect((await w.add({ kind: 'TASK', title: 'Next' })).body.key).toBe(
         `${w.keyPrefix}-4`,
       );
       // …but the row is still in the database.
@@ -362,7 +369,7 @@ describe('items (e2e)', () => {
 
   describe('restore', () => {
     it('lists deleted items in the trash and brings one back with its key', async () => {
-      const w = await workspace('GUIDED');
+      const w = await project('GUIDED');
       const feature = (await w.add({ kind: 'FEATURE', title: 'F' })).body;
       const slice = (
         await w.add({ kind: 'SLICE', title: 'S', parentId: feature.id })
@@ -370,11 +377,7 @@ describe('items (e2e)', () => {
       await api.send('DELETE', `/api/items/${slice.id}`, w.cookie);
 
       const trash = await read(
-        await api.send(
-          'GET',
-          `/api/workspaces/${w.id}/items/deleted`,
-          w.cookie,
-        ),
+        await api.send('GET', `/api/projects/${w.id}/items/deleted`, w.cookie),
       );
       expect(trash).toEqual([
         expect.objectContaining({
@@ -402,7 +405,7 @@ describe('items (e2e)', () => {
         await read(
           await api.send(
             'GET',
-            `/api/workspaces/${w.id}/items/deleted`,
+            `/api/projects/${w.id}/items/deleted`,
             w.cookie,
           ),
         ),
@@ -410,7 +413,7 @@ describe('items (e2e)', () => {
     });
 
     it('asks to restore a deleted parent first (409), and 404s an item that is not deleted', async () => {
-      const w = await workspace('GUIDED');
+      const w = await project('GUIDED');
       const feature = (await w.add({ kind: 'FEATURE', title: 'F' })).body;
       const slice = (
         await w.add({ kind: 'SLICE', title: 'S', parentId: feature.id })
@@ -443,9 +446,9 @@ describe('items (e2e)', () => {
 
   describe('blocked-by', () => {
     it('links, lists and unlinks', async () => {
-      const w = await workspace('STANDARD');
-      const a = (await w.add({ kind: 'ISSUE', title: 'A' })).body;
-      const b = (await w.add({ kind: 'ISSUE', title: 'B' })).body;
+      const w = await project('STANDARD');
+      const a = (await w.add({ kind: 'TASK', title: 'A' })).body;
+      const b = (await w.add({ kind: 'TASK', title: 'B' })).body;
 
       const linked = await api.send(
         'POST',
@@ -472,9 +475,9 @@ describe('items (e2e)', () => {
     });
 
     it('lets only one of two opposite links sent at the same time through', async () => {
-      const w = await workspace('STANDARD');
-      const a = (await w.add({ kind: 'ISSUE', title: 'A' })).body;
-      const b = (await w.add({ kind: 'ISSUE', title: 'B' })).body;
+      const w = await project('STANDARD');
+      const a = (await w.add({ kind: 'TASK', title: 'A' })).body;
+      const b = (await w.add({ kind: 'TASK', title: 'B' })).body;
       const results = await Promise.all([
         api.send('POST', `/api/items/${a.id}/blockers`, w.cookie, {
           blockerId: b.id,
@@ -494,9 +497,9 @@ describe('items (e2e)', () => {
     });
 
     it('answers two identical links sent at the same time with 201 and 409, never 500', async () => {
-      const w = await workspace('STANDARD');
-      const a = (await w.add({ kind: 'ISSUE', title: 'A' })).body;
-      const b = (await w.add({ kind: 'ISSUE', title: 'B' })).body;
+      const w = await project('STANDARD');
+      const a = (await w.add({ kind: 'TASK', title: 'A' })).body;
+      const b = (await w.add({ kind: 'TASK', title: 'B' })).body;
       const link = () =>
         api.send('POST', `/api/items/${a.id}/blockers`, w.cookie, {
           blockerId: b.id,
@@ -508,10 +511,10 @@ describe('items (e2e)', () => {
     });
 
     it('refuses self (400), duplicates (409) and cycles (409)', async () => {
-      const w = await workspace('STANDARD');
+      const w = await project('STANDARD');
       const [a, b, c] = await Promise.all(
         ['A', 'B', 'C'].map(
-          async (t) => (await w.add({ kind: 'ISSUE', title: t })).body,
+          async (t) => (await w.add({ kind: 'TASK', title: t })).body,
         ),
       );
       const block = async (item: Item, blocker: Item) => {
@@ -545,15 +548,15 @@ describe('items (e2e)', () => {
     });
   });
 
-  it('answers 404 to someone outside the workspace, on every route', async () => {
-    const w = await workspace('STANDARD');
-    const item = (await w.add({ kind: 'ISSUE', title: 'I' })).body;
+  it('answers 404 to someone outside the project, on every route', async () => {
+    const w = await project('STANDARD');
+    const item = (await w.add({ kind: 'TASK', title: 'I' })).body;
     const outsider = await api.signInReady();
 
     const responses = await Promise.all([
-      api.send('GET', `/api/workspaces/${w.id}/items`, outsider.cookie),
-      api.send('POST', `/api/workspaces/${w.id}/items`, outsider.cookie, {
-        kind: 'ISSUE',
+      api.send('GET', `/api/projects/${w.id}/items`, outsider.cookie),
+      api.send('POST', `/api/projects/${w.id}/items`, outsider.cookie, {
+        kind: 'TASK',
         title: 'X',
       }),
       api.send('GET', `/api/items/${item.id}`, outsider.cookie),
@@ -569,7 +572,7 @@ describe('items (e2e)', () => {
         `/api/items/${item.id}/blockers/${item.id}`,
         outsider.cookie,
       ),
-      api.send('GET', `/api/workspaces/${w.id}/items/deleted`, outsider.cookie),
+      api.send('GET', `/api/projects/${w.id}/items/deleted`, outsider.cookie),
       api.send('POST', `/api/items/${item.id}/restore`, outsider.cookie),
     ]);
     expect(responses.map((r) => r.status)).toEqual(Array(9).fill(404));
@@ -579,10 +582,10 @@ describe('items (e2e)', () => {
   });
 
   it('lists slim rows for members', async () => {
-    const w = await workspace('GUIDED');
+    const w = await project('GUIDED');
     await w.add({ kind: 'FEATURE', title: 'Sign-in' });
     const rows = (await read(
-      await api.send('GET', `/api/workspaces/${w.id}/items`, w.cookie),
+      await api.send('GET', `/api/projects/${w.id}/items`, w.cookie),
     )) as object[];
     expect(rows).toEqual([
       {
