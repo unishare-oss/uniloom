@@ -1,6 +1,6 @@
 # 05: Typed API client (OpenAPI → Orval → TanStack Query)
 
-Status: In Review
+Status: Done
 
 ## Scope
 

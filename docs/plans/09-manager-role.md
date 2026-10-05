@@ -1,6 +1,6 @@
 # 09: Manager role and who can create work
 
-Status: In Review
+Status: Done
 
 ## Scope
 

@@ -1,6 +1,6 @@
 # 07: Workspaces become projects; Standard is Task → Subtask
 
-Status: In Review
+Status: Done
 
 ## Scope
 

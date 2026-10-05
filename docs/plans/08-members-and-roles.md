@@ -1,6 +1,6 @@
 # 08: Members and roles
 
-Status: In Review
+Status: Done
 
 ## Scope
 

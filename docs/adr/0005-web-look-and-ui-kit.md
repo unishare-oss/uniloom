@@ -1,6 +1,6 @@
 # ADR-0005: The web app's look and UI kit
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-04
 
 ## Context
