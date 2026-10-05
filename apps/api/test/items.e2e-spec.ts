@@ -548,6 +548,108 @@ describe('items (e2e)', () => {
     });
   });
 
+  describe('roles', () => {
+    /** A project with an item, and a manager and a member joined as the owner. */
+    const withRoles = async () => {
+      const w = await project('STANDARD');
+      const item = (await w.add({ kind: 'TASK', title: 'T' })).body;
+      const join = async (role: string) => {
+        const p = await api.signInReady();
+        const res = await api.send(
+          'POST',
+          `/api/projects/${w.id}/members`,
+          w.cookie,
+          { email: p.profile.email, role },
+        );
+        expect(res.status).toBe(201);
+        return p.cookie;
+      };
+      return {
+        w,
+        item,
+        manager: await join('MANAGER'),
+        member: await join('MEMBER'),
+      };
+    };
+
+    it('lets a manager create, delete and restore; a member gets 403 on each', async () => {
+      const { w, item, manager, member } = await withRoles();
+      const create = (cookie: string) =>
+        api.send('POST', `/api/projects/${w.id}/items`, cookie, {
+          kind: 'SUBTASK',
+          title: 'S',
+          parentId: item.id,
+        });
+
+      const denied = await create(member);
+      expect(denied.status).toBe(403);
+      expect(await read(denied)).toMatchObject({ code: 'forbidden' });
+      const made = await create(manager);
+      expect(made.status).toBe(201);
+      const { id } = (await read(made)) as Item;
+
+      const noDelete = await api.send('DELETE', `/api/items/${id}`, member);
+      expect(noDelete.status).toBe(403);
+      expect(await read(noDelete)).toMatchObject({ code: 'forbidden' });
+      expect(
+        (await api.send('DELETE', `/api/items/${id}`, manager)).status,
+      ).toBe(200);
+
+      const noRestore = await api.send(
+        'POST',
+        `/api/items/${id}/restore`,
+        member,
+      );
+      expect(noRestore.status).toBe(403);
+      expect(await read(noRestore)).toMatchObject({ code: 'forbidden' });
+      expect(
+        (await api.send('POST', `/api/items/${id}/restore`, manager)).status,
+      ).toBe(200);
+    });
+
+    it('still lets a member update state and fields and set blockers', async () => {
+      const { w, item, manager, member } = await withRoles();
+      const other = (
+        (await read(
+          await api.send('POST', `/api/projects/${w.id}/items`, manager, {
+            kind: 'TASK',
+            title: 'O',
+          }),
+        )) as Item
+      ).id;
+      const done = (
+        (await read(
+          await api.send('GET', `/api/projects/${w.id}`, member),
+        )) as {
+          states: { id: string; name: string }[];
+        }
+      ).states.find((s) => s.name === 'Done')!;
+
+      const moved = await api.send('PATCH', `/api/items/${item.id}`, member, {
+        title: 'Renamed',
+        stateId: done.id,
+      });
+      expect(moved.status).toBe(200);
+      expect(await read(moved)).toMatchObject({ title: 'Renamed' });
+      expect(
+        (
+          await api.send('POST', `/api/items/${item.id}/blockers`, member, {
+            blockerId: other,
+          })
+        ).status,
+      ).toBe(201);
+      expect(
+        (
+          await api.send(
+            'DELETE',
+            `/api/items/${item.id}/blockers/${other}`,
+            member,
+          )
+        ).status,
+      ).toBe(200);
+    });
+  });
+
   it('answers 404 to someone outside the project, on every route', async () => {
     const w = await project('STANDARD');
     const item = (await w.add({ kind: 'TASK', title: 'I' })).body;

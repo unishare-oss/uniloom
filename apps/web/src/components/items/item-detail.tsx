@@ -508,34 +508,36 @@ export const ItemDetail = ({
             </dl>
           </div>
 
-          <div className="flex flex-col gap-2.5 rounded-xl border bg-card p-4">
-            <p className="text-sm text-muted-foreground">
-              Deleting moves it to the trash. You can restore it from there.
-            </p>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={<Button variant="destructive">Delete item</Button>}
-              />
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {item.key}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    It moves to the trash, and you can restore it from there.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    disabled={remove.isPending}
-                    onClick={() => remove.mutate({ id: item.id })}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          {project.canCreateItems && (
+            <div className="flex flex-col gap-2.5 rounded-xl border bg-card p-4">
+              <p className="text-sm text-muted-foreground">
+                Deleting moves it to the trash. You can restore it from there.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={<Button variant="destructive">Delete item</Button>}
+                />
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {item.key}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      It moves to the trash, and you can restore it from there.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      disabled={remove.isPending}
+                      onClick={() => remove.mutate({ id: item.id })}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </aside>
       </div>
     </main>

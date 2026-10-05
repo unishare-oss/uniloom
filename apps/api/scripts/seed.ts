@@ -22,7 +22,8 @@ import { createProject } from '../src/modules/projects/project.service.js';
 const SEED_PROJECTS = {
   TG: 'Seed · Guided',
   TS: 'Seed · Standard',
-  TR: 'Seed · Reviewer',
+  TR: 'Seed · Manager',
+  TM: 'Seed · Member',
   TX: 'Seed · Not a member',
 };
 
@@ -132,7 +133,7 @@ const note = (key: string, what: string) => checks.push(`${key}  ${what}`);
 const seedGuided = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
   const { item } = await seedProject('TG', 'GUIDED', ownerId, [
-    { userId: mya.id, role: 'REVIEWER' },
+    { userId: mya.id, role: 'MANAGER' },
     { userId: ko.id, role: 'MEMBER' },
   ]);
 
@@ -268,33 +269,57 @@ const seedStandard = async (ownerId: string) => {
   note(other.key, 'parent picker: the task → works');
 };
 
-/** Guided, someone else owns it and you review: for role rules (plan 07 onwards). */
-const seedReviewer = async (ownerId: string) => {
+/** Guided, someone else owns it and you are a manager: create, delete, add members as Member. */
+const seedManager = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
   const { item } = await seedProject('TR', 'GUIDED', mya.id, [
-    { userId: ownerId, role: 'REVIEWER' },
+    { userId: ownerId, role: 'MANAGER' },
     { userId: ko.id, role: 'MEMBER' },
   ]);
   const feature = await item({
     kind: 'FEATURE',
-    title: 'Feature by Mya',
-    by: mya.id,
+    title: 'Feature. Delete me → works, you are a manager (restore from Trash)',
   });
   await item({
     kind: 'SLICE',
-    title: 'Slice by Ko in Aligning (approve it once designs exist)',
+    title: 'Slice in Aligning. Move it to Ready → works for any member',
     parentId: feature.id,
     state: 'Aligning',
-    by: ko.id,
   });
-  await item({
+  note('TR', 'you are a MANAGER here: New item and Delete work');
+  note(
+    'TR members',
+    'add someone by email as Member → works; as Owner or Manager → refused (403); no role picker, no Remove',
+  );
+};
+
+/** Guided, someone else owns it and you are a member: no create, delete or restore. */
+const seedMember = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const { item } = await seedProject('TM', 'GUIDED', mya.id, [
+    { userId: ownerId, role: 'MEMBER' },
+    { userId: ko.id, role: 'MANAGER' },
+  ]);
+  const feature = await item({
+    kind: 'FEATURE',
+    title: 'Feature. Open it → no Add subtask, no Delete (you are a member)',
+  });
+  const slice = await item({
     kind: 'SLICE',
-    title: 'Slice by Ko in In Review (move to Done once role gates exist)',
+    title:
+      'Slice. Move it to another column, edit it, set a blocker → all work',
     parentId: feature.id,
-    state: 'In Review',
-    by: ko.id,
+    state: 'Backlog',
   });
-  note('TR', 'you are a REVIEWER here, not the owner');
+  note(
+    'TM',
+    'you are a MEMBER here: no New item, Add subtask, Delete or Restore',
+  );
+  note(
+    slice.key,
+    'drag to another column, edit the title, set a blocker → works',
+  );
+  note('TM members', 'no add-member form, no Remove; you can still Leave');
 };
 
 /** Someone else's project you're not in: its URLs must answer 404. */
@@ -321,7 +346,8 @@ for (const user of SEED_USERS)
 await removeOldSeed();
 await seedGuided(owner.id);
 await seedStandard(owner.id);
-await seedReviewer(owner.id);
+await seedManager(owner.id);
+await seedMember(owner.id);
 await seedOutsider();
 console.log(`Seeded for ${owner.name}. Try:\n  ${checks.join('\n  ')}`);
 await prisma.$disconnect();

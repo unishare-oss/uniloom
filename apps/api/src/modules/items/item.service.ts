@@ -4,6 +4,7 @@ import type {
   Priority,
   ProjectMode,
 } from '@/generated/prisma/enums.js';
+import { CREATORS, requireRole } from '@/modules/members/member.service.js';
 import {
   isProjectMember,
   requireMember,
@@ -184,6 +185,7 @@ export const createProjectItem = async (
     stateId?: string;
   },
 ) => {
+  await requireRole(projectId, userId, CREATORS);
   const project = await requireMember(projectId, userId);
   await checkParent(
     projectId,
@@ -231,7 +233,8 @@ export const updateProjectItem = async (
 
 /** Deletes an item. One with children can't be deleted: move or delete them first. */
 export const removeItem = async (id: string, userId: string) => {
-  await loadItem(id, userId);
+  const item = await loadItem(id, userId);
+  await requireRole(item.projectId, userId, CREATORS);
   if ((await countChildren(id)) > 0)
     throw apiError(409, 'has_children', 'Delete or move its child items first');
   await deleteItem(id);
@@ -256,7 +259,7 @@ export const listProjectDeletedItems = async (
 export const restoreProjectItem = async (id: string, userId: string) => {
   const item = await findDeletedItem(id);
   if (!item) throw apiError(404, 'not_found', 'Deleted item not found');
-  await requireMember(item.projectId, userId);
+  await requireRole(item.projectId, userId, CREATORS);
   if (item.parentId && !(await findItem(item.parentId)))
     throw apiError(409, 'parent_deleted', 'Restore its parent first');
   return toItem(await restoreItem(id));

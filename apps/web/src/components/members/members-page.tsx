@@ -24,6 +24,7 @@ import {
   useListMembers,
   useRemoveMember,
 } from "@/lib/api/generated/members/members";
+import type { GetProject200Role } from "@/lib/api/generated/uniloomAPI.schemas";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import {
   getGetProjectQueryKey,
@@ -31,22 +32,23 @@ import {
   useGetProject,
 } from "@/lib/api/generated/projects/projects";
 
-type Role = "OWNER" | "REVIEWER" | "MEMBER";
+type Role = GetProject200Role;
 
 const roleLabels: Record<Role, string> = {
   OWNER: "Owner",
-  REVIEWER: "Reviewer",
+  MANAGER: "Manager",
   MEMBER: "Member",
 };
-const roles: Role[] = ["OWNER", "REVIEWER", "MEMBER"];
 
 const RoleSelect = ({
   value,
+  roles,
   onChange,
   disabled,
   label,
 }: {
   value: Role;
+  roles: Role[];
   onChange: (role: Role) => void;
   disabled?: boolean;
   label: string;
@@ -70,7 +72,10 @@ const RoleSelect = ({
   </Select>
 );
 
-/** Who is in the project and with which role. Owners add, change and remove. */
+/**
+ * Who is in the project and with which role. Owners add, change and remove; managers
+ * add people as Member. What each may do comes from the project's flags.
+ */
 export const MembersPage = ({ projectId }: { projectId: string }) => {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -133,6 +138,7 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
   });
 
   const canManage = project?.canManageMembers ?? false;
+  const assignable = project?.assignableRoles ?? [];
   const busy = add.isPending || change.isPending || remove.isPending;
 
   return (
@@ -144,12 +150,18 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
         </p>
       </div>
 
-      {canManage && (
+      {assignable.length > 0 && (
         <form
           className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4"
           onSubmit={(event) => {
             event.preventDefault();
-            add.mutate({ projectId, data: { email: email.trim(), role } });
+            add.mutate({
+              projectId,
+              data: {
+                email: email.trim(),
+                role: assignable.includes(role) ? role : assignable[0]!,
+              },
+            });
           }}
         >
           <label className="flex min-w-60 flex-1 flex-col gap-1.5 text-sm font-medium">
@@ -162,7 +174,18 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
               placeholder="name@example.com"
             />
           </label>
-          <RoleSelect value={role} onChange={setRole} label="Role to add" />
+          {assignable.length > 1 ? (
+            <RoleSelect
+              value={role}
+              roles={assignable}
+              onChange={setRole}
+              label="Role to add"
+            />
+          ) : (
+            <span className="flex h-9 items-center px-3 text-sm">
+              {roleLabels[assignable[0]!]}
+            </span>
+          )}
           <Button type="submit" disabled={busy || !email.trim()}>
             <UserPlus />
             Add
@@ -197,6 +220,7 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
               {canManage ? (
                 <RoleSelect
                   value={member.role}
+                  roles={assignable}
                   label={`Role of ${member.name}`}
                   disabled={busy}
                   onChange={(next) =>

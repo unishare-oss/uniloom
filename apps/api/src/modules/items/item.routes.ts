@@ -40,7 +40,7 @@ itemRoutes.post(
   describe({
     tag: 'items',
     operationId: 'createItem',
-    summary: 'Create an item',
+    summary: 'Create an item (owners and managers)',
     pathParams: ['projectId'],
     body: createItemSchema,
     data: itemSchema,
@@ -88,7 +88,7 @@ itemRoutes.delete(
   describe({
     tag: 'items',
     operationId: 'deleteItem',
-    summary: 'Delete an item (it can be restored)',
+    summary: 'Delete an item, restorable (owners and managers)',
     pathParams: ['id'],
     data: z.null(),
   }),
@@ -99,7 +99,7 @@ itemRoutes.post(
   describe({
     tag: 'items',
     operationId: 'restoreItem',
-    summary: 'Restore a deleted item',
+    summary: 'Restore a deleted item (owners and managers)',
     pathParams: ['id'],
     data: itemSchema,
   }),

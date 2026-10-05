@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Role } from '@/generated/prisma/enums.js';
 
 export const createProjectSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -36,7 +37,11 @@ export const stateSchema = z.object({
 /** A project with its states in board order and what the caller may do in it. */
 export const projectDetailSchema = projectSchema.extend({
   states: z.array(stateSchema),
-  role: z.enum(['OWNER', 'REVIEWER', 'MEMBER']),
+  role: z.enum(Role),
   /** Whether the caller may add, change or remove members (owners). */
   canManageMembers: z.boolean(),
+  /** Whether the caller may create, delete and restore items (owners, managers). */
+  canCreateItems: z.boolean(),
+  /** The roles the caller may give when adding a member. */
+  assignableRoles: z.array(z.enum(Role)),
 });
