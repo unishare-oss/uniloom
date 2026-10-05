@@ -59,7 +59,7 @@ Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a
 
 ### Test data
 
-After signing in once, `bun run db:seed` adds test projects with a case for every rule built so far (TG: Guided, TS: Standard, TR: you as reviewer, TX: a project you're not in) and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only those four projects. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in.
+After signing in once, `bun run db:seed` adds test projects with a case for every rule built so far (TG: Guided, TS: Standard, TR: you as manager, TM: you as member, TX: a project you're not in) and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only those five projects. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in.
 
 ## Checks
 

@@ -52,7 +52,7 @@ export const Trash = ({ projectId }: { projectId: string }) => {
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Trash</h1>
         <p className="text-muted-foreground">
-          Deleted items stay here until you restore them.
+          Deleted items stay here until an owner or manager restores them.
         </p>
       </div>
 
@@ -103,13 +103,15 @@ export const Trash = ({ projectId }: { projectId: string }) => {
                     {timeAgo(item.deletedAt)}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <Button
-                      variant="outline"
-                      disabled={restore.isPending}
-                      onClick={() => restore.mutate({ id: item.id })}
-                    >
-                      Restore
-                    </Button>
+                    {project?.canCreateItems && (
+                      <Button
+                        variant="outline"
+                        disabled={restore.isPending}
+                        onClick={() => restore.mutate({ id: item.id })}
+                      >
+                        Restore
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

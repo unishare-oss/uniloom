@@ -69,30 +69,41 @@ describe('members and roles (e2e)', () => {
 
   it('lists members with name, email, image and role, owners first', async () => {
     const w = await setup();
-    const reviewer = await w.join('REVIEWER');
+    const manager = await w.join('MANAGER');
     const member = await w.join('MEMBER');
     const rows = await w.list(member.cookie);
     expect(rows.map((r) => r.email)).toEqual([
       w.owner.email,
-      reviewer.email,
+      manager.email,
       member.email,
     ]);
     expect(rows[0]).toMatchObject({ role: 'OWNER', image: null });
     expect(rows[0]).toHaveProperty('name');
   });
 
-  it('returns the caller role and canManageMembers on the project', async () => {
+  it('returns the caller role and what they may do on the project', async () => {
     const w = await setup();
-    const reviewer = await w.join('REVIEWER');
+    const manager = await w.join('MANAGER');
+    const member = await w.join('MEMBER');
     const get = async (cookie: string) =>
       read(await api.send('GET', `/api/projects/${w.id}`, cookie));
     expect(await get(w.owner.cookie)).toMatchObject({
       role: 'OWNER',
       canManageMembers: true,
+      canCreateItems: true,
+      assignableRoles: ['OWNER', 'MANAGER', 'MEMBER'],
     });
-    expect(await get(reviewer.cookie)).toMatchObject({
-      role: 'REVIEWER',
+    expect(await get(manager.cookie)).toMatchObject({
+      role: 'MANAGER',
       canManageMembers: false,
+      canCreateItems: true,
+      assignableRoles: ['MEMBER'],
+    });
+    expect(await get(member.cookie)).toMatchObject({
+      role: 'MEMBER',
+      canManageMembers: false,
+      canCreateItems: false,
+      assignableRoles: [],
     });
   });
 
@@ -113,23 +124,58 @@ describe('members and roles (e2e)', () => {
     ]);
   });
 
-  it('lets an owner add by email; reviewers and members get 403', async () => {
+  it('lets an owner add by email with any role; a member gets 403', async () => {
     const w = await setup();
-    const reviewer = await w.join('REVIEWER');
     const member = await w.join('MEMBER');
     const newcomer = await person();
 
-    for (const who of [reviewer, member]) {
-      const res = await w.add(who.cookie, newcomer.email, 'MEMBER');
-      expect(res.status).toBe(403);
-      expect(await read(res)).toMatchObject({ code: 'forbidden' });
-    }
-    const res = await w.add(w.owner.cookie, newcomer.email, 'REVIEWER');
+    const denied = await w.add(member.cookie, newcomer.email, 'MEMBER');
+    expect(denied.status).toBe(403);
+    expect(await read(denied)).toMatchObject({ code: 'forbidden' });
+
+    const res = await w.add(w.owner.cookie, newcomer.email, 'MANAGER');
     expect(res.status).toBe(201);
     expect(await read(res)).toMatchObject({
       email: newcomer.email,
-      role: 'REVIEWER',
+      role: 'MANAGER',
     });
+  });
+
+  it('lets a manager add people as Member only; any other role gets 403', async () => {
+    const w = await setup();
+    const manager = await w.join('MANAGER');
+    const first = await person();
+    const second = await person();
+
+    for (const role of ['OWNER', 'MANAGER']) {
+      const res = await w.add(manager.cookie, first.email, role);
+      expect(res.status).toBe(403);
+      expect(await read(res)).toMatchObject({ code: 'forbidden' });
+    }
+    expect((await w.list(w.owner.cookie)).map((r) => r.email)).not.toContain(
+      first.email,
+    );
+    const ok = await w.add(manager.cookie, second.email, 'MEMBER');
+    expect(ok.status).toBe(201);
+    expect(await read(ok)).toMatchObject({ role: 'MEMBER' });
+  });
+
+  it('keeps changing roles and removing others owner-only, but a manager can leave', async () => {
+    const w = await setup();
+    const manager = await w.join('MANAGER');
+    const member = await w.join('MEMBER');
+    const target = `${w.path}/${member.id}`;
+
+    const change = await api.send('PATCH', target, manager.cookie, {
+      role: 'MANAGER',
+    });
+    expect(change.status).toBe(403);
+    expect(await read(change)).toMatchObject({ code: 'forbidden' });
+    expect((await api.send('DELETE', target, manager.cookie)).status).toBe(403);
+    expect(
+      (await api.send('DELETE', `${w.path}/${manager.id}`, manager.cookie))
+        .status,
+    ).toBe(200);
   });
 
   it('answers 404 user_not_found, 409 already_member and 400 for bad input on add', async () => {
@@ -167,7 +213,7 @@ describe('members and roles (e2e)', () => {
     expect(promoted.status).toBe(200);
     expect(await read(promoted)).toMatchObject({ role: 'OWNER' });
     // The new owner can manage others now.
-    expect((await patch(member.cookie, other.id, 'REVIEWER')).status).toBe(200);
+    expect((await patch(member.cookie, other.id, 'MANAGER')).status).toBe(200);
     expect((await patch(w.owner.cookie, randomUUID(), 'MEMBER')).status).toBe(
       404,
     );
@@ -228,13 +274,13 @@ describe('members and roles (e2e)', () => {
 
   it('lets an owner remove a member; others cannot remove someone else', async () => {
     const w = await setup();
-    const reviewer = await w.join('REVIEWER');
+    const manager = await w.join('MANAGER');
     const member = await w.join('MEMBER');
 
     const denied = await api.send(
       'DELETE',
       `${w.path}/${member.id}`,
-      reviewer.cookie,
+      manager.cookie,
     );
     expect(denied.status).toBe(403);
     expect(await read(denied)).toMatchObject({ code: 'forbidden' });
@@ -259,14 +305,14 @@ describe('members and roles (e2e)', () => {
 
   it('lets any member leave, but not the last owner', async () => {
     const w = await setup();
-    const reviewer = await w.join('REVIEWER');
+    const manager = await w.join('MANAGER');
     const left = await api.send(
       'DELETE',
-      `${w.path}/${reviewer.id}`,
-      reviewer.cookie,
+      `${w.path}/${manager.id}`,
+      manager.cookie,
     );
     expect(left.status).toBe(200);
-    expect((await api.send('GET', w.path, reviewer.cookie)).status).toBe(404);
+    expect((await api.send('GET', w.path, manager.cookie)).status).toBe(404);
 
     const stuck = await api.send(
       'DELETE',

@@ -89,7 +89,7 @@ enum ProjectMode {
 
 enum Role {
   OWNER
-  REVIEWER
+  MANAGER
   MEMBER
 }
 

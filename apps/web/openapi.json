@@ -510,12 +510,26 @@
                       "type": "string",
                       "enum": [
                         "OWNER",
-                        "REVIEWER",
+                        "MANAGER",
                         "MEMBER"
                       ]
                     },
                     "canManageMembers": {
                       "type": "boolean"
+                    },
+                    "canCreateItems": {
+                      "type": "boolean"
+                    },
+                    "assignableRoles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "OWNER",
+                          "MANAGER",
+                          "MEMBER"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -535,7 +549,9 @@
                     "updatedAt",
                     "states",
                     "role",
-                    "canManageMembers"
+                    "canManageMembers",
+                    "canCreateItems",
+                    "assignableRoles"
                   ]
                 }
               }
@@ -660,7 +676,7 @@
         "tags": [
           "items"
         ],
-        "summary": "Create an item",
+        "summary": "Create an item (owners and managers)",
         "parameters": [
           {
             "name": "projectId",
@@ -746,7 +762,7 @@
         },
         "responses": {
           "201": {
-            "description": "Create an item",
+            "description": "Create an item (owners and managers)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1400,7 +1416,7 @@
         "tags": [
           "items"
         ],
-        "summary": "Delete an item (it can be restored)",
+        "summary": "Delete an item, restorable (owners and managers)",
         "parameters": [
           {
             "name": "id",
@@ -1414,7 +1430,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Delete an item (it can be restored)",
+            "description": "Delete an item, restorable (owners and managers)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1432,7 +1448,7 @@
         "tags": [
           "items"
         ],
-        "summary": "Restore a deleted item",
+        "summary": "Restore a deleted item (owners and managers)",
         "parameters": [
           {
             "name": "id",
@@ -1446,7 +1462,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Restore a deleted item",
+            "description": "Restore a deleted item (owners and managers)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1864,7 +1880,7 @@
                         "type": "string",
                         "enum": [
                           "OWNER",
-                          "REVIEWER",
+                          "MANAGER",
                           "MEMBER"
                         ]
                       },
@@ -1894,7 +1910,7 @@
         "tags": [
           "members"
         ],
-        "summary": "Add someone who already has an account, by email (owners only)",
+        "summary": "Add someone who already has an account, by email (owners any role, managers Member only)",
         "parameters": [
           {
             "name": "projectId",
@@ -1922,7 +1938,7 @@
                     "type": "string",
                     "enum": [
                       "OWNER",
-                      "REVIEWER",
+                      "MANAGER",
                       "MEMBER"
                     ]
                   }
@@ -1937,7 +1953,7 @@
         },
         "responses": {
           "201": {
-            "description": "Add someone who already has an account, by email (owners only)",
+            "description": "Add someone who already has an account, by email (owners any role, managers Member only)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1962,7 +1978,7 @@
                       "type": "string",
                       "enum": [
                         "OWNER",
-                        "REVIEWER",
+                        "MANAGER",
                         "MEMBER"
                       ]
                     },
@@ -2024,7 +2040,7 @@
                     "type": "string",
                     "enum": [
                       "OWNER",
-                      "REVIEWER",
+                      "MANAGER",
                       "MEMBER"
                     ]
                   }
@@ -2063,7 +2079,7 @@
                       "type": "string",
                       "enum": [
                         "OWNER",
-                        "REVIEWER",
+                        "MANAGER",
                         "MEMBER"
                       ]
                     },

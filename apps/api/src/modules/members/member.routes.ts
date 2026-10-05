@@ -32,7 +32,8 @@ memberRoutes.post(
   describe({
     tag: 'members',
     operationId: 'addMember',
-    summary: 'Add someone who already has an account, by email (owners only)',
+    summary:
+      'Add someone who already has an account, by email (owners any role, managers Member only)',
     pathParams: ['projectId'],
     body: addMemberSchema,
     data: memberSchema,

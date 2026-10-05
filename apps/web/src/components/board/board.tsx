@@ -191,7 +191,7 @@ export const Board = ({ projectId }: { projectId: string }) => {
             />
           )}
         </div>
-        {project && items && (
+        {project?.canCreateItems && items && (
           <NewItemDialog
             project={project}
             items={items}

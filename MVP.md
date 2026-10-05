@@ -43,7 +43,7 @@ A project has one mode. Each mode is a **preset of rule switches** in one workfl
 | Work items                  | Tasks → Subtasks                                         | Features → Slices                                                                                |
 | States                      | Custom per project (default: To Do → In Progress → Done) | Fixed: Triage → Backlog → Aligning → Ready → In Progress → Blocked → In Review → Done → Canceled |
 | Done-when checklist         | Optional, any length                                     | **Required, 3–6 items**. Gates In Review and Done                                                |
-| Design before Ready         | No                                                       | **Required**, approved by a reviewer                                                             |
+| Design before Ready         | No                                                       | **Required**, approved by a manager                                                              |
 | Planned vs actual at review | No                                                       | Yes                                                                                              |
 | ADRs                        | Available                                                | Available, and linked from designs                                                               |
 | Agents via MCP              | Create, update, move, comment                            | Same, plus designs and records. **Agents can't approve**                                         |
@@ -81,14 +81,14 @@ Mode names are still open: "Standard / Guided" or "Classic / Paired".
 
 People sign in with **uniAuth**. Access to a project is by invitation.
 
-| Role         | Can do                                                                  |
-| ------------ | ----------------------------------------------------------------------- |
-| **Owner**    | Everything, plus members, key prefix, labels, mode and switches         |
-| **Reviewer** | Approve designs (→ Ready), accept ADRs, review code, move items to Done |
-| **Member**   | Read, comment, create and edit work. Works through their own agent      |
+| Role        | Can do                                                                                                           |
+| ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Owner**   | Everything: change roles, remove members, key prefix, labels, mode and switches, delete the project              |
+| **Manager** | Create and delete tickets and subtasks, add members (as Member only), approve designs, accept ADRs, move to Done |
+| **Member**  | Read, comment, move tickets across states and edit them. Works through their own agent                           |
 
 - **Each person's agent acts as that person.** Every user creates their own access token for their agent. The site shows "Mya's agent created UG-12".
-- **Approver ≠ author** (Guided): a design written by Mya's agent is approved by a different reviewer, unless the switch is off.
+- **Approver ≠ author** (Guided): a design written by Mya's agent is approved by a different manager, unless the switch is off.
 
 ### Work items
 
@@ -138,11 +138,11 @@ sequenceDiagram
 1. **Discuss** the feature in the terminal with the agent until you agree.
 2. **Agent creates** the feature and its slices over MCP, in **Aligning**. Each slice gets 3–6 done-when items and a **design**.
 3. **You read** each design on the website. Change requests go back to the agent in the terminal. Any edit to an approved design **resets the approval**.
-4. **A reviewer approves** the design on the website, and the slice moves to **Ready**. Only people can do this. There is no MCP tool for it.
+4. **A manager approves** the design on the website, and the slice moves to **Ready**. Only people can do this. There is no MCP tool for it.
 5. **Agent implements:** In Progress. It ticks each item **the moment it's met**, links the commit and PR, and writes the change document.
 6. **In Review** is allowed only when every checklist item is ticked.
 7. **You review** on the website: the approved design next to what was built (planned vs actual), the checklist, the commits.
-8. **Done** after merge. Set by a reviewer, never by an agent.
+8. **Done** after merge. Set by a manager, never by an agent.
 9. **Blocked:** if the agent can't finish without a person, the slice moves to Blocked with a reason.
 
 ### Splitting a feature into slices
@@ -154,18 +154,18 @@ sequenceDiagram
 
 ### Feature-level vs slice-level
 
-|           | Feature                                    | Slice                                |
-| --------- | ------------------------------------------ | ------------------------------------ |
-| Design    | Overview flow: how the slices fit together | Functions plus detailed flows        |
-| Approval  | The split and the overview, once           | Each slice's design, before Ready    |
-| Checklist | Optional                                   | Required, 3–6                        |
-| Done      | Automatic when all slices are Done         | When a reviewer marks it after merge |
+|           | Feature                                    | Slice                               |
+| --------- | ------------------------------------------ | ----------------------------------- |
+| Design    | Overview flow: how the slices fit together | Functions plus detailed flows       |
+| Approval  | The split and the overview, once           | Each slice's design, before Ready   |
+| Checklist | Optional                                   | Required, 3–6                       |
+| Done      | Automatic when all slices are Done         | When a manager marks it after merge |
 
 ---
 
 ## 6. Designs (Guided)
 
-A design says **how a slice will be built**, so the reviewer understands every function before it exists.
+A design says **how a slice will be built**, so the manager understands every function before it exists.
 
 | Part          | Content                                                                                                                  |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -177,7 +177,7 @@ Rules:
 
 - **List only meaningful functions:** exported functions, routes, guards, services, components with logic. No small private helpers.
 - **At least one function and one flow** before the design can be approved.
-- **Approval belongs to people**, on the website, by a reviewer (≠ author when that switch is on).
+- **Approval belongs to people**, on the website, by a manager (≠ author when that switch is on).
 - **Editing an approved design resets its approval.**
 - Example function row:
 
@@ -190,9 +190,9 @@ Rules:
 - When a commit is linked, Uniloom **reads the commit's diff itself** and lists the functions added and changed. The agent doesn't write this list. It's cheaper, and the agent isn't reporting on its own work.
 - The review page shows three groups:
   - **Planned and built**: matches, with file and line.
-  - **Extra**: built but not in the design. Flagged so the reviewer can ask why.
+  - **Extra**: built but not in the design. Flagged so the manager can ask why.
   - **Missing**: in the design but not found.
-- Open question: should extra functions **block** In Review until a reviewer accepts them, or only be flagged? MVP default: **flag**.
+- Open question: should extra functions **block** In Review until a manager accepts them, or only be flagged? MVP default: **flag**.
 
 ---
 
@@ -211,7 +211,7 @@ ADRs record **choices that outlive one slice**, such as "Postgres over SQLite" o
 | Links            | Features and slices it affects                               |
 
 - Usually written **in Aligning**, by the agent over MCP, when a feature involves a real choice.
-- **Accepted only by a person** (reviewer or owner) on the website.
+- **Accepted only by a person** (manager or owner) on the website.
 - Designs reference ADRs instead of repeating the reasoning.
 - Agents **read** them (`list_adrs`, `get_adr`), so new work follows past decisions instead of re-arguing them.
 - **Never deleted, only superseded**, so the history stays readable.
@@ -276,18 +276,18 @@ Written after the MCP server works, so they describe the real tools.
 
 Signed-in people only (uniAuth). No agent chat.
 
-| Page              | Content                                                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Sign-in           | uniAuth (silent check, login, consent pattern from Unigym)                                                                     |
-| Projects          | List, create, settings: mode, switches, labels, members and roles, invites                                                     |
-| Board             | Columns by state, filter by assignee, label, feature. Drag to move where the rules allow                                       |
-| Feature page      | Overview flow, slices with progress, ADR links                                                                                 |
-| Slice / task page | Description, checklist with evidence, **design** (functions table + flows), **Approve** button for reviewers, comments, record |
-| Review page       | **Planned vs actual**, checklist, commits and PR, change document                                                              |
-| ADRs              | List by status, ADR page, **Accept / Reject** for reviewers                                                                    |
-| Documents         | List and page with Mermaid rendering                                                                                           |
-| Activity          | Who (person or agent) did what, per item and per project                                                                       |
-| Account           | Access tokens for agents: create, name, revoke                                                                                 |
+| Page              | Content                                                                                                                       |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in           | uniAuth (silent check, login, consent pattern from Unigym)                                                                    |
+| Projects          | List, create, settings: mode, switches, labels, members and roles, invites                                                    |
+| Board             | Columns by state, filter by assignee, label, feature. Drag to move where the rules allow                                      |
+| Feature page      | Overview flow, slices with progress, ADR links                                                                                |
+| Slice / task page | Description, checklist with evidence, **design** (functions table + flows), **Approve** button for managers, comments, record |
+| Review page       | **Planned vs actual**, checklist, commits and PR, change document                                                             |
+| ADRs              | List by status, ADR page, **Accept / Reject** for managers                                                                    |
+| Documents         | List and page with Mermaid rendering                                                                                          |
+| Activity          | Who (person or agent) did what, per item and per project                                                                      |
+| Account           | Access tokens for agents: create, name, revoke                                                                                |
 
 ---
 
@@ -337,7 +337,7 @@ Each step is one slice with its own design and done-when checklist. From step 4,
 | 3   | Rules engine: mode presets, switches, label overrides, checklist limits and gates, design approval gate | 1 day   | ½ day   | Switches from day one                  |
 | 4   | MCP server: tools, instructions, access tokens, activity log                                            | 1 day   | ½ day   | **Usable from Claude Code after this** |
 | 5   | Sign-in: uniAuth, sessions, consent (reused from Unigym)                                                | ½ day   | ¼ day   |                                        |
-| 6   | Users and roles: members, invites, owner / reviewer / member, approver ≠ author                         | ½–1 day | ½ day   |                                        |
+| 6   | Users and roles: members, invites, owner / manager / member, approver ≠ author                          | ½–1 day | ½ day   |                                        |
 | 7   | Designs and ADRs: design storage, approval reset, ADR statuses and links                                | ½–1 day | ½ day   |                                        |
 | 8   | Web: board and item lists, both modes                                                                   | 1 day   | ½ day   |                                        |
 | 9   | Web: slice page with design review and **Approve**, ADR pages with **Accept**                           | 1 day   | ½ day   |                                        |

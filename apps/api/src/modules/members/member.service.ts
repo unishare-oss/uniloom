@@ -1,4 +1,4 @@
-import type { Role } from '@/generated/prisma/enums.js';
+import { Role } from '@/generated/prisma/enums.js';
 import { apiError } from '@/http.js';
 import {
   deleteKeepingOwner,
@@ -9,7 +9,18 @@ import {
   updateRoleKeepingOwner,
 } from './member.repository.js';
 
-const ALL_ROLES: Role[] = ['OWNER', 'REVIEWER', 'MEMBER'];
+/** Every role. */
+export const ROLES: Role[] = Object.values(Role);
+
+/** The roles that create, delete and restore work. */
+export const CREATORS: Role[] = ['OWNER', 'MANAGER'];
+
+/** The roles `role` may give when adding a member: owners any, managers only Member. */
+export const assignableRoles = (role: Role): Role[] => {
+  if (role === 'OWNER') return ROLES;
+  if (role === 'MANAGER') return ['MEMBER'];
+  return [];
+};
 
 /**
  * The caller's membership. 404 if they aren't a member (so ids reveal nothing), 403
@@ -43,20 +54,25 @@ const view = (member: {
 
 /** Every member, owners first. Any member may ask. */
 export const listMembers = async (projectId: string, userId: string) => {
-  await requireRole(projectId, userId, ALL_ROLES);
+  await requireRole(projectId, userId, ROLES);
   const members = await findMembers(projectId);
   const owners = members.filter((m) => m.role === 'OWNER');
   const others = members.filter((m) => m.role !== 'OWNER');
   return [...owners, ...others].map(view);
 };
 
-/** Owner only. The person must already have a Uniloom account. */
+/**
+ * Owner or manager, who may only add people as Member. The person must already have a
+ * Uniloom account.
+ */
 export const addMember = async (
   projectId: string,
   userId: string,
   input: { email: string; role: Role },
 ) => {
-  await requireRole(projectId, userId, ['OWNER']);
+  const caller = await requireRole(projectId, userId, CREATORS);
+  if (!assignableRoles(caller.role).includes(input.role))
+    throw apiError(403, 'forbidden', 'Your role cannot give that role');
   const user = await findUserByEmail(input.email);
   if (!user)
     throw apiError(
@@ -87,10 +103,6 @@ export const removeMember = async (
   userId: string,
   targetId: string,
 ) => {
-  await requireRole(
-    projectId,
-    userId,
-    userId === targetId ? ALL_ROLES : ['OWNER'],
-  );
+  await requireRole(projectId, userId, userId === targetId ? ROLES : ['OWNER']);
   await deleteKeepingOwner(projectId, targetId);
 };

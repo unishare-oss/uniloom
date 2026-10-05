@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { Role } from '@/generated/prisma/enums.js';
 
-const roleSchema = z.enum(['OWNER', 'REVIEWER', 'MEMBER']);
+const roleSchema = z.enum(Role);
 
 export const addMemberSchema = z.object({
   email: z.email().trim().toLowerCase(),

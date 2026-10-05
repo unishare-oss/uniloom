@@ -1,6 +1,11 @@
 import { apiError } from '@/http.js';
 import type { ProjectMode } from '@/generated/prisma/enums.js';
-import { requireRole } from '@/modules/members/member.service.js';
+import {
+  assignableRoles,
+  CREATORS,
+  requireRole,
+  ROLES,
+} from '@/modules/members/member.service.js';
 import {
   createProject as insertProject,
   findProjectDetailForMember,
@@ -29,18 +34,20 @@ export const listProjects = (userId: string) => {
 };
 
 /**
- * The project with its states in board order, plus the caller's role and whether they
- * may manage members; 404 for non-members.
+ * The project with its states in board order, plus the caller's role and what they
+ * may do (manage members, create items, roles they can give); 404 for non-members.
  */
 export const getProject = async (projectId: string, userId: string) => {
-  const { role } = await requireRole(projectId, userId, [
-    'OWNER',
-    'REVIEWER',
-    'MEMBER',
-  ]);
+  const { role } = await requireRole(projectId, userId, ROLES);
   const project = await findProjectDetailForMember(projectId, userId);
   if (!project) throw apiError(404, 'not_found', 'Project not found');
-  return { ...project, role, canManageMembers: role === 'OWNER' };
+  return {
+    ...project,
+    role,
+    canManageMembers: role === 'OWNER',
+    canCreateItems: CREATORS.includes(role),
+    assignableRoles: assignableRoles(role),
+  };
 };
 
 /** The project, or 404 when it doesn't exist or the user isn't a member. */
