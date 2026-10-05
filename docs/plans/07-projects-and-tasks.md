@@ -1,6 +1,6 @@
 # 07: Workspaces become projects; Standard is Task → Subtask
 
-Status: In Progress
+Status: In Review
 
 ## Scope
 
@@ -36,7 +36,7 @@ ADR-0006 points out the rename).
       task and subtask, never workspace or issue
 - [x] The seed, `MVP.md`, the three `AGENTS.md` files and `README.md` use project, task and
       subtask; `bun run db:seed` runs twice in a row
-- [ ] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included
+- [x] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included
 
 ## Design
 
@@ -67,7 +67,7 @@ flowchart LR
 
 ## Changes
 
-Branch `feat/projects-and-tasks`. Done by two Sonnet subagents (API and database, then web
+Commits: `cc3ece5` (rename), `f12f898` (seed), on branch `feat/projects-and-tasks`, PR #12. Done by two Sonnet subagents (API and database, then web
 and docs), reviewed and checked by the main agent.
 
 - Two migrations: `20261005120000_task_kinds` renames `ISSUE`/`SUB_ISSUE` to
@@ -88,7 +88,7 @@ and docs), reviewed and checked by the main agent.
   files, `README.md`, ADR-0003 kinds paragraph, ADR-0006 (Proposed).
 
 Checks: lint, typecheck, build pass; API unit 35/35 and e2e 68/68 pass against the dev
-database.
+database; CI passes on PR #12.
 
 Planned vs actual:
 
