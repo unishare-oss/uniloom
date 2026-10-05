@@ -50,16 +50,16 @@ A workspace has one mode. Each mode is a **preset of rule switches** in one work
 
 ### Rule switches
 
-| Switch                           | Standard        | Guided                                               |
-| -------------------------------- | --------------- | ---------------------------------------------------- |
-| `item_names`                     | Project / Issue | Feature / Slice                                      |
-| `fixed_states`                   | `false`         | `true`                                               |
-| `checklist_required`             | `false`         | `true`                                               |
-| `checklist_min`, `checklist_max` | none            | 3, 6                                                 |
-| `design_required`                | `false`         | `true`                                               |
-| `approval_required`              | `false`         | `true`                                               |
-| `approver_not_author`            | n/a             | `true` (can be turned off in a one-person workspace) |
-| `planned_vs_actual`              | `false`         | `true`                                               |
+States are not a switch: they are locked in Guided, because its rules rely on them, and editable in Standard.
+
+| Switch                | Standard        | Guided                                               |
+| --------------------- | --------------- | ---------------------------------------------------- |
+| `item_names`          | Project / Issue | Feature / Slice                                      |
+| `checklist_required`  | `false`         | `true`                                               |
+| `design_required`     | `false`         | `true`                                               |
+| `approval_required`   | `false`         | `true`                                               |
+| `approver_not_author` | n/a             | `true` (can be turned off in a one-person workspace) |
+| `planned_vs_actual`   | `false`         | `true`                                               |
 
 - **Per-label overrides.** In Guided mode, `bug` and `chore` can skip the design. In Standard mode, one label could require a checklist.
 - **Switching modes later** is a setting change. Existing items keep their data, and the new rules apply from then on.
@@ -102,13 +102,13 @@ People sign in with **uniAuth**. Access to a workspace is by invitation.
 | Priority           | Urgent, High, Medium, Low, None                               |
 | Labels             | Exclusive groups enforced (one `type` label)                  |
 | Blocked by         | Keys of items this one waits on                               |
-| Parent             | Slice → Feature, or Sub-issue → Issue                         |
+| Parent             | Slice → Feature, or Issue → Project, or Sub-issue → Issue     |
 | Checklist          | Done-when items, each with a done state and optional evidence |
 | Design             | Guided only. See §6                                           |
 | Comments           | Thread per item, by people and agents                         |
 | Record             | Commits, branch, PR, documents                                |
 
-**Two levels only.** A slice can't have slices. If a slice is too big, it becomes more slices of the same feature.
+**Fixed depth.** Guided has two levels: a slice can't have slices, and a slice that is too big becomes more slices of the same feature. Standard has three: Project → Issue → Sub-issue. The rules engine enforces the depth (ADR-0003).
 
 **A feature is Done automatically** when all its slices are Done or Canceled.
 
@@ -148,7 +148,7 @@ sequenceDiagram
 ### Splitting a feature into slices
 
 - Each slice is a **vertical slice**: end to end (database + API + UI + tests), reviewable and shippable on its own.
-- **3–6 done-when items per slice, enforced.** A 7th item is rejected with "split this slice".
+- **3–6 done-when items per slice, enforced.** A 7th item is rejected with "split this slice". 3–6 is the Guided default and is shown as recommended in settings; an owner can change the limits per workspace. The limits are fixed, not a setting.
 - **About 8 meaningful functions per slice** is a soft cap. Above it the website warns "this slice may be too big to review", but doesn't block.
 - Slices can wait on each other with **blocked by**.
 
@@ -372,4 +372,4 @@ Each step is one slice with its own design and done-when checklist. From step 4,
 3. ~~Drizzle or Prisma?~~ Prisma (decided: familiar from Unigym).
 4. Where to deploy (k8s-practice like Unigym?), and the hostnames.
 5. Which Standard-mode extras come after the MVP: sprints, story points, time tracking?
-6. Should Uniloom's own work be tracked in Markdown under `plans/` until slice 4 works?
+6. ~~Should Uniloom's own work be tracked in Markdown under `plans/` until slice 4 works?~~ Yes: plans, ADRs and tech debt live in `docs/`.

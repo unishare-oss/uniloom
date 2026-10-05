@@ -1,0 +1,84 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { goToLogin } from "@/lib/api";
+import { ApiError } from "@/lib/api/fetcher";
+import { useAcceptTerms } from "@/lib/api/generated/users/users";
+import { authClient } from "@/lib/auth-client";
+import { safeNext } from "@/lib/safe-next";
+import { signOutEverywhere } from "@/lib/uniauth";
+
+/** Signing in through uniAuth is not agreeing to Uniloom's terms: this asks once. */
+const Consent = () => {
+  const [next] = useState(() =>
+    safeNext(new URLSearchParams(window.location.search).get("next")),
+  );
+  const [ready, setReady] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const acceptTerms = useAcceptTerms({
+    mutation: {
+      onSuccess: () => window.location.replace(next),
+      onError: (err) => {
+        if (err instanceof ApiError && err.status === 401) return goToLogin();
+        toast.error(
+          err instanceof ApiError
+            ? err.message
+            : "Couldn't reach Uniloom. Check your connection and try again.",
+        );
+      },
+    },
+  });
+  const busy = acceptTerms.isPending || signingOut;
+
+  useEffect(() => {
+    void authClient.getSession().then(({ data }) => {
+      if (!data) return goToLogin();
+      const { consentGivenAt } = data.user as { consentGivenAt?: unknown };
+      if (consentGivenAt) return window.location.replace(next);
+      setReady(true);
+    });
+  }, [next]);
+
+  if (!ready) return null;
+  return (
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-16">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Before you continue
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          To use Uniloom, please read and accept our{" "}
+          <a href="/terms" className="underline underline-offset-4">
+            Terms of Service
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" className="underline underline-offset-4">
+            Privacy Policy
+          </a>
+          . Your uniAuth account is shared with other apps, but these terms are
+          Uniloom&rsquo;s own.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Button size="lg" disabled={busy} onClick={() => acceptTerms.mutate()}>
+          I agree
+        </Button>
+        <Button
+          size="lg"
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            setSigningOut(true);
+            void signOutEverywhere();
+          }}
+        >
+          Sign out
+        </Button>
+      </div>
+    </main>
+  );
+};
+
+export default Consent;

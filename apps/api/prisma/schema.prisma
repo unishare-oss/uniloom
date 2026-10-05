@@ -7,4 +7,229 @@ datasource db {
   provider = "postgresql"
 }
 
-// Models arrive with the data model slice (MVP.md §14, step 2).
+// Tables are added one feature at a time; see docs/plans/. Rules that depend on a
+// workspace's switches live in the rules engine, not here.
+
+// Better Auth tables. People are matched by uniAuth `sub` through Account
+// (providerId "uniauth", accountId = sub), never by email.
+
+/// A person, as Better Auth stores them.
+model User {
+  id             String    @id
+  name           String
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
+  image          String?
+  /// When the user accepted Uniloom's Terms and Privacy Policy. Null until they do.
+  consentGivenAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Member[]
+  assignedItems Item[]    @relation("ItemAssignee")
+  createdItems  Item[]    @relation("ItemCreatedBy")
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+enum WorkspaceMode {
+  STANDARD
+  GUIDED
+}
+
+enum Role {
+  OWNER
+  REVIEWER
+  MEMBER
+}
+
+/// A mode is a preset of the switch columns; owners can change switches afterwards.
+/// States are locked when `mode` is GUIDED, since its rules rely on them.
+/// When `checklistRequired` is on, a checklist has 3 to 6 items: fixed in code, not
+/// stored per workspace.
+model Workspace {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  name              String
+  /// Items are numbered `<keyPrefix>-<number>`, e.g. UG-12.
+  keyPrefix         String        @unique
+  mode              WorkspaceMode
+  checklistRequired Boolean
+  /// Fewest done-when items per checklist; null = no limit. Guided preset: 3 (recommended).
+  checklistMin      Int?
+  /// Most done-when items per checklist; null = no limit. Guided preset: 6 (recommended).
+  checklistMax      Int?
+  designRequired    Boolean
+  approvalRequired  Boolean
+  approverNotAuthor Boolean
+  plannedVsActual   Boolean
+  /// Next item number. Increment it in the same transaction that creates the item.
+  nextItemNumber    Int           @default(1)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  members Member[]
+  states  State[]
+  items   Item[]
+
+  @@map("workspace")
+}
+
+model Member {
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role
+  createdAt   DateTime  @default(now())
+
+  @@id([workspaceId, userId])
+  @@index([userId])
+  @@map("member")
+}
+
+// ---------------------------------------------------------------------------
+// Items: workflow states, work items and blocked-by links (docs/plans/04-items.md)
+
+enum StateCategory {
+  BACKLOG
+  UNSTARTED
+  STARTED
+  DONE
+  CANCELED
+}
+
+/// A board column. Each workspace gets its mode's states when it is created. Guided
+/// states carry a stable `key` (triage, backlog, aligning, ready, in_progress, blocked,
+/// in_review, done, canceled) that the rules use.
+model State {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  workspaceId String        @db.Uuid
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  key         String?
+  category    StateCategory
+  position    Int
+
+  items Item[]
+
+  @@unique([workspaceId, name])
+  @@unique([workspaceId, key])
+  @@map("state")
+}
+
+/// Guided: FEATURE → SLICE. Standard: PROJECT → ISSUE → SUB_ISSUE.
+enum ItemKind {
+  PROJECT
+  ISSUE
+  SUB_ISSUE
+  FEATURE
+  SLICE
+}
+
+enum Priority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+  NONE
+}
+
+/// A piece of work, shown as `<keyPrefix>-<number>` (UG-12).
+model Item {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  number      Int
+  kind        ItemKind
+  title       String
+  /// Markdown, may contain Mermaid diagrams.
+  description String    @default("")
+  /// NoAction: a state in use can't be deleted, but a workspace delete still cascades.
+  stateId     String    @db.Uuid
+  state       State     @relation(fields: [stateId], references: [id], onDelete: NoAction)
+  priority    Priority  @default(NONE)
+  assigneeId  String?
+  assignee    User?     @relation("ItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  /// NoAction: an item with children can't be deleted.
+  parentId    String?   @db.Uuid
+  parent      Item?     @relation("ItemParent", fields: [parentId], references: [id], onDelete: NoAction)
+  children    Item[]    @relation("ItemParent")
+  createdById String?
+  createdBy   User?     @relation("ItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  /// Set when the item is deleted: it disappears from the API, but the row is kept.
+  deletedAt   DateTime?
+
+  blockedBy ItemBlock[] @relation("BlockedItem")
+  blocking  ItemBlock[] @relation("BlockerItem")
+
+  @@unique([workspaceId, number])
+  @@index([workspaceId, stateId, deletedAt])
+  @@index([parentId])
+  @@index([assigneeId])
+  @@map("item")
+}
+
+/// `blocked` waits on `blocker`: a many-to-many link of item with itself. The migration
+/// adds a CHECK that they differ.
+model ItemBlock {
+  blockedId String @db.Uuid
+  blocked   Item   @relation("BlockedItem", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockerId String @db.Uuid
+  blocker   Item   @relation("BlockerItem", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@id([blockedId, blockerId])
+  @@index([blockerId])
+  @@map("item_block")
+}

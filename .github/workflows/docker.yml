@@ -1,0 +1,252 @@
+name: Build & Push Docker Images
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+    inputs:
+      force_api:
+        description: Force build API
+        type: boolean
+        default: false
+      force_web:
+        description: Force build Web
+        type: boolean
+        default: false
+      no_cache:
+        description: Bust build cache (clean rebuild)
+        type: boolean
+        default: false
+
+env:
+  OWNER: ${{ github.repository_owner }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    if: github.actor != 'unishare-release-bot[bot]'
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      env: ${{ steps.target.outputs.env }}
+      values_file: ${{ steps.target.outputs.values_file }}
+      tag_suffix: ${{ steps.target.outputs.tag_suffix }}
+      moving_tag: ${{ steps.target.outputs.moving_tag }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Which environment this ref deploys to. Everything downstream keys off these
+      # outputs rather than re-testing the ref. The values files are repository
+      # variables: until one is set, images are built and pushed but not deployed.
+      - name: Resolve target environment
+        id: target
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          PROD_VALUES_FILE: ${{ vars.GITOPS_VALUES_FILE }}
+          DEV_VALUES_FILE: ${{ vars.GITOPS_VALUES_FILE_DEV }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_NAME" = "main" ]; then
+            ENV=prod
+            VALUES_FILE="$PROD_VALUES_FILE"
+            TAG_SUFFIX=""
+            MOVING_TAG=latest
+          else
+            ENV=dev
+            VALUES_FILE="$DEV_VALUES_FILE"
+            # The web image bakes API_URL and NEXT_PUBLIC_* at build time, so the same
+            # commit produces a different web image per environment. The suffix keeps
+            # them from overwriting each other; the API carries it too for one pattern.
+            TAG_SUFFIX="-dev"
+            MOVING_TAG=dev
+          fi
+          {
+            echo "env=$ENV"
+            echo "values_file=$VALUES_FILE"
+            echo "tag_suffix=$TAG_SUFFIX"
+            echo "moving_tag=$MOVING_TAG"
+          } >> "$GITHUB_OUTPUT"
+          echo "$REF_NAME -> $ENV (tags: $MOVING_TAG, sha-<commit>$TAG_SUFFIX, values: ${VALUES_FILE:-none})"
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          base: ${{ github.event_name == 'push' && github.event.before || github.event.repository.default_branch }}
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'package.json'
+              - 'bun.lock'
+              - 'Dockerfile.api'
+            web:
+              - 'apps/web/**'
+              - 'package.json'
+              - 'bun.lock'
+              - 'Dockerfile.web'
+
+  build-api:
+    name: Build API image
+    needs: changes
+    if: (github.event_name == 'push' && needs.changes.outputs.api == 'true') || inputs.force_api
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.api
+          push: true
+          no-cache: ${{ inputs.no_cache == true }}
+          platforms: linux/arm64
+          tags: |
+            ghcr.io/${{ env.OWNER }}/uniloom-api:${{ needs.changes.outputs.moving_tag }}
+            ghcr.io/${{ env.OWNER }}/uniloom-api:sha-${{ github.sha }}${{ needs.changes.outputs.tag_suffix }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  build-web:
+    name: Build Web image
+    needs: changes
+    if: (github.event_name == 'push' && needs.changes.outputs.web == 'true') || inputs.force_web
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Web
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.web
+          push: true
+          no-cache: ${{ inputs.no_cache == true }}
+          platforms: linux/arm64
+          tags: |
+            ghcr.io/${{ env.OWNER }}/uniloom-web:${{ needs.changes.outputs.moving_tag }}
+            ghcr.io/${{ env.OWNER }}/uniloom-web:sha-${{ github.sha }}${{ needs.changes.outputs.tag_suffix }}
+          build-args: |
+            API_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_API_URL || vars.API_URL || 'http://uniloom-api.uniloom.svc.cluster.local:3011' }}
+            NEXT_PUBLIC_UNIAUTH_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_UNIAUTH_URL || vars.UNIAUTH_URL || 'https://auth.psstee.dev' }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    name: Write image tags to GitOps repo
+    needs: [changes, build-api, build-web]
+    # Skipped until the values file for this environment is set as a repository
+    # variable (GITOPS_VALUES_FILE for main, GITOPS_VALUES_FILE_DEV for dev).
+    if: >-
+      always() &&
+      needs.changes.outputs.values_file != '' &&
+      (needs.build-api.result == 'success' || needs.build-web.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: gitops-write-back
+      cancel-in-progress: false
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.GITOPS_APP_ID }}
+          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: k8s-practice
+
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v7
+        with:
+          repository: unishare-oss/k8s-practice
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          path: gitops
+
+      - name: Update image tags
+        working-directory: gitops
+        env:
+          API_BUILT: ${{ needs.build-api.result == 'success' }}
+          WEB_BUILT: ${{ needs.build-web.result == 'success' }}
+          SHA: ${{ github.sha }}
+          F: ${{ needs.changes.outputs.values_file }}
+          TAG_SUFFIX: ${{ needs.changes.outputs.tag_suffix }}
+        run: |
+          set -euo pipefail
+          TAG="sha-${SHA}${TAG_SUFFIX}"
+
+          # `yq -i` will not create a missing file, and a silent failure here is the
+          # failure mode this pipeline exists to avoid.
+          if [ ! -f "$F" ]; then
+            echo "::error::${F} does not exist in the GitOps repo -- nothing to deploy into."
+            exit 1
+          fi
+
+          if [ "$API_BUILT" = "true" ]; then
+            yq -i ".image.api.tag = \"${TAG}\"" "$F"
+            echo "api -> ${TAG}"
+          fi
+          if [ "$WEB_BUILT" = "true" ]; then
+            yq -i ".image.web.tag = \"${TAG}\"" "$F"
+            echo "web -> ${TAG}"
+          fi
+
+          echo "--- resulting image block ---"
+          yq '.image' "$F"
+
+      - name: Commit and publish
+        working-directory: gitops
+        env:
+          SHA: ${{ github.sha }}
+          F: ${{ needs.changes.outputs.values_file }}
+          TARGET_ENV: ${{ needs.changes.outputs.env }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No tag change (this commit is already deployed) -- nothing to do."
+            exit 0
+          fi
+          git config user.name  "uniloom-ci[bot]"
+          git config user.email "uniloom-ci[bot]@users.noreply.github.com"
+          git add "$F"
+          if [ "$TARGET_ENV" = "prod" ]; then
+            git commit -m "deploy: uniloom @ ${SHA:0:7}"
+          else
+            git commit -m "deploy: uniloom ${TARGET_ENV} @ ${SHA:0:7}"
+          fi
+          git -c push.default=current push origin HEAD:main || {
+            echo "rejected -- rebasing onto latest main and retrying once"
+            git pull --rebase origin main
+            git -c push.default=current push origin HEAD:main
+          }

@@ -18,13 +18,19 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "api:spec": "bun scripts/openapi.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@scalar/hono-api-reference": "^0.12.9",
+    "better-auth": "^1.7.6",
     "dotenv": "^18.0.5",
-    "hono": "^4.13.12"
+    "hono": "^4.13.12",
+    "hono-openapi": "^1.3.3",
+    "jose": "^6",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",

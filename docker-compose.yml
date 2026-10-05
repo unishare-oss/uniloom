@@ -7,7 +7,9 @@ services:
       POSTGRES_USER: uniloom
       POSTGRES_PASSWORD: uniloom
     ports:
-      - "127.0.0.1:5434:5432"
+      # Loopback by default. On the Oracle VM, `bun run db:up` sets DB_HOST_IP to the VM's
+      # Tailscale IP, so only devices on the tailnet can reach it, never the internet.
+      - "${DB_HOST_IP:-127.0.0.1}:5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,6 +35,11 @@ services:
       context: .
       dockerfile: Dockerfile.api
     restart: unless-stopped
+    # Auth settings (BETTER_AUTH_*, UNIAUTH_*) come from apps/api/.env. UNIAUTH_ISSUER must
+    # be reachable from inside the container (the VM's Tailscale address), not localhost.
+    env_file:
+      - path: apps/api/.env
+        required: false
     environment:
       DATABASE_URL: postgresql://uniloom:uniloom@db:5432/uniloom
       PORT: 3011
@@ -59,6 +66,7 @@ services:
       dockerfile: Dockerfile.web
       args:
         API_URL: http://api:3011
+        NEXT_PUBLIC_UNIAUTH_URL: https://oracle.tailcb9a25.ts.net
     restart: unless-stopped
     environment:
       API_URL: http://api:3011

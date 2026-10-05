@@ -8,35 +8,99 @@ and the MCP endpoint (`/mcp`).
 ```text
 apps/api/
 ├── prisma/
-│   ├── schema.prisma      # Canonical data model
-│   └── migrations/        # Database history
+│   ├── schema.prisma        # Canonical data model
+│   └── migrations/          # Database history
 ├── src/
-│   ├── routes/            # One Hono router per area, mounted in app.ts
-│   ├── generated/prisma/  # Generated client; never edit manually
-│   ├── app.ts             # createApp(): builds the Hono app and mounts routers
-│   ├── db.ts              # Prisma client and database connection
-│   └── index.ts           # Bun server entry
-├── test/                  # End-to-end tests
+│   ├── modules/             # One folder per feature (see below)
+│   │   ├── health/          # health.routes.ts
+│   │   ├── users/           # /api/me, consent
+│   │   ├── workspaces/      # workspaces, mode presets, membership
+│   │   ├── items/           # items, states, blocked-by
+│   │   └── uniauth/         # uniAuth receivers and event tokens
+│   ├── auth/                # Better Auth (`auth`), session and consent middleware
+│   ├── db/                  # prisma.ts: the Prisma client and connection
+│   ├── http.ts              # apiSuccess, apiError, parseBody, idParam
+│   ├── openapi.ts           # describe() for routes, spec options
+│   ├── rules/               # Workflow rules engine, shared by REST and MCP (later)
+│   ├── mcp/                 # MCP server; its tools call module services (later)
+│   ├── generated/prisma/    # Generated client; never edit manually
+│   ├── routes/index.ts      # Every /api route in one place: auth, receivers, modules
+│   ├── env.ts               # Declares `c.var.user` for every Hono context
+│   ├── app.ts               # `app`: health, then mounts routes/index.ts
+│   └── index.ts             # Bun server entry
+├── test/                    # End-to-end tests and test support
 └── AGENTS.md
 ```
 
-Put each area's routes in `src/routes/<area>.ts` as a `Hono` router and mount it in
-`createApp()`. Keep business logic in plain functions next to the routes or in
-`src/<area>/` once an area needs more than one file. Put new routes under `/api/`.
-`createApp()` must stay free of side effects so tests can call `app.request()`.
+Each feature is a folder `src/modules/<features>/` with files named after the singular
+(`users/user.routes.ts`). Add only the files the feature needs:
+
+| File                      | Holds                                                                      |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `<feature>.routes.ts`     | The `Hono` router, plain Hono style: `userRoutes.get('/me', getMe)`        |
+| `<feature>.handlers.ts`   | Plain `(c: Context) => …` functions: read input, call the service, respond |
+| `<feature>.service.ts`    | Business rules and workflows; no HTTP                                      |
+| `<feature>.repository.ts` | Prisma queries; no rules                                                   |
+| `<feature>.schema.ts`     | Request validation (zod), used by the routes                               |
+| `*.spec.ts`               | Unit tests next to the code they test                                      |
+
+Import with the `@/` alias (`@/db/prisma.js`, `@/auth/auth.js`) for anything outside the
+file's own folder; keep `./` only for files in the same folder.
+
+Calls go routes → handlers → service → repository. Only repositories touch the
+database: they import `prisma` from `src/db/prisma.ts`. Handlers read the signed-in user
+with `c.var.user` and pass plain values (ids, input) to services. A module may call another
+module's service, never its handlers or repository. Mount each module router in
+`src/routes/index.ts`, not in `app.ts`. `src/auth/auth.ts` reads its settings when it is
+imported: unit tests get placeholders from `vitest.config.ts`, and e2e tests set them
+and then import the app (`test/support/test-app.ts`).
+
+`src/routes/index.ts` is the one place that wires `/api` (Express-style index routing).
+Health is the only route outside it, in `app.ts`. Better Auth is mounted at
+`/api/auth/*`; people sign in through uniAuth only. In the index, routes registered
+before `requireSession` are public, routes between `requireSession` and
+`requireConsent` need a session only (`/api/me`, consent), and every module router
+mounted after `requireConsent` needs both: `401` without a session, `403
+consent_required` until the user accepts Uniloom's terms. Mount new feature routers at
+the end. Read the signed-in user with `c.var.user`. Map uniAuth people by `sub` through
+`account`, never by email.
+
+OpenAPI: describe every route the web app calls with `describe({ tag, operationId, summary,
+pathParams?, body?, data, status? })` from `src/openapi.ts`, placed before its handler in
+the routes file. `operationId` becomes the web hook's name (`getMe` → `useGetMe`), so keep
+it stable. After changing a route or a schema, run `bun run api:spec` and commit
+`apps/web/openapi.json`; CI fails if it is stale. The spec is served at `/api/openapi.json`
+and readable at `/api/docs`.
+
+Responses, errors and input, from `src/http.ts` (the same shape as Unishare's API):
+
+- Answer successes with `apiSuccess(c, data, message?, status?)`:
+  `{ success: true, message, data }`. `message` defaults to `'OK'`; give one for actions
+  (`'UG-12 created'`). Deletes answer 200 with `data: null`, not 204.
+- Throw `apiError(status, code, message)` from a service, handler or middleware; the API
+  answers `{ success: false, statusCode, code, message }`. Use a stable snake_case `code`
+  the web app can match; the message is for people.
+- Better Auth's `/api/auth/*` and the uniAuth receivers keep their own formats.
+- Read JSON bodies with `parseBody(c, schema)` (zod, from `<feature>.schema.ts`); bad input
+  answers 400 `invalid_input`. Read id path params with `idParam(c, name)`: a non-uuid is
+  404, since nothing can have that id.
+- Answer 404, not 403, when the user isn't a member of the workspace, so ids don't reveal
+  what exists.
 
 ## Responsibilities
 
-- Route handlers parse request data, read the signed-in user, and shape responses.
-- Plain functions enforce business and authorization rules. Workflow rules (modes,
+- Handlers parse request data, read the signed-in user, and shape responses.
+- Services enforce business and authorization rules. Workflow rules (modes,
   switches, checklist limits, design approval) live in one place and are called by
   both REST routes and MCP tools.
-- Call Prisma from those functions. Add a separate data-access layer only when it
-  carries real responsibility. Do not add empty pass-through layers.
+- Repositories own the Prisma queries. Services call repositories, never Prisma
+  directly.
 - Keep Uniloom-specific roles and permissions in this API, not in uniAuth.
 
 ## Data and Verification
 
+- Items are soft-deleted (`deletedAt`). Their repository filters deleted rows out of every
+  lookup; keep it that way when adding queries. Other rows are hard-deleted.
 - Change `prisma/schema.prisma` and add a migration for schema changes. Regenerate
   the Prisma client; never edit `src/generated/prisma` or an applied migration.
 - Keep tests close to behavior under `src/` (`*.spec.ts`); use `test/` for end-to-end

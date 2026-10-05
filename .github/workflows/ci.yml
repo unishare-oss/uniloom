@@ -1,11 +1,15 @@
 name: CI
 on:
   push:
+    branches: [main, dev]
   pull_request:
+    branches: [main, dev]
 
 jobs:
   check:
+    name: Lint, test & build
     runs-on: ubuntu-latest
+    if: github.actor != 'unishare-release-bot[bot]'
     env:
       DATABASE_URL: postgresql://uniloom:uniloom@localhost:5432/uniloom
     services:
@@ -23,31 +27,20 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
       - run: bun run db:generate
       - run: bun run --cwd apps/api db:deploy
+      # The committed OpenAPI spec must match the API; regenerate with `bun run api:spec`.
+      - run: bun run api:spec
+      - run: git diff --exit-code apps/web/openapi.json
+      # The web app's typed client is generated from it, not committed.
+      - run: bun run api:generate
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test
       - run: bun run --cwd apps/api test:e2e
       - run: bun run build
-
-  docker-build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: [api, web]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.${{ matrix.app }}
-          platforms: linux/arm64
-          push: false

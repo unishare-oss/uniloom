@@ -17,17 +17,25 @@
     "test": "bun run --cwd apps/api test",
     "db:generate": "bun run --cwd apps/api db:generate",
     "db:migrate": "bun run --cwd apps/api db:migrate",
-    "db:up": "docker compose up -d --wait db",
-    "db:down": "docker compose down",
+    "api:spec": "bun run --cwd apps/api api:spec",
+    "api:generate": "bun run --cwd apps/web api:generate",
+    "db:up": "ssh oracle 'mkdir -p ~/uniloom' && scp -q docker-compose.yml oracle:uniloom/ && ssh oracle 'cd ~/uniloom && echo DB_HOST_IP=$(tailscale ip -4) > .env && sudo docker compose up -d --wait db'",
+    "db:down": "ssh oracle 'cd ~/uniloom && sudo docker compose stop db'",
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.1",
     "lint-staged": "^16.2.0",
     "prettier": "^3.4.2",
+    "semantic-release": "^25.0.9",
     "simple-git-hooks": "^2.13.1"
   },
   "simple-git-hooks": {
-    "pre-commit": "bunx lint-staged && bun run lint && bun run typecheck"
+    "pre-commit": "bunx lint-staged && bun run lint && bun run typecheck",
+    "commit-msg": "bunx --no -- commitlint --edit \"$1\""
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,json,css,md}": "prettier --write"
