@@ -1,0 +1,544 @@
+"use client";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { Pencil, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  KindIcon,
+  PRIORITIES,
+  PriorityIcon,
+  StateLozenge,
+  kindLabel,
+  priorityLabel,
+  type Priority,
+} from "@/components/items/item-meta";
+import { Markdown } from "@/components/markdown/markdown";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { successMessage } from "@/lib/api/fetcher";
+import {
+  getGetItemQueryKey,
+  getListDeletedItemsQueryKey,
+  getListItemsQueryKey,
+  useAddBlocker,
+  useDeleteItem,
+  useGetItem,
+  useListItems,
+  useRemoveBlocker,
+  useUpdateItem,
+  type getItemResponse,
+} from "@/lib/api/generated/items/items";
+import type {
+  GetItem200,
+  UpdateItemBody,
+} from "@/lib/api/generated/uniloomAPI.schemas";
+import { useGetWorkspace } from "@/lib/api/generated/workspaces/workspaces";
+import { formatDate, timeAgo } from "@/lib/time";
+
+const NO_PARENT = "none";
+
+/** Rendered description; Edit opens Write / Preview with Save and Cancel. */
+const Description = ({
+  value,
+  saving,
+  onSave,
+}: {
+  value: string;
+  saving: boolean;
+  onSave: (description: string) => Promise<unknown>;
+}) => {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  if (draft === null) {
+    return (
+      <section
+        aria-labelledby="description"
+        className="flex flex-col gap-3 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-200"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="description" className="font-semibold">
+            Description
+          </h2>
+          <Button variant="secondary" onClick={() => setDraft(value)}>
+            <Pencil />
+            Edit
+          </Button>
+        </div>
+        {value.trim() ? (
+          <Markdown>{value}</Markdown>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setDraft("")}
+            className="rounded-md border border-dashed p-4 text-left text-muted-foreground transition-colors duration-150 ease-out outline-none hover:border-ring/60 hover:bg-muted hover:text-foreground focus-visible:border-ring/60 focus-visible:bg-muted focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Add a description: Markdown, tables, task lists and ```mermaid
+            diagrams.
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section
+      aria-labelledby="description"
+      className="flex flex-col gap-3 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-200"
+    >
+      <h2 id="description" className="font-semibold">
+        Description
+      </h2>
+      <Tabs defaultValue="write">
+        <TabsList>
+          <TabsTrigger value="write">Write</TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+        </TabsList>
+        <TabsContent
+          value="write"
+          className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
+        >
+          <Textarea
+            aria-label="Description, in Markdown"
+            rows={14}
+            autoFocus
+            className="font-mono text-[13px]"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+        </TabsContent>
+        <TabsContent
+          value="preview"
+          className="min-h-40 rounded-md border p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
+        >
+          {draft.trim() ? (
+            <Markdown>{draft}</Markdown>
+          ) : (
+            <p className="text-muted-foreground">Nothing to preview.</p>
+          )}
+        </TabsContent>
+      </Tabs>
+      <div className="flex items-center justify-end gap-2">
+        {draft !== value && (
+          <span className="mr-auto text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
+            Unsaved changes
+          </span>
+        )}
+        <Button variant="outline" onClick={() => setDraft(null)}>
+          Cancel
+        </Button>
+        <Button
+          disabled={saving}
+          onClick={() => void onSave(draft).then(() => setDraft(null))}
+        >
+          Save
+        </Button>
+      </div>
+    </section>
+  );
+};
+
+/** One item: its fields, what it waits on, and delete. */
+export const ItemDetail = ({
+  workspaceId,
+  itemId,
+}: {
+  workspaceId: string;
+  itemId: string;
+}) => {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: item, error } = useGetItem(itemId, {
+    query: { select: (r) => r.data, retry: false },
+  });
+  const { data: workspace, error: workspaceError } = useGetWorkspace(
+    workspaceId,
+    { query: { select: (r) => r.data } },
+  );
+  const { data: items, error: itemsError } = useListItems(workspaceId, {
+    query: { select: (r) => r.data },
+  });
+  const [blockerKey, setBlockerKey] = useState("");
+  // An item opened under another workspace's URL (the API already checked you may see
+  // it): go to its own workspace, so its states, parents and sidebar match.
+  const elsewhere = item && item.workspaceId !== workspaceId;
+  useEffect(() => {
+    if (item && elsewhere)
+      router.replace(`/w/${item.workspaceId}/items/${item.id}`);
+  }, [item, elsewhere, router]);
+
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(itemId) }),
+      queryClient.invalidateQueries({
+        queryKey: getListItemsQueryKey(workspaceId),
+      }),
+    ]);
+  const onError = (err: { message: string }) => toast.error(err.message);
+  const update = useUpdateItem({ mutation: { onSuccess: refresh, onError } });
+  const addBlocker = useAddBlocker({
+    mutation: {
+      onSuccess: async () => {
+        setBlockerKey("");
+        await refresh();
+      },
+      onError,
+    },
+  });
+  const removeBlocker = useRemoveBlocker({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const remove = useDeleteItem({
+    mutation: {
+      onSuccess: async (res) => {
+        toast.success(successMessage(res));
+        await queryClient.invalidateQueries({
+          queryKey: getListItemsQueryKey(workspaceId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: getListDeletedItemsQueryKey(workspaceId),
+        });
+        router.push(`/w/${workspaceId}`);
+      },
+      onError,
+    },
+  });
+
+  // Any of the three failing is an error, never an endless skeleton.
+  const loadError = error ?? workspaceError ?? itemsError;
+  if (loadError && !elsewhere) {
+    return (
+      <main className="flex flex-col items-start gap-3 px-6 py-12">
+        <p role="alert">{loadError.message}</p>
+        <Link
+          href={`/w/${workspaceId}`}
+          className="text-primary underline underline-offset-4"
+        >
+          Back to the board
+        </Link>
+      </main>
+    );
+  }
+  if (!item || !workspace || !items || elsewhere) {
+    return (
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-12 w-full max-w-xl" />
+        <Skeleton className="h-64 w-full" />
+      </main>
+    );
+  }
+
+  const save = (data: UpdateItemBody) =>
+    update.mutateAsync({ id: item.id, data });
+  // The pickers show the new value at once (`shown`), then save; a refusal puts the
+  // old value back and the toast says why.
+  const saveNow = async (data: UpdateItemBody, shown: Partial<GetItem200>) => {
+    const itemKey = getGetItemQueryKey(item.id);
+    // Wait, or a cancelled refetch can roll the cache back over the new value.
+    await queryClient.cancelQueries({ queryKey: itemKey });
+    const previous = queryClient.getQueryData<getItemResponse>(itemKey);
+    queryClient.setQueryData<getItemResponse>(
+      itemKey,
+      (old) => old && { ...old, data: { ...old.data, ...shown } },
+    );
+    update.mutate(
+      { id: item.id, data },
+      { onError: () => queryClient.setQueryData(itemKey, previous) },
+    );
+  };
+  const byId = new Map(items.map((row) => [row.id, row]));
+  const states = workspace.states;
+  const category = (stateId: string) =>
+    states.find((s) => s.id === stateId)?.category;
+  const parents = [
+    { value: NO_PARENT, label: "No parent" },
+    ...items
+      .filter((row) => row.id !== item.id)
+      .map((row) => ({ value: row.id, label: `${row.key} · ${row.title}` })),
+  ];
+
+  return (
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-7">
+      <nav
+        aria-label="Breadcrumb"
+        className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
+      >
+        <Link
+          href={`/w/${workspaceId}`}
+          className="rounded-sm transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Board
+        </Link>
+        <span aria-hidden>/</span>
+        <span className="min-w-0 truncate font-mono text-foreground">
+          {item.key}
+        </span>
+      </nav>
+
+      <div className="flex flex-wrap items-start gap-8">
+        <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-6">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="title" className="text-xs text-muted-foreground">
+              Title
+            </Label>
+            <Input
+              id="title"
+              key={item.title}
+              defaultValue={item.title}
+              maxLength={200}
+              className="h-12 text-xl font-semibold hover:border-ring/60 md:text-xl"
+              onBlur={(event) => {
+                const title = event.target.value.trim();
+                if (title && title !== item.title) void save({ title });
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+              }}
+            />
+          </div>
+
+          <Description
+            value={item.description}
+            saving={update.isPending}
+            onSave={(description) => save({ description })}
+          />
+
+          <section aria-labelledby="blocked-by" className="flex flex-col gap-3">
+            <h2 id="blocked-by" className="font-semibold">
+              Blocked by
+            </h2>
+            <div className="rounded-lg border bg-card">
+              {item.blockedBy.map((blockerId) => {
+                const blocker = byId.get(blockerId);
+                return (
+                  <div
+                    key={blockerId}
+                    className="flex items-center gap-3 border-b py-2 pr-2 pl-3.5 transition-colors duration-150 ease-out hover:bg-muted/50 focus-within:bg-muted/50 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-200"
+                  >
+                    {blocker && <KindIcon kind={blocker.kind} />}
+                    <Link
+                      href={`/w/${workspaceId}/items/${blockerId}`}
+                      className="flex min-w-0 flex-1 items-center gap-2.5 rounded-sm outline-none hover:underline focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                        {blocker?.key}
+                      </span>
+                      <span className="truncate">{blocker?.title}</span>
+                    </Link>
+                    {blocker && (
+                      <StateLozenge
+                        name={blocker.state.name}
+                        category={category(blocker.state.id)}
+                      />
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:text-foreground"
+                      aria-label={`Stop waiting on ${blocker?.key ?? "this item"}`}
+                      disabled={removeBlocker.isPending}
+                      onClick={() =>
+                        removeBlocker.mutate({ id: item.id, blockerId })
+                      }
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                );
+              })}
+              <form
+                className="flex items-center gap-2 p-2.5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const key = blockerKey.trim().toUpperCase();
+                  const blocker = items.find((row) => row.key === key);
+                  if (!blocker)
+                    return void toast.error(`No item ${key} in this workspace`);
+                  addBlocker.mutate({
+                    id: item.id,
+                    data: { blockerId: blocker.id },
+                  });
+                }}
+              >
+                <Input
+                  aria-label="Item this one waits on"
+                  placeholder={`Wait on another item, e.g. ${workspace.keyPrefix}-1`}
+                  value={blockerKey}
+                  onChange={(event) => setBlockerKey(event.target.value)}
+                  className="h-9"
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="h-9"
+                  disabled={!blockerKey.trim() || addBlocker.isPending}
+                >
+                  Add
+                </Button>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-6">
+          <div className="flex flex-col gap-4 rounded-xl border bg-card p-4">
+            <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
+              <Label className="text-sm text-muted-foreground">State</Label>
+              <Select
+                value={item.state.id}
+                onValueChange={(stateId) => {
+                  const state = states.find((s) => s.id === stateId);
+                  if (!state) return;
+                  const { id, name, key, category } = state;
+                  void saveNow(
+                    { stateId: id },
+                    { state: { id, name, key, category } },
+                  );
+                }}
+                items={states.map((s) => ({ value: s.id, label: s.name }))}
+              >
+                <SelectTrigger
+                  aria-label="State"
+                  className="-ml-2 w-fit max-w-full border-0 bg-transparent px-2 shadow-none transition-colors duration-150 ease-out hover:bg-muted focus-visible:bg-muted"
+                >
+                  <StateLozenge
+                    name={item.state.name}
+                    category={item.state.category}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {states.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Label className="text-sm text-muted-foreground">Priority</Label>
+              <Select
+                value={item.priority}
+                onValueChange={(priority) =>
+                  void saveNow(
+                    { priority: priority as Priority },
+                    { priority: priority as Priority },
+                  )
+                }
+                items={PRIORITIES.map((p) => ({
+                  value: p,
+                  label: priorityLabel(p),
+                }))}
+              >
+                <SelectTrigger
+                  aria-label="Priority"
+                  className="w-full hover:bg-muted/50 focus-visible:bg-muted/50"
+                >
+                  <PriorityIcon priority={item.priority} />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITIES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {priorityLabel(p)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Label className="text-sm text-muted-foreground">Parent</Label>
+              <Select
+                value={item.parentId ?? NO_PARENT}
+                onValueChange={(value) => {
+                  const parentId =
+                    value === NO_PARENT ? null : (value as string);
+                  void saveNow({ parentId }, { parentId });
+                }}
+                items={parents}
+              >
+                <SelectTrigger
+                  aria-label="Parent"
+                  className="w-full hover:bg-muted/50 focus-visible:bg-muted/50"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {parents.map((parent) => (
+                    <SelectItem key={parent.value} value={parent.value}>
+                      {parent.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 border-t pt-4 text-sm">
+              <dt className="text-muted-foreground">Kind</dt>
+              <dd className="flex min-w-0 items-center gap-1.5">
+                <KindIcon kind={item.kind} />
+                {kindLabel(item.kind)}
+              </dd>
+              <dt className="text-muted-foreground">Created</dt>
+              <dd>{formatDate(item.createdAt)}</dd>
+              <dt className="text-muted-foreground">Updated</dt>
+              <dd>{timeAgo(item.updatedAt)}</dd>
+            </dl>
+          </div>
+
+          <div className="flex flex-col gap-2.5 rounded-xl border bg-card p-4">
+            <p className="text-sm text-muted-foreground">
+              Deleting moves it to the trash. You can restore it from there.
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={<Button variant="destructive">Delete item</Button>}
+              />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {item.key}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    It moves to the trash, and you can restore it from there.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate({ id: item.id })}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+};
