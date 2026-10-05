@@ -3,10 +3,10 @@ import { Trash } from "@/components/items/trash";
 const TrashPage = async ({
   params,
 }: {
-  params: Promise<{ workspaceId: string }>;
+  params: Promise<{ projectId: string }>;
 }) => {
-  const { workspaceId } = await params;
-  return <Trash workspaceId={workspaceId} />;
+  const { projectId } = await params;
+  return <Trash projectId={projectId} />;
 };
 
 export default TrashPage;

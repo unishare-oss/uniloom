@@ -3,10 +3,10 @@ import { Board } from "@/components/board/board";
 const BoardPage = async ({
   params,
 }: {
-  params: Promise<{ workspaceId: string }>;
+  params: Promise<{ projectId: string }>;
 }) => {
-  const { workspaceId } = await params;
-  return <Board workspaceId={workspaceId} />;
+  const { projectId } = await params;
+  return <Board projectId={projectId} />;
 };
 
 export default BoardPage;

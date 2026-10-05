@@ -4,24 +4,22 @@ describe('kindError', () => {
   it.each([
     ['GUIDED', 'FEATURE', null],
     ['GUIDED', 'SLICE', 'FEATURE'],
-    ['STANDARD', 'PROJECT', null],
-    ['STANDARD', 'ISSUE', null],
-    ['STANDARD', 'ISSUE', 'PROJECT'],
-    ['STANDARD', 'SUB_ISSUE', 'ISSUE'],
+    ['STANDARD', 'TASK', null],
+    ['STANDARD', 'SUBTASK', 'TASK'],
   ] as const)('%s allows a %s under %s', (mode, kind, parent) => {
     expect(kindError(mode, kind, parent)).toBeNull();
   });
 
   it.each([
-    ['GUIDED', 'ISSUE', null], // a Standard kind
+    ['GUIDED', 'TASK', null], // a Standard kind
     ['STANDARD', 'SLICE', null], // a Guided kind
     ['GUIDED', 'SLICE', null], // a slice needs a feature
     ['GUIDED', 'FEATURE', 'FEATURE'], // two levels only
     ['GUIDED', 'SLICE', 'SLICE'], // a slice can't have slices
-    ['STANDARD', 'PROJECT', 'PROJECT'],
-    ['STANDARD', 'SUB_ISSUE', null],
-    ['STANDARD', 'SUB_ISSUE', 'PROJECT'],
-    ['STANDARD', 'ISSUE', 'ISSUE'],
+    ['STANDARD', 'SUBTASK', null], // a subtask needs a task
+    ['STANDARD', 'TASK', 'TASK'], // a task can't be under anything
+    ['STANDARD', 'TASK', 'SUBTASK'],
+    ['STANDARD', 'SUBTASK', 'SUBTASK'],
   ] as const)('%s refuses a %s under %s', (mode, kind, parent) => {
     expect(kindError(mode, kind, parent)).toEqual(expect.any(String));
   });

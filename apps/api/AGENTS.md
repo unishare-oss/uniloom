@@ -14,7 +14,7 @@ apps/api/
 │   ├── modules/             # One folder per feature (see below)
 │   │   ├── health/          # health.routes.ts
 │   │   ├── users/           # /api/me, consent
-│   │   ├── workspaces/      # workspaces, mode presets, membership
+│   │   ├── projects/        # projects, mode presets, membership
 │   │   ├── items/           # items, states, blocked-by
 │   │   └── uniauth/         # uniAuth receivers and event tokens
 │   ├── auth/                # Better Auth (`auth`), session and consent middleware
@@ -84,7 +84,7 @@ Responses, errors and input, from `src/http.ts` (the same shape as Unishare's AP
 - Read JSON bodies with `parseBody(c, schema)` (zod, from `<feature>.schema.ts`); bad input
   answers 400 `invalid_input`. Read id path params with `idParam(c, name)`: a non-uuid is
   404, since nothing can have that id.
-- Answer 404, not 403, when the user isn't a member of the workspace, so ids don't reveal
+- Answer 404, not 403, when the user isn't a member of the project, so ids don't reveal
   what exists.
 
 ## Responsibilities

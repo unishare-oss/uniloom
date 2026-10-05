@@ -48,7 +48,7 @@ const features: {
     icon: LayoutGrid,
     tile: "bg-muted text-muted-foreground",
     title: "Standard or Guided",
-    text: "Run a workspace like Jira, or turn on the design-first flow. Bugs and chores can skip the design.",
+    text: "Run a project like Jira, or turn on the design-first flow. Bugs and chores can skip the design.",
   },
 ];
 

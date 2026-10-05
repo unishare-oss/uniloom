@@ -5,8 +5,8 @@ Date: 2026-10-03
 
 ## Context
 
-The two modes have different item kinds (Feature → Slice in Guided, Project → Issue →
-Sub-issue in Standard) and different states (nine fixed in Guided, custom in Standard).
+The two modes have different item kinds (Feature → Slice in Guided, Project → Task →
+Subtask in Standard) and different states (nine fixed in Guided, custom in Standard).
 A workspace can switch mode later and keep its data (MVP §3). The spec said "two levels
 only" but also listed three Standard levels.
 

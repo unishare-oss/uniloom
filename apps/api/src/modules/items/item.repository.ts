@@ -2,7 +2,7 @@ import { prisma } from '@/db/prisma.js';
 import type { ItemKind, Priority } from '@/generated/prisma/enums.js';
 
 const itemView = {
-  workspace: { select: { keyPrefix: true, mode: true } },
+  project: { select: { keyPrefix: true, mode: true } },
   state: { select: { id: true, name: true, key: true, category: true } },
   blockedBy: { select: { blockerId: true } },
 } as const;
@@ -25,10 +25,10 @@ export const findDeletedItem = (id: string) => {
   });
 };
 
-/** The workspace's trash: deleted items, most recently deleted first. */
-export const listDeletedItems = (workspaceId: string) => {
+/** The project's trash: deleted items, most recently deleted first. */
+export const listDeletedItems = (projectId: string) => {
   return prisma.item.findMany({
-    where: { workspaceId, deletedAt: { not: null } },
+    where: { projectId, deletedAt: { not: null } },
     orderBy: { deletedAt: 'desc' },
     include: itemView,
   });
@@ -42,17 +42,17 @@ export const restoreItem = (id: string) => {
   });
 };
 
-export const listItems = (workspaceId: string) => {
+export const listItems = (projectId: string) => {
   return prisma.item.findMany({
-    where: { workspaceId, deletedAt: null },
+    where: { projectId, deletedAt: null },
     orderBy: { number: 'asc' },
     include: itemView,
   });
 };
 
-/** Takes the workspace's next number and creates the item, in one transaction. */
+/** Takes the project's next number and creates the item, in one transaction. */
 export const createItem = (data: {
-  workspaceId: string;
+  projectId: string;
   kind: ItemKind;
   title: string;
   description?: string;
@@ -63,9 +63,9 @@ export const createItem = (data: {
   createdById: string;
 }) => {
   return prisma.$transaction(async (tx) => {
-    // The update locks the workspace row, so concurrent creates get distinct numbers.
-    const { nextItemNumber } = await tx.workspace.update({
-      where: { id: data.workspaceId },
+    // The update locks the project row, so concurrent creates get distinct numbers.
+    const { nextItemNumber } = await tx.project.update({
+      where: { id: data.projectId },
       data: { nextItemNumber: { increment: 1 } },
       select: { nextItemNumber: true },
     });
@@ -109,28 +109,28 @@ export const findState = (id: string) => {
 };
 
 /** The first column on the board: where a new item starts. */
-export const findFirstState = (workspaceId: string) => {
+export const findFirstState = (projectId: string) => {
   return prisma.state.findFirstOrThrow({
-    where: { workspaceId },
+    where: { projectId },
     orderBy: { position: 'asc' },
   });
 };
 
 /**
- * Adds "blocked waits on blocker" once `check` accepts the workspace's current links. The
- * workspace row is locked for the whole transaction, so two concurrent adds can't both
+ * Adds "blocked waits on blocker" once `check` accepts the project's current links. The
+ * project row is locked for the whole transaction, so two concurrent adds can't both
  * pass the check (e.g. A→B and B→A, which together would be a loop).
  */
 export const createLinkChecked = (
-  workspaceId: string,
+  projectId: string,
   blockedId: string,
   blockerId: string,
   check: (links: { blockedId: string; blockerId: string }[]) => void,
 ) => {
   return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT 1 FROM "workspace" WHERE "id" = ${workspaceId}::uuid FOR UPDATE`;
+    await tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
     const links = await tx.itemBlock.findMany({
-      where: { blocked: { workspaceId } },
+      where: { blocked: { projectId } },
       select: { blockedId: true, blockerId: true },
     });
     check(links);

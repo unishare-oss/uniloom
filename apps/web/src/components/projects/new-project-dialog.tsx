@@ -19,9 +19,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { successMessage } from "@/lib/api/fetcher";
 import {
-  getListWorkspacesQueryKey,
-  useCreateWorkspace,
-} from "@/lib/api/generated/workspaces/workspaces";
+  getListProjectsQueryKey,
+  useCreateProject,
+} from "@/lib/api/generated/projects/projects";
 
 const MODES = [
   {
@@ -34,27 +34,27 @@ const MODES = [
     value: "STANDARD",
     label: "Standard",
     description:
-      "Like Jira. Projects, issues and sub-issues, To Do → In Progress → Done, optional checklists.",
+      "Like Jira. Tasks and subtasks, To Do → In Progress → Done, optional checklists.",
   },
 ] as const;
 
-/** Name, key prefix and mode; opens the new workspace's board when it's created. */
-export const NewWorkspaceDialog = ({ trigger }: { trigger: ReactElement }) => {
+/** Name, key prefix and mode; opens the new project's board when it's created. */
+export const NewProjectDialog = ({ trigger }: { trigger: ReactElement }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [keyPrefix, setKeyPrefix] = useState("");
   const [mode, setMode] = useState<"GUIDED" | "STANDARD">("GUIDED");
-  const create = useCreateWorkspace({
+  const create = useCreateProject({
     mutation: {
       onSuccess: async (res) => {
         await queryClient.invalidateQueries({
-          queryKey: getListWorkspacesQueryKey(),
+          queryKey: getListProjectsQueryKey(),
         });
         setOpen(false);
         toast.success(successMessage(res));
-        router.push(`/w/${res.data.id}`);
+        router.push(`/p/${res.data.id}`);
       },
       onError: (err) => toast.error(err.message),
     },
@@ -72,14 +72,14 @@ export const NewWorkspaceDialog = ({ trigger }: { trigger: ReactElement }) => {
           }}
         >
           <DialogHeader>
-            <DialogTitle>New workspace</DialogTitle>
+            <DialogTitle>New project</DialogTitle>
             <DialogDescription>You&rsquo;ll be its owner.</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="workspace-name">Name</Label>
+            <Label htmlFor="project-name">Name</Label>
             <Input
-              id="workspace-name"
+              id="project-name"
               placeholder="e.g. Uniloom"
               required
               maxLength={100}
@@ -89,9 +89,9 @@ export const NewWorkspaceDialog = ({ trigger }: { trigger: ReactElement }) => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="workspace-key">Key prefix</Label>
+            <Label htmlFor="project-key">Key prefix</Label>
             <Input
-              id="workspace-key"
+              id="project-key"
               placeholder="UL"
               required
               pattern="[A-Z]{2,5}"
@@ -142,7 +142,7 @@ export const NewWorkspaceDialog = ({ trigger }: { trigger: ReactElement }) => {
               Cancel
             </Button>
             <Button type="submit" disabled={create.isPending}>
-              Create workspace
+              Create project
             </Button>
           </DialogFooter>
         </form>

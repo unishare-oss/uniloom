@@ -1,4 +1,4 @@
-import type { StateCategory, WorkspaceMode } from '@/generated/prisma/enums.js';
+import type { StateCategory, ProjectMode } from '@/generated/prisma/enums.js';
 
 interface PresetState {
   name: string;
@@ -6,9 +6,9 @@ interface PresetState {
   category: StateCategory;
 }
 
-/** What a new workspace gets for its mode: rule switches and states, in board order. */
+/** What a new project gets for its mode: rule switches and states, in board order. */
 export const PRESETS: Record<
-  WorkspaceMode,
+  ProjectMode,
   {
     switches: {
       checklistRequired: boolean;

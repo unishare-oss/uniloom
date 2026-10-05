@@ -4,7 +4,7 @@ import { requireConsent, requireSession } from '@/auth/middleware.js';
 import { itemRoutes } from '@/modules/items/item.routes.js';
 import { uniauthRoutes } from '@/modules/uniauth/uniauth.routes.js';
 import { userRoutes } from '@/modules/users/user.routes.js';
-import { workspaceRoutes } from '@/modules/workspaces/workspace.routes.js';
+import { projectRoutes } from '@/modules/projects/project.routes.js';
 
 /** Every route under /api, in one place. Order matters: see the comments. */
 export const apiRoutes = new Hono();
@@ -19,5 +19,5 @@ apiRoutes.route('/', userRoutes);
 
 // Signed in and consented: mount every feature router below.
 apiRoutes.use(requireConsent);
-apiRoutes.route('/workspaces', workspaceRoutes);
+apiRoutes.route('/projects', projectRoutes);
 apiRoutes.route('/', itemRoutes);

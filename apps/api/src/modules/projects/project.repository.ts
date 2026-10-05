@@ -1,20 +1,20 @@
 import { prisma } from '@/db/prisma.js';
 import { Prisma } from '@/generated/prisma/client.js';
-import type { WorkspaceMode } from '@/generated/prisma/enums.js';
-import { PRESETS } from './workspace.presets.js';
+import type { ProjectMode } from '@/generated/prisma/enums.js';
+import { PRESETS } from './project.presets.js';
 
 /**
- * The workspace, its mode's switches and states, and the creator as OWNER, together. null
+ * The project, its mode's switches and states, and the creator as OWNER, together. null
  * if the key prefix is taken (the unique index decides, so concurrent creates are safe).
  */
-export const createWorkspace = async (data: {
+export const createProject = async (data: {
   name: string;
   keyPrefix: string;
-  mode: WorkspaceMode;
+  mode: ProjectMode;
   ownerId: string;
 }) => {
   const preset = PRESETS[data.mode];
-  return prisma.workspace
+  return prisma.project
     .create({
       data: {
         name: data.name,
@@ -40,33 +40,33 @@ export const createWorkspace = async (data: {
     });
 };
 
-export const findWorkspacesForUser = (userId: string) => {
-  return prisma.workspace.findMany({
+export const findProjectsForUser = (userId: string) => {
+  return prisma.project.findMany({
     where: { members: { some: { userId } } },
     orderBy: { createdAt: 'asc' },
   });
 };
 
-/** The workspace, if `userId` is one of its members. */
-export const findWorkspaceForMember = (workspaceId: string, userId: string) => {
-  return prisma.workspace.findFirst({
-    where: { id: workspaceId, members: { some: { userId } } },
+/** The project, if `userId` is one of its members. */
+export const findProjectForMember = (projectId: string, userId: string) => {
+  return prisma.project.findFirst({
+    where: { id: projectId, members: { some: { userId } } },
   });
 };
 
-export const isMember = (workspaceId: string, userId: string) => {
+export const isMember = (projectId: string, userId: string) => {
   return prisma.member
-    .count({ where: { workspaceId, userId } })
+    .count({ where: { projectId, userId } })
     .then((count) => count > 0);
 };
 
-/** The workspace with its states in board order, if `userId` is one of its members. */
-export const findWorkspaceDetailForMember = (
-  workspaceId: string,
+/** The project with its states in board order, if `userId` is one of its members. */
+export const findProjectDetailForMember = (
+  projectId: string,
   userId: string,
 ) => {
-  return prisma.workspace.findFirst({
-    where: { id: workspaceId, members: { some: { userId } } },
+  return prisma.project.findFirst({
+    where: { id: projectId, members: { some: { userId } } },
     include: {
       states: {
         select: {
