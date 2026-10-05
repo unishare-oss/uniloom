@@ -1,3 +1,11 @@
+# [1.1.0](https://github.com/unishare-oss/uniloom/compare/v1.0.0...v1.1.0) (2026-10-05)
+
+
+### Features
+
+* **web:** item page ([a444653](https://github.com/unishare-oss/uniloom/commit/a44465359dbcb57e3e5148340153cec3730bc3fc))
+* **web:** landing page at /welcome and split-screen login ([677b041](https://github.com/unishare-oss/uniloom/commit/677b04174c4f3b57bb7f33fd04380025032d0830))
+
 # 1.0.0 (2026-10-05)
 
 
