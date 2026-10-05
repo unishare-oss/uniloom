@@ -44,6 +44,10 @@ contracts only when both workspaces actually need them.
   Lint enforces it (`func-style`, `prefer-arrow-callback`).
 - Make code reusable only when it repeats: once something is written the same way three
   times, extract a shared function or component. Not before.
+- Don't write your own functions that take another function as a parameter (callbacks,
+  `withX(fn)` wrappers, higher-order helpers) unless I explicitly ask. Write the steps
+  in order in one function, so it reads top to bottom. Passing a callback to a library
+  (`.map`, event handlers, `prisma.$transaction(async (tx) => ...)`) is fine.
 - `MVP.md` is the spec. Build in the order of its §14 and do not pull later slices
   forward.
 - The API owns Uniloom data, authorization and the workflow rules. The website and the
