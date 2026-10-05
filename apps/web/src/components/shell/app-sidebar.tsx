@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   SquarePlus,
   Trash2,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
@@ -104,7 +105,10 @@ export const AppSidebar = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   className={linkClass}
-                  isActive={!pathname.endsWith("/trash")}
+                  isActive={
+                    !pathname.endsWith("/trash") &&
+                    !pathname.endsWith("/members")
+                  }
                   render={<Link href={`/p/${current.id}`} />}
                 >
                   <Columns3 />
@@ -119,6 +123,16 @@ export const AppSidebar = () => {
                 >
                   <Trash2 />
                   <span>Trash</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className={linkClass}
+                  isActive={pathname.endsWith("/members")}
+                  render={<Link href={`/p/${current.id}/members`} />}
+                >
+                  <Users />
+                  <span>Members</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
