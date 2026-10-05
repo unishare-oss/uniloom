@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pencil, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, Pencil, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -330,11 +330,17 @@ export const ItemDetail = ({
           />
 
           {children.length > 0 && (
-            <section aria-labelledby="children" className="flex flex-col gap-3">
-              <h2 id="children" className="font-semibold">
-                {item.kind === "FEATURE" ? "Slices" : "Subtasks"}
-              </h2>
-              <div className="overflow-hidden rounded-lg border bg-card">
+            <details open className="group">
+              <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 ease-out group-open:rotate-90" />
+                <h2 id="children" className="font-semibold">
+                  {item.kind === "FEATURE" ? "Slices" : "Subtasks"}
+                </h2>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {children.length}
+                </span>
+              </summary>
+              <div className="mt-3 overflow-hidden rounded-lg border bg-card">
                 {children.map((child) => (
                   <Link
                     key={child.id}
@@ -355,14 +361,20 @@ export const ItemDetail = ({
                   </Link>
                 ))}
               </div>
-            </section>
+            </details>
           )}
 
-          <section aria-labelledby="blocked-by" className="flex flex-col gap-3">
-            <h2 id="blocked-by" className="font-semibold">
-              Blocked by
-            </h2>
-            <div className="rounded-lg border bg-card">
+          <details open className="group">
+            <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 ease-out group-open:rotate-90" />
+              <h2 id="blocked-by" className="font-semibold">
+                Blocked by
+              </h2>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {item.blockedBy.length}
+              </span>
+            </summary>
+            <div className="mt-3 rounded-lg border bg-card">
               {item.blockedBy.map((blockerId) => {
                 const blocker = byId.get(blockerId);
                 return (
@@ -436,7 +448,7 @@ export const ItemDetail = ({
                 </Select>
               </div>
             </div>
-          </section>
+          </details>
         </div>
 
         <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-6">
