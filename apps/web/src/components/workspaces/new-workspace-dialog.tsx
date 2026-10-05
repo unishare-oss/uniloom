@@ -28,7 +28,7 @@ const MODES = [
     value: "GUIDED",
     label: "Guided",
     description:
-      "Design first. Features and slices, fixed states, a 3 to 6 item done-when checklist, and an approved design before Ready.",
+      "Design first. Features and slices, fixed states, a 3 to 6 item checklist, and an approved design before Ready.",
   },
   {
     value: "STANDARD",
