@@ -1,12 +1,16 @@
 import { Role } from '@/generated/prisma/enums.js';
 import { apiError } from '@/http.js';
+import { prisma } from '@/db/prisma.js';
+import type { Prisma } from '@/generated/prisma/client.js';
 import {
-  deleteKeepingOwner,
+  countOwners,
+  deleteMember,
   findMember,
   findMembers,
   findUserByEmail,
   insertMember,
-  updateRoleKeepingOwner,
+  lockProject,
+  updateRole,
 } from './member.repository.js';
 
 /** Every role. */
@@ -86,6 +90,30 @@ export const addMember = async (
   return view(member);
 };
 
+/**
+ * 404 if the target isn't a member, 409 `last_owner` if changing them to `newRole` (or
+ * removing them, when null) would leave no owner. Call it with the project locked.
+ */
+const checkKeepsOwner = async (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  targetId: string,
+  newRole: Role | null,
+) => {
+  const target = await findMember(projectId, targetId, tx);
+  if (!target) throw apiError(404, 'not_found', 'Member not found');
+  if (
+    target.role === 'OWNER' &&
+    newRole !== 'OWNER' &&
+    (await countOwners(tx, projectId)) <= 1
+  )
+    throw apiError(
+      409,
+      'last_owner',
+      'A project needs at least one owner. Make another member an owner first.',
+    );
+};
+
 /** Owner only. The last owner can't be demoted. */
 export const changeRole = async (
   projectId: string,
@@ -94,7 +122,13 @@ export const changeRole = async (
   role: Role,
 ) => {
   await requireRole(projectId, userId, ['OWNER']);
-  return view(await updateRoleKeepingOwner(projectId, targetId, role));
+  // Locked, so two owners demoting each other at once can't both pass.
+  const member = await prisma.$transaction(async (tx) => {
+    await lockProject(tx, projectId);
+    await checkKeepsOwner(tx, projectId, targetId, role);
+    return updateRole(tx, projectId, targetId, role);
+  });
+  return view(member);
 };
 
 /** An owner removes anyone; anyone removes themselves (leaves). */
@@ -104,5 +138,9 @@ export const removeMember = async (
   targetId: string,
 ) => {
   await requireRole(projectId, userId, userId === targetId ? ROLES : ['OWNER']);
-  await deleteKeepingOwner(projectId, targetId);
+  await prisma.$transaction(async (tx) => {
+    await lockProject(tx, projectId);
+    await checkKeepsOwner(tx, projectId, targetId, null);
+    await deleteMember(tx, projectId, targetId);
+  });
 };

@@ -1,4 +1,5 @@
 import { prisma } from '@/db/prisma.js';
+import type { Prisma } from '@/generated/prisma/client.js';
 import type { ItemKind, Priority } from '@/generated/prisma/enums.js';
 
 const itemView = {
@@ -117,25 +118,31 @@ export const findFirstState = (projectId: string) => {
 };
 
 /**
- * Adds "blocked waits on blocker" once `check` accepts the project's current links. The
- * project row is locked for the whole transaction, so two concurrent adds can't both
- * pass the check (e.g. A→B and B→A, which together would be a loop).
+ * Locks the project row until the transaction ends, so concurrent blocked-by adds run one
+ * at a time. Call it first, before reading the links you check.
  */
-export const createLinkChecked = (
+export const lockProject = (
+  tx: Prisma.TransactionClient,
   projectId: string,
+) => {
+  return tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
+};
+
+/** Every blocked-by link in the project. */
+export const findLinks = (tx: Prisma.TransactionClient, projectId: string) => {
+  return tx.itemBlock.findMany({
+    where: { blocked: { projectId } },
+    select: { blockedId: true, blockerId: true },
+  });
+};
+
+/** Records that `blockedId` waits on `blockerId`. */
+export const insertLink = (
+  tx: Prisma.TransactionClient,
   blockedId: string,
   blockerId: string,
-  check: (links: { blockedId: string; blockerId: string }[]) => void,
 ) => {
-  return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
-    const links = await tx.itemBlock.findMany({
-      where: { blocked: { projectId } },
-      select: { blockedId: true, blockerId: true },
-    });
-    check(links);
-    await tx.itemBlock.create({ data: { blockedId, blockerId } });
-  });
+  return tx.itemBlock.create({ data: { blockedId, blockerId } });
 };
 
 export const deleteLink = (blockedId: string, blockerId: string) => {

@@ -1,3 +1,4 @@
+import { prisma } from '@/db/prisma.js';
 import { apiError } from '@/http.js';
 import type {
   ItemKind,
@@ -12,15 +13,17 @@ import {
 import {
   countChildren,
   createItem,
-  createLinkChecked,
   deleteItem,
   deleteLink,
   findFirstState,
   findDeletedItem,
   findItem,
+  findLinks,
   findState,
+  insertLink,
   listDeletedItems,
   listItems,
+  lockProject,
   restoreItem,
   updateItem,
 } from './item.repository.js';
@@ -281,7 +284,10 @@ export const addBlocker = async (
       'invalid_blocker',
       'The blocker must be an item in this project',
     );
-  await createLinkChecked(item.projectId, id, blockerId, (links) => {
+  // Locked, so two adds at once can't both pass (A→B and B→A together are a loop).
+  await prisma.$transaction(async (tx) => {
+    await lockProject(tx, item.projectId);
+    const links = await findLinks(tx, item.projectId);
     if (
       links.some(
         (link) => link.blockedId === id && link.blockerId === blockerId,
@@ -294,6 +300,7 @@ export const addBlocker = async (
         'blocking_cycle',
         'That would make the items wait on each other',
       );
+    await insertLink(tx, id, blockerId);
   });
   return getItem(id, userId);
 };
