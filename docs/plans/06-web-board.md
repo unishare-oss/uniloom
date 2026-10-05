@@ -1,6 +1,6 @@
 # 06: Web pages for workspaces and items
 
-Status: In Review
+Status: Done
 
 ## Scope
 

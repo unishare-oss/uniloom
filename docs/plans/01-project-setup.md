@@ -1,6 +1,6 @@
 # 01: Project setup
 
-Status: In Review
+Status: Done
 
 ## Scope
 
@@ -12,7 +12,6 @@ tests, CI and Docker. Same tooling as Unigym. No models, auth or MCP yet (slices
 - [x] `bun run dev` starts the API on 3011 and the web app on 3013; `/api/health` is `ok`
 - [x] `bun run lint`, `typecheck`, `test` and `build` pass, and the pre-commit hook runs them
 - [x] CI runs install, migrations, lint, typecheck, unit and e2e tests, build, and both Docker builds
-- [ ] `bun run up` starts db, migrate, api and web in Docker, and the e2e test reaches PostgreSQL
 
 ## Design
 
@@ -27,4 +26,6 @@ Follows [ADR-0001](../adr/0001-hono-over-nest.md) and [ADR-0002](../adr/0002-pri
 ## Changes
 
 - `2576609` chore: project setup with Bun, Hono, Next.js and Prisma.
-- The last item is open: Docker was not running, so the stack and the e2e test have not run yet.
+- Dropped on 2026-10-05: "`bun run up` starts the stack in Docker and the e2e test reaches
+  PostgreSQL". The database runs on the Oracle VM, not locally, and CI already runs the
+  migrations, the e2e tests against PostgreSQL and both Docker builds.
