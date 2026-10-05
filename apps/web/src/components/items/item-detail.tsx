@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Pencil, X } from "lucide-react";
+import { ArrowLeft, Pencil, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -181,7 +181,6 @@ export const ItemDetail = ({
   const { data: items, error: itemsError } = useListItems(projectId, {
     query: { select: (r) => r.data },
   });
-  const [blockerKey, setBlockerKey] = useState("");
   // An item opened under another project's URL (the API already checked you may see
   // it): go to its own project, so its states, parents and sidebar match.
   const elsewhere = item && item.projectId !== projectId;
@@ -201,10 +200,7 @@ export const ItemDetail = ({
   const update = useUpdateItem({ mutation: { onSuccess: refresh, onError } });
   const addBlocker = useAddBlocker({
     mutation: {
-      onSuccess: async () => {
-        setBlockerKey("");
-        await refresh();
-      },
+      onSuccess: refresh,
       onError,
     },
   });
@@ -280,6 +276,11 @@ export const ItemDetail = ({
       .filter((row) => row.id !== item.id)
       .map((row) => ({ value: row.id, label: `${row.key} · ${row.title}` })),
   ];
+  const children = items.filter((row) => row.parentId === item.id);
+  // Every other item it doesn't already wait on; the API still refuses loops.
+  const blockerOptions = items
+    .filter((row) => row.id !== item.id && !item.blockedBy.includes(row.id))
+    .map((row) => ({ value: row.id, label: `${row.key} · ${row.title}` }));
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-7">
@@ -289,8 +290,9 @@ export const ItemDetail = ({
       >
         <Link
           href={`/p/${projectId}`}
-          className="rounded-sm transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex items-center gap-1.5 rounded-sm transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
+          <ArrowLeft className="size-4" />
           Board
         </Link>
         <span aria-hidden>/</span>
@@ -326,6 +328,35 @@ export const ItemDetail = ({
             saving={update.isPending}
             onSave={(description) => save({ description })}
           />
+
+          {children.length > 0 && (
+            <section aria-labelledby="children" className="flex flex-col gap-3">
+              <h2 id="children" className="font-semibold">
+                {item.kind === "FEATURE" ? "Slices" : "Subtasks"}
+              </h2>
+              <div className="overflow-hidden rounded-lg border bg-card">
+                {children.map((child) => (
+                  <Link
+                    key={child.id}
+                    href={`/p/${projectId}/items/${child.id}`}
+                    className="flex items-center gap-3 border-b px-3.5 py-2.5 transition-colors duration-150 ease-out outline-none last:border-b-0 hover:bg-muted/50 focus-visible:bg-muted/50"
+                  >
+                    <KindIcon kind={child.kind} />
+                    <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                      {child.key}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {child.title}
+                    </span>
+                    <StateLozenge
+                      name={child.state.name}
+                      category={category(child.state.id)}
+                    />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section aria-labelledby="blocked-by" className="flex flex-col gap-3">
             <h2 id="blocked-by" className="font-semibold">
@@ -370,36 +401,40 @@ export const ItemDetail = ({
                   </div>
                 );
               })}
-              <form
-                className="flex items-center gap-2 p-2.5"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const key = blockerKey.trim().toUpperCase();
-                  const blocker = items.find((row) => row.key === key);
-                  if (!blocker)
-                    return void toast.error(`No item ${key} in this project`);
-                  addBlocker.mutate({
-                    id: item.id,
-                    data: { blockerId: blocker.id },
-                  });
-                }}
-              >
-                <Input
-                  aria-label="Item this one waits on"
-                  placeholder={`Wait on another item, e.g. ${project.keyPrefix}-1`}
-                  value={blockerKey}
-                  onChange={(event) => setBlockerKey(event.target.value)}
-                  className="h-9"
-                />
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="h-9"
-                  disabled={!blockerKey.trim() || addBlocker.isPending}
+              <div className="p-2.5">
+                <Select
+                  value={null}
+                  onValueChange={(blockerId) => {
+                    if (blockerId)
+                      addBlocker.mutate({
+                        id: item.id,
+                        data: { blockerId: blockerId as string },
+                      });
+                  }}
+                  items={blockerOptions}
+                  disabled={!blockerOptions.length || addBlocker.isPending}
                 >
-                  Add
-                </Button>
-              </form>
+                  <SelectTrigger
+                    aria-label="Item this one waits on"
+                    className="h-9 w-full"
+                  >
+                    <SelectValue
+                      placeholder={
+                        blockerOptions.length
+                          ? "Wait on another item"
+                          : "No other items to wait on"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {blockerOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </section>
         </div>
