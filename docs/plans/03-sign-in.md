@@ -1,6 +1,6 @@
 # 03: Sign-in with uniAuth
 
-Status: In Progress
+Status: In Review
 
 ## Scope
 
@@ -48,7 +48,7 @@ splitting API from web would leave a sign-in that can't be used.
 
 ## Done when
 
-- [ ] Signing in at `http://127.0.0.1:3013/login` against the local uniAuth creates a
+- [x] Signing in at `http://127.0.0.1:3013/login` against the local uniAuth creates a
       `uniloom.session_token` cookie and `/api/me` returns the person; signing out ends it
 - [x] e2e tests with a mock uniAuth cover the sign-in flow, no email/password sign-up, the
       7-day sliding session, 401 on a missing/expired/deleted session, and the consent gate
@@ -58,7 +58,7 @@ splitting API from web would leave a sign-in that can't be used.
 - [x] The event-token verifier rejects another key, wrong issuer or audience, a `nonce`, a
       second event, a missing event and garbage (unit tests)
 - [x] The uniAuth PR (registry entry + `UNILOOM_ORIGIN`) is open
-- [ ] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included
+- [x] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included
 
 ## Design
 
@@ -158,4 +158,17 @@ sequenceDiagram
 
 ## Changes
 
-Filled in at the end.
+Commits: `8effda4` (API), `856a59e` (web), `dd5abf8` (local sign-in docs). Merged in PR #4.
+
+- API: Better Auth with uniAuth in `src/auth/auth.ts`, the session and consent middleware
+  in `src/auth/middleware.ts`, one migration for `session`, `account`, `verification`
+  and `consentGivenAt`. The receivers live in `modules/uniauth/*`, with the event-token
+  verifier in `event-token.ts`. `GET /api/me` and consent live in `modules/users/*`.
+- Tests: a mock uniAuth (`test/support/mock-uniauth.ts`) drives the e2e sign-in and
+  receiver tests; `event-token.spec.ts` covers the verifier.
+- Web: `/login`, `/auth/return`, `/consent`, `/profile`, `/terms`, `/privacy`,
+  `AuthBootstrap` for the silent check, and `proxy.ts` for the redirect to `/login`.
+
+Planned vs actual: local sign-in uses the https uniAuth on the VM instead of a local
+uniAuth on `:3002`. The `lib/api.ts` fetch helper was later replaced by the generated
+client (plan 05), and the page components moved to `src/components/<feature>/` (plan 06).
