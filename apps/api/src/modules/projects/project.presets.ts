@@ -1,10 +1,5 @@
-import type { StateCategory, ProjectMode } from '@/generated/prisma/enums.js';
-
-interface PresetState {
-  name: string;
-  key: string | null;
-  category: StateCategory;
-}
+import type { ProjectMode } from '@/generated/prisma/enums.js';
+import type { PresetState } from './project.types.js';
 
 /** What a new project gets for its mode: rule switches and states, in board order. */
 export const PRESETS: Record<

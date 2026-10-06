@@ -13,6 +13,7 @@ import {
   unassignAll,
   updateRole,
 } from './member.repository.js';
+import { view } from './member.utils.js';
 
 /** Every role. */
 export const ROLES: Role[] = Object.values(Role);
@@ -42,20 +43,6 @@ export const requireRole = async (
     throw apiError(403, 'forbidden', 'Your role cannot do this');
   return member;
 };
-
-const view = (member: {
-  userId: string;
-  role: Role;
-  createdAt: Date;
-  user: { name: string; email: string; image: string | null };
-}) => ({
-  userId: member.userId,
-  name: member.user.name,
-  email: member.user.email,
-  image: member.user.image,
-  role: member.role,
-  createdAt: member.createdAt,
-});
 
 /** Every member, owners first. Any member may ask. */
 export const listMembers = async (projectId: string, userId: string) => {
