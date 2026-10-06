@@ -2,18 +2,25 @@ import type { Context } from 'hono';
 import { idParam, apiSuccess, parseBody } from '@/http.js';
 import {
   addBlockerSchema,
+  addChecklistEntrySchema,
   createItemSchema,
+  reorderChecklistSchema,
+  updateChecklistEntrySchema,
   updateItemSchema,
 } from './item.schema.js';
 import {
   addBlocker,
+  addChecklistEntry,
   createProjectItem,
   getItem,
   listProjectItems,
   removeBlocker,
   listProjectDeletedItems,
+  removeChecklistEntry,
   removeItem,
+  reorderChecklist,
   restoreProjectItem,
+  updateChecklistEntry,
   updateProjectItem,
 } from './item.service.js';
 
@@ -67,4 +74,45 @@ export const postBlocker = async (c: Context) => {
 export const deleteBlocker = async (c: Context) => {
   await removeBlocker(idParam(c, 'id'), c.var.user.id, idParam(c, 'blockerId'));
   return apiSuccess(c, null, 'Blocker removed');
+};
+
+export const postChecklistEntry = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const input = await parseBody(c, addChecklistEntrySchema);
+  return apiSuccess(
+    c,
+    await addChecklistEntry(id, c.var.user.id, input),
+    'Checklist entry added',
+    201,
+  );
+};
+
+export const patchChecklistEntry = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const entryId = idParam(c, 'entryId');
+  const input = await parseBody(c, updateChecklistEntrySchema);
+  return apiSuccess(
+    c,
+    await updateChecklistEntry(id, entryId, c.var.user.id, input),
+    'Checklist entry updated',
+  );
+};
+
+export const deleteChecklistEntry = async (c: Context) => {
+  await removeChecklistEntry(
+    idParam(c, 'id'),
+    idParam(c, 'entryId'),
+    c.var.user.id,
+  );
+  return apiSuccess(c, null, 'Checklist entry deleted');
+};
+
+export const putChecklistOrder = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const { ids } = await parseBody(c, reorderChecklistSchema);
+  return apiSuccess(
+    c,
+    await reorderChecklist(id, c.var.user.id, ids),
+    'Checklist reordered',
+  );
 };

@@ -877,6 +877,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -901,6 +938,7 @@
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1160,6 +1198,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1184,6 +1259,7 @@
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1382,6 +1458,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1406,6 +1519,7 @@
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1577,6 +1691,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1601,6 +1752,7 @@
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1762,6 +1914,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1786,6 +1975,7 @@
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1826,6 +2016,320 @@
         "responses": {
           "200": {
             "description": "Remove a \"waits on\" link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/checklist": {
+      "post": {
+        "operationId": "addChecklistEntry",
+        "tags": [
+          "items"
+        ],
+        "summary": "Add a done-when entry at the end of the checklist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Add a done-when entry at the end of the checklist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "done": {
+                      "type": "boolean"
+                    },
+                    "evidence": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text",
+                    "done",
+                    "evidence",
+                    "position"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/checklist/order": {
+      "put": {
+        "operationId": "reorderChecklist",
+        "tags": [
+          "items"
+        ],
+        "summary": "Set the checklist order from a list of every entry id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "ids"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Set the checklist order from a list of every entry id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "done": {
+                        "type": "boolean"
+                      },
+                      "evidence": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "position": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "text",
+                      "done",
+                      "evidence",
+                      "position"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/checklist/{entryId}": {
+      "patch": {
+        "operationId": "updateChecklistEntry",
+        "tags": [
+          "items"
+        ],
+        "summary": "Edit an entry's text, tick or untick it, set its evidence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "done": {
+                    "type": "boolean"
+                  },
+                  "evidence": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edit an entry's text, tick or untick it, set its evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "done": {
+                      "type": "boolean"
+                    },
+                    "evidence": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text",
+                    "done",
+                    "evidence",
+                    "position"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteChecklistEntry",
+        "tags": [
+          "items"
+        ],
+        "summary": "Delete an entry and close the gap",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete an entry and close the gap",
             "content": {
               "application/json": {
                 "schema": {
