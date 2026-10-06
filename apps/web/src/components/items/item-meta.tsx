@@ -1,6 +1,5 @@
 import {
   CircleDot,
-  CircleUserRound,
   CornerDownRight,
   GitCommitHorizontal,
   Grid3x3,
@@ -107,20 +106,6 @@ export const StateLozenge = ({
     >
       {name}
     </span>
-  );
-};
-
-/** Who the item is assigned to; members come later (§14 step 6), so only yes or no. */
-export const AssigneeIcon = ({ assigned }: { assigned: boolean }) => {
-  return (
-    <CircleUserRound
-      role="img"
-      aria-label={assigned ? "Assigned" : "Unassigned"}
-      className={cn(
-        "size-5 shrink-0",
-        assigned ? "text-primary" : "text-muted-foreground/60",
-      )}
-    />
   );
 };
 
