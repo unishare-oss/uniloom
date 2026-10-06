@@ -2,17 +2,7 @@ import { Role } from '@/generated/prisma/enums.js';
 import { apiError } from '@/http.js';
 import { prisma } from '@/db/prisma.js';
 import type { Prisma } from '@/generated/prisma/client.js';
-import {
-  countOwners,
-  deleteMember,
-  findMember,
-  findMembers,
-  findUserByEmail,
-  insertMember,
-  lockProject,
-  unassignAll,
-  updateRole,
-} from './member.repository.js';
+import * as memberRepo from './member.repository.js';
 import { view } from './member.utils.js';
 
 /** Every role. */
@@ -37,7 +27,7 @@ export const requireRole = async (
   userId: string,
   roles: Role[],
 ) => {
-  const member = await findMember(projectId, userId);
+  const member = await memberRepo.findMember(projectId, userId);
   if (!member) throw apiError(404, 'not_found', 'Project not found');
   if (!roles.includes(member.role))
     throw apiError(403, 'forbidden', 'Your role cannot do this');
@@ -47,7 +37,7 @@ export const requireRole = async (
 /** Every member, owners first. Any member may ask. */
 export const listMembers = async (projectId: string, userId: string) => {
   await requireRole(projectId, userId, ROLES);
-  const members = await findMembers(projectId);
+  const members = await memberRepo.findMembers(projectId);
   const owners = members.filter((m) => m.role === 'OWNER');
   const others = members.filter((m) => m.role !== 'OWNER');
   return [...owners, ...others].map(view);
@@ -65,14 +55,14 @@ export const addMember = async (
   const caller = await requireRole(projectId, userId, CREATORS);
   if (!assignableRoles(caller.role).includes(input.role))
     throw apiError(403, 'forbidden', 'Your role cannot give that role');
-  const user = await findUserByEmail(input.email);
+  const user = await memberRepo.findUserByEmail(input.email);
   if (!user)
     throw apiError(
       404,
       'user_not_found',
       'No Uniloom account has that email yet',
     );
-  const member = await insertMember(projectId, user.id, input.role);
+  const member = await memberRepo.insertMember(projectId, user.id, input.role);
   if (!member)
     throw apiError(409, 'already_member', 'They are already a member');
   return view(member);
@@ -88,12 +78,12 @@ const checkKeepsOwner = async (
   targetId: string,
   newRole: Role | null,
 ) => {
-  const target = await findMember(projectId, targetId, tx);
+  const target = await memberRepo.findMember(projectId, targetId, tx);
   if (!target) throw apiError(404, 'not_found', 'Member not found');
   if (
     target.role === 'OWNER' &&
     newRole !== 'OWNER' &&
-    (await countOwners(tx, projectId)) <= 1
+    (await memberRepo.countOwners(tx, projectId)) <= 1
   )
     throw apiError(
       409,
@@ -112,9 +102,9 @@ export const changeRole = async (
   await requireRole(projectId, userId, ['OWNER']);
   // Locked, so two owners demoting each other at once can't both pass.
   const member = await prisma.$transaction(async (tx) => {
-    await lockProject(tx, projectId);
+    await memberRepo.lockProject(tx, projectId);
     await checkKeepsOwner(tx, projectId, targetId, role);
-    return updateRole(tx, projectId, targetId, role);
+    return memberRepo.updateRole(tx, projectId, targetId, role);
   });
   return view(member);
 };
@@ -130,9 +120,9 @@ export const removeMember = async (
 ) => {
   await requireRole(projectId, userId, userId === targetId ? ROLES : ['OWNER']);
   await prisma.$transaction(async (tx) => {
-    await lockProject(tx, projectId);
+    await memberRepo.lockProject(tx, projectId);
     await checkKeepsOwner(tx, projectId, targetId, null);
-    await deleteMember(tx, projectId, targetId);
-    await unassignAll(tx, projectId, targetId);
+    await memberRepo.deleteMember(tx, projectId, targetId);
+    await memberRepo.unassignAll(tx, projectId, targetId);
   });
 };

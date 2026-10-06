@@ -7,20 +7,17 @@ import {
   ROLES,
 } from '@/modules/members/member.service.js';
 import { mayMoveToDone } from '@/modules/items/item.rules.js';
-import {
-  createProject as insertProject,
-  findProjectDetailForMember,
-  findProjectForMember,
-  findProjectsForUser,
-  isMember,
-} from './project.repository.js';
+import * as projectRepo from './project.repository.js';
 
 /** Creates a project in a mode; the creator becomes its OWNER. */
 export const createProject = async (
   userId: string,
   input: { name: string; keyPrefix: string; mode: ProjectMode },
 ) => {
-  const project = await insertProject({ ...input, ownerId: userId });
+  const project = await projectRepo.createProject({
+    ...input,
+    ownerId: userId,
+  });
   if (!project)
     throw apiError(
       409,
@@ -31,7 +28,7 @@ export const createProject = async (
 };
 
 export const listProjects = (userId: string) => {
-  return findProjectsForUser(userId);
+  return projectRepo.findProjectsForUser(userId);
 };
 
 /**
@@ -40,7 +37,10 @@ export const listProjects = (userId: string) => {
  */
 export const getProject = async (projectId: string, userId: string) => {
   const { role } = await requireRole(projectId, userId, ROLES);
-  const project = await findProjectDetailForMember(projectId, userId);
+  const project = await projectRepo.findProjectDetailForMember(
+    projectId,
+    userId,
+  );
   if (!project) throw apiError(404, 'not_found', 'Project not found');
   return {
     ...project,
@@ -55,12 +55,12 @@ export const getProject = async (projectId: string, userId: string) => {
 
 /** The project, or 404 when it doesn't exist or the user isn't a member. */
 export const requireMember = async (projectId: string, userId: string) => {
-  const project = await findProjectForMember(projectId, userId);
+  const project = await projectRepo.findProjectForMember(projectId, userId);
   if (!project) throw apiError(404, 'not_found', 'Project not found');
   return project;
 };
 
 /** Whether `userId` belongs to the project, e.g. before assigning them an item. */
 export const isProjectMember = (projectId: string, userId: string) => {
-  return isMember(projectId, userId);
+  return projectRepo.isMember(projectId, userId);
 };
