@@ -85,7 +85,7 @@ People sign in with **uniAuth**. Access to a project is by invitation.
 | ----------- | ---------------------------------------------------------------------------------------------------------------- |
 | **Owner**   | Everything: change roles, remove members, key prefix, labels, mode and switches, delete the project              |
 | **Manager** | Create and delete tickets and subtasks, add members (as Member only), approve designs, accept ADRs, move to Done |
-| **Member**  | Read, comment, move tickets across states and edit them. Works through their own agent                           |
+| **Member**  | Read, comment, edit tickets and move tickets assigned to them (not to Done). Works through their own agent       |
 
 - **Each person's agent acts as that person.** Every user creates their own access token for their agent. The site shows "Mya's agent created UG-12".
 - **Approver ≠ author** (Guided): a design written by Mya's agent is approved by a different manager, unless the switch is off.

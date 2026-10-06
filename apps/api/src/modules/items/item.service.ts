@@ -17,17 +17,29 @@ import {
   requireMember,
 } from '@/modules/projects/project.service.js';
 import {
+  checklistError,
+  featureDone,
+  kindError,
+  mayAssign,
+  mayMove,
+  mayMoveToDone,
+  wouldCreateCycle,
+} from './item.rules.js';
+import {
   countChildren,
   createItem,
   deleteEntry,
   deleteItem,
   deleteLink,
   findChecklist,
+  findChildren,
   findEntry,
+  findFirstDoneState,
   findFirstState,
   findDeletedItem,
   findItem,
   findLinks,
+  findParent,
   findState,
   insertEntry,
   insertLink,
@@ -43,70 +55,6 @@ import {
 
 // ---------------------------------------------------------------------------
 // Rules
-
-/** For each kind a mode allows: the kinds its parent may have (null = no parent). */
-const ALLOWED_PARENTS: Record<
-  ProjectMode,
-  Partial<Record<ItemKind, (ItemKind | null)[]>>
-> = {
-  // Two levels: a slice belongs to a feature.
-  GUIDED: { FEATURE: [null], SLICE: ['FEATURE'] },
-  // Two levels: a subtask belongs to a task.
-  STANDARD: { TASK: [null], SUBTASK: ['TASK'] },
-};
-
-/** Why `kind` under `parentKind` isn't allowed in `mode`, or null when it is. */
-export const kindError = (
-  mode: ProjectMode,
-  kind: ItemKind,
-  parentKind: ItemKind | null,
-) => {
-  const parents = ALLOWED_PARENTS[mode][kind];
-  if (!parents) return `${mode} projects have no ${kind} items`;
-  if (!parents.includes(parentKind))
-    return parentKind
-      ? `a ${kind} can't be under a ${parentKind}`
-      : `a ${kind} needs a parent (${parents.filter(Boolean).join(' or ')})`;
-  return null;
-};
-
-/**
- * Whether `role` may change a ticket's assignee from `from` to `to`. Owners and managers
- * may set anyone; a member may only claim a free ticket or unclaim their own.
- */
-export const mayAssign = (
-  role: Role,
-  userId: string,
-  from: string | null,
-  to: string | null,
-) => {
-  if (CREATORS.includes(role)) return true;
-  const claim = from === null && to === userId;
-  const unclaim = from === userId && to === null;
-  return claim || unclaim;
-};
-
-/**
- * Whether adding "blocked waits on blocker" closes a loop: following the existing
- * "waits on" links from `blocker` reaches `blocked`.
- */
-export const wouldCreateCycle = (
-  links: { blockedId: string; blockerId: string }[],
-  blockedId: string,
-  blockerId: string,
-) => {
-  const seen = new Set<string>();
-  const queue = [blockerId];
-  while (queue.length > 0) {
-    const current = queue.pop()!;
-    if (current === blockedId) return true;
-    if (seen.has(current)) continue;
-    seen.add(current);
-    for (const link of links)
-      if (link.blockedId === current) queue.push(link.blockerId);
-  }
-  return false;
-};
 
 // ---------------------------------------------------------------------------
 // Views
@@ -127,7 +75,7 @@ const toEntry = (row: EntryRow) => {
 };
 
 /** One item, as the API returns it. */
-const toItem = (row: ItemRow) => {
+const toItem = (row: ItemRow, role: Role, userId: string) => {
   return {
     id: row.id,
     key: `${row.project.keyPrefix}-${row.number}`,
@@ -138,6 +86,7 @@ const toItem = (row: ItemRow) => {
     state: row.state,
     priority: row.priority,
     assigneeId: row.assigneeId,
+    canMove: mayMove(role, userId, row.assigneeId),
     parentId: row.parentId,
     createdById: row.createdById,
     blockedBy: row.blockedBy.map((link) => link.blockerId),
@@ -148,7 +97,7 @@ const toItem = (row: ItemRow) => {
 };
 
 /** A slim row for lists. */
-const toListRow = (row: ItemRow) => {
+const toListRow = (row: ItemRow, role: Role, userId: string) => {
   return {
     id: row.id,
     key: `${row.project.keyPrefix}-${row.number}`,
@@ -157,6 +106,7 @@ const toListRow = (row: ItemRow) => {
     state: { id: row.state.id, name: row.state.name },
     priority: row.priority,
     assigneeId: row.assigneeId,
+    canMove: mayMove(role, userId, row.assigneeId),
     parentId: row.parentId,
   };
 };
@@ -164,12 +114,12 @@ const toListRow = (row: ItemRow) => {
 // ---------------------------------------------------------------------------
 // Workflows
 
-/** The item, or 404 when it doesn't exist or the user isn't in its project. */
+/** The item and the user's role, or 404 when it doesn't exist or they aren't in its project. */
 const loadItem = async (id: string, userId: string) => {
   const item = await findItem(id);
   if (!item) throw apiError(404, 'not_found', 'Item not found');
-  await requireMember(item.projectId, userId);
-  return item;
+  const { role } = await requireRole(item.projectId, userId, ROLES);
+  return { item, role };
 };
 
 /** Checks a new parent: same project, not the item itself, and allowed for its kind. */
@@ -194,6 +144,7 @@ const checkParent = async (
   if (error) throw apiError(400, 'invalid_kind', error);
 };
 
+/** The state, or 400 when it isn't one of the project's. */
 const checkState = async (projectId: string, stateId: string) => {
   const state = await findState(stateId);
   if (!state || state.projectId !== projectId)
@@ -202,6 +153,7 @@ const checkState = async (projectId: string, stateId: string) => {
       'invalid_state',
       'The state must belong to this project',
     );
+  return state;
 };
 
 const checkAssignee = async (projectId: string, assigneeId: string) => {
@@ -214,8 +166,10 @@ const checkAssignee = async (projectId: string, assigneeId: string) => {
 };
 
 export const listProjectItems = async (projectId: string, userId: string) => {
-  await requireMember(projectId, userId);
-  return (await listItems(projectId)).map(toListRow);
+  const { role } = await requireRole(projectId, userId, ROLES);
+  return (await listItems(projectId)).map((row) =>
+    toListRow(row, role, userId),
+  );
 };
 
 export const createProjectItem = async (
@@ -231,7 +185,7 @@ export const createProjectItem = async (
     stateId?: string;
   },
 ) => {
-  await requireRole(projectId, userId, CREATORS);
+  const { role } = await requireRole(projectId, userId, CREATORS);
   const project = await requireMember(projectId, userId);
   await checkParent(
     projectId,
@@ -244,11 +198,14 @@ export const createProjectItem = async (
   const stateId = input.stateId ?? (await findFirstState(projectId)).id;
   return toItem(
     await createItem({ ...input, projectId, stateId, createdById: userId }),
+    role,
+    userId,
   );
 };
 
 export const getItem = async (id: string, userId: string) => {
-  return toItem(await loadItem(id, userId));
+  const { item, role } = await loadItem(id, userId);
+  return toItem(item, role, userId);
 };
 
 export const updateProjectItem = async (
@@ -260,10 +217,9 @@ export const updateProjectItem = async (
     parentId?: string | null;
     priority?: Priority;
     assigneeId?: string | null;
-    stateId?: string;
   },
 ) => {
-  const item = await loadItem(id, userId);
+  const { item, role } = await loadItem(id, userId);
   if (input.parentId !== undefined)
     await checkParent(
       item.projectId,
@@ -272,9 +228,7 @@ export const updateProjectItem = async (
       input.parentId,
       id,
     );
-  if (input.stateId) await checkState(item.projectId, input.stateId);
   if (input.assigneeId !== undefined && input.assigneeId !== item.assigneeId) {
-    const { role } = await requireRole(item.projectId, userId, ROLES);
     if (!mayAssign(role, userId, item.assigneeId, input.assigneeId))
       throw apiError(
         403,
@@ -283,12 +237,74 @@ export const updateProjectItem = async (
       );
   }
   if (input.assigneeId) await checkAssignee(item.projectId, input.assigneeId);
-  return toItem(await updateItem(id, input));
+  const row = await prisma.$transaction((tx) => updateItem(tx, id, input));
+  return toItem(row, role, userId);
+};
+
+/**
+ * Moves an item to another state: who may move it, the Done role check, then the
+ * checklist gate. A slice that finishes can finish its feature too.
+ */
+export const moveItem = async (id: string, userId: string, stateId: string) => {
+  const { item, role } = await loadItem(id, userId);
+  const target = await checkState(item.projectId, stateId);
+  if (target.id === item.state.id) return toItem(item, role, userId);
+  if (!mayMove(role, userId, item.assigneeId))
+    throw apiError(
+      403,
+      'forbidden',
+      'Members can only move tickets assigned to them: claim it first',
+    );
+  if (target.category === 'DONE' && !mayMoveToDone(role))
+    throw apiError(
+      403,
+      'forbidden',
+      'Only owners and managers can move a ticket to Done',
+    );
+  const row = await prisma.$transaction(async (tx) => {
+    // Locked, so a tick or an added entry can't slip in between the check and the move.
+    await lockItem(tx, id);
+    const error = checklistError(
+      item.project,
+      item.kind,
+      await findChecklist(tx, id),
+      target,
+    );
+    if (error) throw apiError(409, 'criteria_incomplete', error);
+    const updated = await updateItem(tx, id, { stateId });
+    const finished = ['DONE', 'CANCELED'].includes(target.category);
+    if (finished && item.parentId) {
+      // Locked, so two slices finishing at once each see the other as finished.
+      await lockItem(tx, item.parentId);
+      const parent = await findParent(tx, item.parentId);
+      const open =
+        parent?.state.category !== 'DONE' &&
+        parent?.state.category !== 'CANCELED';
+      if (
+        parent?.kind === 'FEATURE' &&
+        open &&
+        featureDone(await findChildren(tx, item.parentId))
+      ) {
+        const done = await findFirstDoneState(tx, item.projectId);
+        // The feature's own checklist gates it too: with an unticked entry it stays open.
+        const featureError = checklistError(
+          item.project,
+          parent.kind,
+          await findChecklist(tx, item.parentId),
+          done,
+        );
+        if (!featureError)
+          await updateItem(tx, item.parentId, { stateId: done.id });
+      }
+    }
+    return updated;
+  });
+  return toItem(row, role, userId);
 };
 
 /** Deletes an item. One with children can't be deleted: move or delete them first. */
 export const removeItem = async (id: string, userId: string) => {
-  const item = await loadItem(id, userId);
+  const { item } = await loadItem(id, userId);
   await requireRole(item.projectId, userId, CREATORS);
   if ((await countChildren(id)) > 0)
     throw apiError(409, 'has_children', 'Delete or move its child items first');
@@ -300,9 +316,9 @@ export const listProjectDeletedItems = async (
   projectId: string,
   userId: string,
 ) => {
-  await requireMember(projectId, userId);
+  const { role } = await requireRole(projectId, userId, ROLES);
   return (await listDeletedItems(projectId)).map((row) => ({
-    ...toListRow(row),
+    ...toListRow(row, role, userId),
     deletedAt: row.deletedAt,
   }));
 };
@@ -314,10 +330,10 @@ export const listProjectDeletedItems = async (
 export const restoreProjectItem = async (id: string, userId: string) => {
   const item = await findDeletedItem(id);
   if (!item) throw apiError(404, 'not_found', 'Deleted item not found');
-  await requireRole(item.projectId, userId, CREATORS);
+  const { role } = await requireRole(item.projectId, userId, CREATORS);
   if (item.parentId && !(await findItem(item.parentId)))
     throw apiError(409, 'parent_deleted', 'Restore its parent first');
-  return toItem(await restoreItem(id));
+  return toItem(await restoreItem(id), role, userId);
 };
 
 /** Records that the item waits on `blockerId`. */
@@ -326,7 +342,7 @@ export const addBlocker = async (
   userId: string,
   blockerId: string,
 ) => {
-  const item = await loadItem(id, userId);
+  const { item } = await loadItem(id, userId);
   if (blockerId === id)
     throw apiError(400, 'self_block', "An item can't wait on itself");
   const blocker = await findItem(blockerId);
@@ -382,11 +398,18 @@ export const addChecklistEntry = async (
   userId: string,
   input: { text: string },
 ) => {
-  await loadItem(itemId, userId);
-  // Locked, so two adds at once can't take the same position.
+  const { item } = await loadItem(itemId, userId);
+  // Locked, so two adds at once can't take the same position or both pass the limit.
   const entry = await prisma.$transaction(async (tx) => {
     await lockItem(tx, itemId);
     const entries = await findChecklist(tx, itemId);
+    const max = item.project.checklistMax;
+    if (max !== null && entries.length >= max)
+      throw apiError(
+        409,
+        'checklist_max_exceeded',
+        `A checklist holds at most ${max} entries: split this slice`,
+      );
     return insertEntry(tx, itemId, input.text, entries.length);
   });
   return toEntry(entry);

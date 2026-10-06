@@ -62,6 +62,7 @@ import {
   useDeleteItem,
   useGetItem,
   useListItems,
+  useMoveItem,
   useRemoveBlocker,
   useReorderChecklist,
   useUpdateChecklistEntry,
@@ -280,13 +281,14 @@ const Description = ({
 
 type Entry = GetItem200["checklist"][number];
 
-/** One checklist entry: tick (asks for evidence), edit inline, move, delete. */
+/** One checklist entry: tick, edit inline, move, delete. */
 const ChecklistRow = ({
   entry,
   first,
   last,
   busy,
   onUpdate,
+  onToggle,
   onDelete,
   onMove,
 }: {
@@ -294,29 +296,20 @@ const ChecklistRow = ({
   first: boolean;
   last: boolean;
   busy: boolean;
-  onUpdate: (
-    data: { text?: string; done?: boolean; evidence?: string },
-    onDone: () => void,
-  ) => void;
+  onUpdate: (data: { text: string }, onDone: () => void) => void;
+  onToggle: () => void;
   onDelete: () => void;
   onMove: (step: -1 | 1) => void;
 }) => {
-  // "view", "evidence" (ticking, asking for evidence) or "edit".
-  const [mode, setMode] = useState<"view" | "evidence" | "edit">("view");
+  const [editing, setEditing] = useState(false);
   const [text, setText] = useState(entry.text);
-  const [evidence, setEvidence] = useState(entry.evidence ?? "");
-  const close = () => setMode("view");
+  const close = () => setEditing(false);
   const startEdit = () => {
     setText(entry.text);
-    setEvidence(entry.evidence ?? "");
-    setMode("edit");
-  };
-  const startTick = () => {
-    setEvidence(entry.evidence ?? "");
-    setMode("evidence");
+    setEditing(true);
   };
 
-  if (mode === "edit") {
+  if (editing) {
     return (
       <li className="flex flex-col gap-2 border-b px-3.5 py-2.5 last:border-b-0">
         <Input
@@ -326,20 +319,13 @@ const ChecklistRow = ({
           value={text}
           onChange={(event) => setText(event.target.value)}
         />
-        <Input
-          aria-label="Evidence"
-          placeholder="Evidence: a commit, test name or link (optional)"
-          maxLength={500}
-          value={evidence}
-          onChange={(event) => setEvidence(event.target.value)}
-        />
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={close}>
             Cancel
           </Button>
           <Button
             disabled={busy || !text.trim()}
-            onClick={() => onUpdate({ text, evidence }, close)}
+            onClick={() => onUpdate({ text }, close)}
           >
             Save
           </Button>
@@ -354,11 +340,9 @@ const ChecklistRow = ({
         <input
           type="checkbox"
           aria-label={`${entry.text}, done`}
-          checked={entry.done || mode === "evidence"}
+          checked={entry.done}
           disabled={busy}
-          onChange={() =>
-            entry.done ? onUpdate({ done: false }, close) : startTick()
-          }
+          onChange={onToggle}
           className="mt-1 size-4 shrink-0 accent-primary"
         />
         <div className="min-w-0 flex-1">
@@ -415,30 +399,6 @@ const ChecklistRow = ({
           </Button>
         </div>
       </div>
-      {mode === "evidence" && (
-        <div className="flex items-center gap-2 pl-7">
-          <Input
-            aria-label="Evidence"
-            placeholder="Evidence: a commit, test name or link (optional)"
-            autoFocus
-            maxLength={500}
-            value={evidence}
-            onChange={(event) => setEvidence(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter")
-                onUpdate({ done: true, evidence }, close);
-              if (event.key === "Escape") close();
-            }}
-          />
-          <Button
-            variant="outline"
-            disabled={busy}
-            onClick={() => onUpdate({ done: true }, close)}
-          >
-            Skip
-          </Button>
-        </div>
-      )}
     </li>
   );
 };
@@ -480,27 +440,38 @@ const Checklist = ({
       { onSuccess: () => setText("") },
     );
   };
-  /** Swaps the entry with its neighbour on screen at once, then saves the new order. */
-  const move = async (index: number, step: -1 | 1) => {
-    const moved = [...entries];
-    [moved[index], moved[index + step]] = [moved[index + step], moved[index]];
-    const itemKey = getGetItemQueryKey(itemId);
-    // Wait, or a cancelled refetch can roll the cache back over the new order.
+  const itemKey = getGetItemQueryKey(itemId);
+  /** Shows `checklist` at once, before the save; returns the cache to restore on error. */
+  const showChecklist = async (checklist: Entry[]) => {
+    // Wait, or a cancelled refetch can roll the cache back over the new checklist.
     await queryClient.cancelQueries({ queryKey: itemKey });
     const previous = queryClient.getQueryData<getItemResponse>(itemKey);
     queryClient.setQueryData<getItemResponse>(
       itemKey,
-      (old) =>
-        old && {
-          ...old,
-          data: {
-            ...old.data,
-            checklist: moved.map((entry, i) => ({ ...entry, position: i })),
-          },
-        },
+      (old) => old && { ...old, data: { ...old.data, checklist } },
+    );
+    return previous;
+  };
+  /** Swaps the entry with its neighbour on screen at once, then saves the new order. */
+  const move = async (index: number, step: -1 | 1) => {
+    const moved = [...entries];
+    [moved[index], moved[index + step]] = [moved[index + step], moved[index]];
+    const previous = await showChecklist(
+      moved.map((entry, i) => ({ ...entry, position: i })),
     );
     reorder.mutate(
       { id: itemId, data: { ids: moved.map((entry) => entry.id) } },
+      { onError: () => queryClient.setQueryData(itemKey, previous) },
+    );
+  };
+  /** Ticks or unticks the entry on screen at once, then saves it. */
+  const toggle = async (entry: Entry) => {
+    const done = !entry.done;
+    const previous = await showChecklist(
+      entries.map((row) => (row.id === entry.id ? { ...row, done } : row)),
+    );
+    update.mutate(
+      { id: itemId, entryId: entry.id, data: { done } },
       { onError: () => queryClient.setQueryData(itemKey, previous) },
     );
   };
@@ -532,6 +503,7 @@ const Checklist = ({
                   { onSuccess: onDone },
                 )
               }
+              onToggle={() => void toggle(entry)}
               onDelete={() => remove.mutate({ id: itemId, entryId: entry.id })}
               onMove={(step) => void move(index, step)}
             />
@@ -598,6 +570,7 @@ export const ItemDetail = ({
     ]);
   const onError = (err: { message: string }) => toast.error(err.message);
   const update = useUpdateItem({ mutation: { onSuccess: refresh, onError } });
+  const move = useMoveItem({ mutation: { onSuccess: refresh, onError } });
   const addBlocker = useAddBlocker({
     mutation: {
       onSuccess: refresh,
@@ -663,6 +636,21 @@ export const ItemDetail = ({
     );
     update.mutate(
       { id: item.id, data },
+      { onError: () => queryClient.setQueryData(itemKey, previous) },
+    );
+  };
+  // Moving has its own endpoint; the picker shows the new state at once, a refusal
+  // puts the old one back.
+  const moveNow = async (stateId: string, shown: Partial<GetItem200>) => {
+    const itemKey = getGetItemQueryKey(item.id);
+    await queryClient.cancelQueries({ queryKey: itemKey });
+    const previous = queryClient.getQueryData<getItemResponse>(itemKey);
+    queryClient.setQueryData<getItemResponse>(
+      itemKey,
+      (old) => old && { ...old, data: { ...old.data, ...shown } },
+    );
+    move.mutate(
+      { id: item.id, data: { stateId } },
       { onError: () => queryClient.setQueryData(itemKey, previous) },
     );
   };
@@ -868,12 +856,10 @@ export const ItemDetail = ({
                   const state = states.find((s) => s.id === stateId);
                   if (!state) return;
                   const { id, name, key, category } = state;
-                  void saveNow(
-                    { stateId: id },
-                    { state: { id, name, key, category } },
-                  );
+                  void moveNow(id, { state: { id, name, key, category } });
                 }}
                 items={states.map((s) => ({ value: s.id, label: s.name }))}
+                disabled={!item.canMove}
               >
                 <SelectTrigger
                   aria-label="State"
@@ -885,11 +871,18 @@ export const ItemDetail = ({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {states.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
+                  {states
+                    .filter(
+                      (s) =>
+                        project.canMoveToDone ||
+                        s.category !== "DONE" ||
+                        s.id === item.state.id,
+                    )
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 

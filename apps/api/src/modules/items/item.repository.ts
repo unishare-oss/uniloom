@@ -3,7 +3,15 @@ import type { Prisma } from '@/generated/prisma/client.js';
 import type { ItemKind, Priority } from '@/generated/prisma/enums.js';
 
 const itemView = {
-  project: { select: { keyPrefix: true, mode: true } },
+  project: {
+    select: {
+      keyPrefix: true,
+      mode: true,
+      checklistRequired: true,
+      checklistMin: true,
+      checklistMax: true,
+    },
+  },
   state: { select: { id: true, name: true, key: true, category: true } },
   blockedBy: { select: { blockerId: true } },
   checklist: { orderBy: { position: 'asc' } },
@@ -79,6 +87,7 @@ export const createItem = (data: {
 };
 
 export const updateItem = (
+  tx: Prisma.TransactionClient,
   id: string,
   data: {
     title?: string;
@@ -89,7 +98,37 @@ export const updateItem = (
     parentId?: string | null;
   },
 ) => {
-  return prisma.item.update({ where: { id }, data, include: itemView });
+  return tx.item.update({ where: { id }, data, include: itemView });
+};
+
+/** The live item's kind and state, for the parent of an item that just moved. */
+export const findParent = (tx: Prisma.TransactionClient, id: string) => {
+  return tx.item.findFirst({
+    where: { id, deletedAt: null },
+    select: { kind: true, state: { select: { category: true } } },
+  });
+};
+
+/** A parent's live children with their state category. */
+export const findChildren = (
+  tx: Prisma.TransactionClient,
+  parentId: string,
+) => {
+  return tx.item.findMany({
+    where: { parentId, deletedAt: null },
+    select: { state: { select: { category: true } } },
+  });
+};
+
+/** The project's first Done state: where a finished feature goes. */
+export const findFirstDoneState = (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+) => {
+  return tx.state.findFirstOrThrow({
+    where: { projectId, category: 'DONE' },
+    orderBy: { position: 'asc' },
+  });
 };
 
 /** Soft delete: marks the item deleted and removes its blocked-by links, together. */

@@ -72,6 +72,8 @@ export const ItemCard = ({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     data: { item },
+    // The API says whether the caller may move it.
+    disabled: !item.canMove,
   });
   return (
     <Link

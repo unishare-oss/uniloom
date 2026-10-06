@@ -18,8 +18,9 @@ export const updateItemSchema = z.object({
   parentId: z.uuid().nullable().optional(),
   priority: priority.optional(),
   assigneeId: z.string().min(1).nullable().optional(),
-  stateId: z.uuid().optional(),
 });
+
+export const moveItemSchema = z.object({ stateId: z.uuid() });
 
 export const addBlockerSchema = z.object({ blockerId: z.uuid() });
 
@@ -63,6 +64,8 @@ export const itemSchema = z.object({
   }),
   priority,
   assigneeId: z.string().nullable(),
+  /** Whether the caller may move it: the web reads this and never repeats the rule. */
+  canMove: z.boolean(),
   parentId: z.uuid().nullable(),
   createdById: z.string().nullable(),
   /** Ids of the items this one waits on. */
@@ -81,6 +84,7 @@ export const itemRowSchema = z.object({
   state: z.object({ id: z.uuid(), name: z.string() }),
   priority,
   assigneeId: z.string().nullable(),
+  canMove: z.boolean(),
   parentId: z.uuid().nullable(),
 });
 

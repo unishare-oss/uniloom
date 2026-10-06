@@ -26,7 +26,7 @@ import {
   getGetItemQueryKey,
   getListItemsQueryKey,
   useListItems,
-  useUpdateItem,
+  useMoveItem,
   type listItemsResponse,
 } from "@/lib/api/generated/items/items";
 import type {
@@ -62,7 +62,7 @@ export const Board = ({ projectId }: { projectId: string }) => {
   const { data: members } = useListMembers(projectId, {
     query: { select: (r) => r.data },
   });
-  const updateItem = useUpdateItem();
+  const move = useMoveItem();
   const [search, setSearch] = useState("");
   const [dragged, setDragged] = useState<Row | null>(null);
   // A drag ends with a click on the card; this keeps it from opening the item.
@@ -121,7 +121,7 @@ export const Board = ({ projectId }: { projectId: string }) => {
           ),
         },
     );
-    updateItem.mutate(
+    move.mutate(
       { id: item.id, data: { stateId: state.id } },
       {
         onError: (err) => {

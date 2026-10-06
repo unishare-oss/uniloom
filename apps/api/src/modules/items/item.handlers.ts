@@ -4,6 +4,7 @@ import {
   addBlockerSchema,
   addChecklistEntrySchema,
   createItemSchema,
+  moveItemSchema,
   reorderChecklistSchema,
   updateChecklistEntrySchema,
   updateItemSchema,
@@ -14,6 +15,7 @@ import {
   createProjectItem,
   getItem,
   listProjectItems,
+  moveItem,
   removeBlocker,
   listProjectDeletedItems,
   removeChecklistEntry,
@@ -53,6 +55,13 @@ export const patchItem = async (c: Context) => {
   const input = await parseBody(c, updateItemSchema);
   const item = await updateProjectItem(id, c.var.user.id, input);
   return apiSuccess(c, item, `${item.key} updated`);
+};
+
+export const postMoveItem = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const { stateId } = await parseBody(c, moveItemSchema);
+  const item = await moveItem(id, c.var.user.id, stateId);
+  return apiSuccess(c, item, `${item.key} moved`);
 };
 
 export const deleteItemById = async (c: Context) => {

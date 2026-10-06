@@ -523,6 +523,9 @@
                     "canAssignOthers": {
                       "type": "boolean"
                     },
+                    "canMoveToDone": {
+                      "type": "boolean"
+                    },
                     "assignableRoles": {
                       "type": "array",
                       "items": {
@@ -555,6 +558,7 @@
                     "canManageMembers",
                     "canCreateItems",
                     "canAssignOthers",
+                    "canMoveToDone",
                     "assignableRoles"
                   ]
                 }
@@ -645,6 +649,9 @@
                           "null"
                         ]
                       },
+                      "canMove": {
+                        "type": "boolean"
+                      },
                       "parentId": {
                         "anyOf": [
                           {
@@ -666,6 +673,7 @@
                       "state",
                       "priority",
                       "assigneeId",
+                      "canMove",
                       "parentId"
                     ]
                   }
@@ -851,6 +859,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -935,6 +946,7 @@
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
@@ -1030,6 +1042,9 @@
                           "null"
                         ]
                       },
+                      "canMove": {
+                        "type": "boolean"
+                      },
                       "parentId": {
                         "anyOf": [
                           {
@@ -1056,6 +1071,7 @@
                       "state",
                       "priority",
                       "assigneeId",
+                      "canMove",
                       "parentId",
                       "deletedAt"
                     ]
@@ -1172,6 +1188,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1256,6 +1275,7 @@
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
@@ -1274,7 +1294,7 @@
         "tags": [
           "items"
         ],
-        "summary": "Update an item's title, description, priority, assignee, state or parent",
+        "summary": "Update an item's title, description, priority, assignee or parent",
         "parameters": [
           {
             "name": "id",
@@ -1334,11 +1354,6 @@
                         "type": "null"
                       }
                     ]
-                  },
-                  "stateId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 }
               }
@@ -1347,7 +1362,7 @@
         },
         "responses": {
           "200": {
-            "description": "Update an item's title, description, priority, assignee, state or parent",
+            "description": "Update an item's title, description, priority, assignee or parent",
             "content": {
               "application/json": {
                 "schema": {
@@ -1432,6 +1447,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1516,6 +1534,7 @@
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
@@ -1553,6 +1572,233 @@
               "application/json": {
                 "schema": {
                   "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/move": {
+      "post": {
+        "operationId": "moveItem",
+        "tags": [
+          "items"
+        ],
+        "summary": "Move an item to another state",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stateId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "stateId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Move an item to another state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "TASK",
+                        "SUBTASK",
+                        "FEATURE",
+                        "SLICE"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "key": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "BACKLOG",
+                            "UNSTARTED",
+                            "STARTED",
+                            "DONE",
+                            "CANCELED"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "key",
+                        "category"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "URGENT",
+                        "HIGH",
+                        "MEDIUM",
+                        "LOW",
+                        "NONE"
+                      ]
+                    },
+                    "assigneeId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "canMove": {
+                      "type": "boolean"
+                    },
+                    "parentId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdById": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "blockedBy": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "key",
+                    "projectId",
+                    "kind",
+                    "title",
+                    "description",
+                    "state",
+                    "priority",
+                    "assigneeId",
+                    "canMove",
+                    "parentId",
+                    "createdById",
+                    "blockedBy",
+                    "checklist",
+                    "createdAt",
+                    "updatedAt"
+                  ]
                 }
               }
             }
@@ -1665,6 +1911,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1749,6 +1998,7 @@
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
@@ -1888,6 +2138,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1972,6 +2225,7 @@
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",

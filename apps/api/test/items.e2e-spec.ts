@@ -260,9 +260,15 @@ describe('items (e2e)', () => {
       const patch = async (body: object) =>
         read(await api.send('PATCH', `/api/items/${item.id}`, w.cookie, body));
 
-      expect((await patch({ stateId: foreign.state.id })).code).toBe(
-        'invalid_state',
-      );
+      expect(
+        (
+          await read(
+            await api.send('POST', `/api/items/${item.id}/move`, w.cookie, {
+              stateId: foreign.state.id,
+            }),
+          )
+        ).code,
+      ).toBe('invalid_state');
       expect((await patch({ assigneeId: outsiderId })).code).toBe(
         'invalid_assignee',
       );
@@ -283,16 +289,47 @@ describe('items (e2e)', () => {
         id: string;
       };
 
-      const res = await api.send('PATCH', `/api/items/${item.id}`, w.cookie, {
-        stateId: states[1].id,
-        assigneeId: me.id,
-        title: 'Renamed',
-      });
+      const edited = await api.send(
+        'PATCH',
+        `/api/items/${item.id}`,
+        w.cookie,
+        {
+          assigneeId: me.id,
+          title: 'Renamed',
+        },
+      );
+      expect(edited.status).toBe(200);
+      const res = await api.send(
+        'POST',
+        `/api/items/${item.id}/move`,
+        w.cookie,
+        {
+          stateId: states[1].id,
+        },
+      );
       expect(res.status).toBe(200);
       expect(await read(res)).toMatchObject({
         title: 'Renamed',
         state: { name: 'In Progress' },
         assigneeId: me.id,
+      });
+    });
+
+    it('ignores stateId on PATCH: only /move changes the state', async () => {
+      const w = await project('STANDARD');
+      const item = (await w.add({ kind: 'TASK', title: 'I' })).body;
+      const states = await prisma.state.findMany({
+        where: { projectId: w.id },
+        orderBy: { position: 'asc' },
+      });
+      const res = await api.send('PATCH', `/api/items/${item.id}`, w.cookie, {
+        stateId: states[1].id,
+        title: 'Renamed',
+      });
+      expect(res.status).toBe(200);
+      expect(await read(res)).toMatchObject({
+        title: 'Renamed',
+        state: { id: item.state.id },
       });
     });
 
@@ -616,7 +653,7 @@ describe('items (e2e)', () => {
       ).toBe(200);
     });
 
-    it('still lets a member update state and fields and set blockers', async () => {
+    it('still lets a member edit fields, claim and set blockers', async () => {
       const { w, item, manager, member } = await withRoles();
       const other = (
         (await read(
@@ -626,17 +663,14 @@ describe('items (e2e)', () => {
           }),
         )) as Item
       ).id;
-      const done = (
-        (await read(
-          await api.send('GET', `/api/projects/${w.id}`, member),
-        )) as {
-          states: { id: string; name: string }[];
-        }
-      ).states.find((s) => s.name === 'Done')!;
+      const memberId = (
+        (await read(await api.send('GET', '/api/me', member))) as Item
+      ).id;
 
+      // Members edit fields freely and can claim; moving is covered under 'moving'.
       const moved = await api.send('PATCH', `/api/items/${item.id}`, member, {
         title: 'Renamed',
-        stateId: done.id,
+        assigneeId: memberId,
       });
       expect(moved.status).toBe(200);
       expect(await read(moved)).toMatchObject({ title: 'Renamed' });
@@ -719,6 +753,231 @@ describe('items (e2e)', () => {
       expect((await set(w.cookie, await me(outsider.cookie))).body.code).toBe(
         'invalid_assignee',
       );
+    });
+  });
+
+  describe('moving', () => {
+    /** A Guided project with a feature, a slice, an owner, a manager and a member. */
+    const withSlice = async () => {
+      const w = await project('GUIDED');
+      const feature = (await w.add({ kind: 'FEATURE', title: 'F' })).body;
+      const slice = (
+        await w.add({ kind: 'SLICE', title: 'S', parentId: feature.id })
+      ).body;
+      const join = async (role: string) => {
+        const p = await api.signInReady();
+        const res = await api.send(
+          'POST',
+          `/api/projects/${w.id}/members`,
+          w.cookie,
+          { email: p.profile.email, role },
+        );
+        expect(res.status).toBe(201);
+        const me = (await read(await api.send('GET', '/api/me', p.cookie))) as {
+          id: string;
+        };
+        return { cookie: p.cookie, id: me.id };
+      };
+      const states = await prisma.state.findMany({
+        where: { projectId: w.id },
+      });
+      const state = (name: string) => states.find((s) => s.name === name)!.id;
+      const move = async (cookie: string, id: string, name: string) => {
+        const res = await api.send('POST', `/api/items/${id}/move`, cookie, {
+          stateId: state(name),
+        });
+        return {
+          status: res.status,
+          body: (await read(res)) as Item & { code?: string; message?: string },
+        };
+      };
+      const tick = async (id: string, texts: string[], done: boolean) => {
+        for (const text of texts) {
+          const entry = (await read(
+            await api.send('POST', `/api/items/${id}/checklist`, w.cookie, {
+              text,
+            }),
+          )) as Entry;
+          if (done)
+            await api.send(
+              'PATCH',
+              `/api/items/${id}/checklist/${entry.id}`,
+              w.cookie,
+              { done: true },
+            );
+        }
+      };
+      const assign = (id: string, assigneeId: string | null) =>
+        api.send('PATCH', `/api/items/${id}`, w.cookie, { assigneeId });
+      return {
+        w,
+        feature,
+        slice,
+        manager: await join('MANAGER'),
+        member: await join('MEMBER'),
+        move,
+        tick,
+        assign,
+        state,
+      };
+    };
+
+    it('lets a member move only a ticket assigned to them, and reports canMove', async () => {
+      const { w, slice, member, manager, move, assign } = await withSlice();
+      const canMove = async (cookie: string) =>
+        (
+          (await read(
+            await api.send('GET', `/api/items/${slice.id}`, cookie),
+          )) as Item & { canMove: boolean }
+        ).canMove;
+      const rowCanMove = async (cookie: string) =>
+        (
+          (await read(
+            await api.send('GET', `/api/projects/${w.id}/items`, cookie),
+          )) as (Item & { canMove: boolean })[]
+        ).find((row) => row.id === slice.id)!.canMove;
+
+      // Unassigned: members can't, owners and managers can.
+      expect((await move(member.cookie, slice.id, 'Ready')).status).toBe(403);
+      expect(await canMove(member.cookie)).toBe(false);
+      expect(await rowCanMove(member.cookie)).toBe(false);
+      expect(await canMove(manager.cookie)).toBe(true);
+      expect(await canMove(w.cookie)).toBe(true);
+      // Someone else's.
+      await assign(slice.id, manager.id);
+      const denied = await move(member.cookie, slice.id, 'Ready');
+      expect(denied).toMatchObject({
+        status: 403,
+        body: { code: 'forbidden' },
+      });
+      // Their own, after claiming.
+      await assign(slice.id, null);
+      expect(
+        (
+          await api.send('PATCH', `/api/items/${slice.id}`, member.cookie, {
+            assigneeId: member.id,
+          })
+        ).status,
+      ).toBe(200);
+      expect(await canMove(member.cookie)).toBe(true);
+      expect(await rowCanMove(member.cookie)).toBe(true);
+      expect((await move(member.cookie, slice.id, 'Ready')).status).toBe(200);
+      // Owners and managers move anyone's.
+      expect((await move(manager.cookie, slice.id, 'Aligning')).status).toBe(
+        200,
+      );
+      expect((await move(w.cookie, slice.id, 'Backlog')).status).toBe(200);
+    });
+
+    it('lets only owners and managers move to Done, with a complete checklist', async () => {
+      const { w, slice, member, manager, move, assign, tick } =
+        await withSlice();
+      await tick(slice.id, ['a', 'b', 'c'], true);
+      await assign(slice.id, member.id);
+      const denied = await move(member.cookie, slice.id, 'Done');
+      expect(denied).toMatchObject({
+        status: 403,
+        body: { code: 'forbidden' },
+      });
+      expect((await move(member.cookie, slice.id, 'In Review')).status).toBe(
+        200,
+      );
+      expect((await move(manager.cookie, slice.id, 'Done')).status).toBe(200);
+      expect((await move(w.cookie, slice.id, 'In Progress')).status).toBe(200);
+      expect((await move(w.cookie, slice.id, 'Done')).status).toBe(200);
+
+      const detail = async (cookie: string) =>
+        (await read(
+          await api.send('GET', `/api/projects/${w.id}`, cookie),
+        )) as { canMoveToDone: boolean };
+      expect((await detail(w.cookie)).canMoveToDone).toBe(true);
+      expect((await detail(manager.cookie)).canMoveToDone).toBe(true);
+      expect((await detail(member.cookie)).canMoveToDone).toBe(false);
+    });
+
+    it('refuses In Review and Done with too few or unticked entries (409), naming them', async () => {
+      const { slice, manager, move, tick } = await withSlice();
+      // No entries: too few.
+      const none = await move(manager.cookie, slice.id, 'In Review');
+      expect(none).toMatchObject({
+        status: 409,
+        body: { code: 'criteria_incomplete' },
+      });
+      expect(none.body.message).toContain('at least 3');
+      // Three entries, two unticked.
+      await tick(slice.id, ['Ticked one'], true);
+      await tick(slice.id, ['Open one', 'Open two'], false);
+      const open = await move(manager.cookie, slice.id, 'Done');
+      expect(open).toMatchObject({
+        status: 409,
+        body: { code: 'criteria_incomplete' },
+      });
+      expect(open.body.message).toContain('"Open one"');
+      expect(open.body.message).toContain('"Open two"');
+      expect(open.body.message).not.toContain('Ticked one');
+      // Other columns are free.
+      expect((await move(manager.cookie, slice.id, 'In Progress')).status).toBe(
+        200,
+      );
+      expect((await move(manager.cookie, slice.id, 'Canceled')).status).toBe(
+        200,
+      );
+    });
+
+    it('refuses an entry past checklistMax (409)', async () => {
+      const { slice, w, tick } = await withSlice();
+      await tick(slice.id, ['1', '2', '3', '4', '5', '6'], false);
+      const res = await api.send(
+        'POST',
+        `/api/items/${slice.id}/checklist`,
+        w.cookie,
+        { text: '7' },
+      );
+      expect(res.status).toBe(409);
+      expect(await read(res)).toMatchObject({
+        code: 'checklist_max_exceeded',
+      });
+    });
+
+    it('moves the feature to Done when its last open slice is Done or Canceled', async () => {
+      const { w, feature, slice, move, tick } = await withSlice();
+      const other = (
+        await w.add({ kind: 'SLICE', title: 'S2', parentId: feature.id })
+      ).body;
+      const featureState = async () =>
+        (
+          (await read(
+            await api.send('GET', `/api/items/${feature.id}`, w.cookie),
+          )) as Item
+        ).state.name;
+      await tick(slice.id, ['a', 'b', 'c'], true);
+
+      await move(w.cookie, slice.id, 'Done');
+      expect(await featureState()).toBe('Triage');
+      await move(w.cookie, other.id, 'Canceled');
+      expect(await featureState()).toBe('Done');
+    });
+
+    it("gates a feature on its own entries: it stays open, and can't be moved, until they're ticked", async () => {
+      const { w, feature, slice, move, tick } = await withSlice();
+      await tick(feature.id, ['Overview agreed'], false);
+      await tick(slice.id, ['a', 'b', 'c'], true);
+
+      await move(w.cookie, slice.id, 'Done');
+      const after = (await read(
+        await api.send('GET', `/api/items/${feature.id}`, w.cookie),
+      )) as Item;
+      expect(after.state.name).toBe('Triage');
+
+      const refused = await move(w.cookie, feature.id, 'Done');
+      expect(refused.status).toBe(409);
+      expect(refused.body.code).toBe('criteria_incomplete');
+      expect(refused.body.message).toContain('"Overview agreed"');
+    });
+
+    it('lets a feature with no entries into Done (no minimum above slices)', async () => {
+      const { w, feature, move } = await withSlice();
+      expect((await move(w.cookie, feature.id, 'Done')).status).toBe(200);
     });
   });
 
@@ -926,6 +1185,9 @@ describe('items (e2e)', () => {
       api.send('PATCH', `/api/items/${item.id}`, outsider.cookie, {
         title: 'X',
       }),
+      api.send('POST', `/api/items/${item.id}/move`, outsider.cookie, {
+        stateId: item.state.id,
+      }),
       api.send('DELETE', `/api/items/${item.id}`, outsider.cookie),
       api.send('POST', `/api/items/${item.id}/blockers`, outsider.cookie, {
         blockerId: item.id,
@@ -938,7 +1200,7 @@ describe('items (e2e)', () => {
       api.send('GET', `/api/projects/${w.id}/items/deleted`, outsider.cookie),
       api.send('POST', `/api/items/${item.id}/restore`, outsider.cookie),
     ]);
-    expect(responses.map((r) => r.status)).toEqual(Array(9).fill(404));
+    expect(responses.map((r) => r.status)).toEqual(Array(10).fill(404));
     expect(
       (await api.send('GET', `/api/items/not-a-uuid`, outsider.cookie)).status,
     ).toBe(404);
@@ -959,6 +1221,7 @@ describe('items (e2e)', () => {
         state: { id: expect.any(String), name: 'Triage' },
         priority: 'NONE',
         assigneeId: null,
+        canMove: true,
         parentId: null,
       },
     ]);

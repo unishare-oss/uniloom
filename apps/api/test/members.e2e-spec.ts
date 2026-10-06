@@ -92,6 +92,7 @@ describe('members and roles (e2e)', () => {
       canManageMembers: true,
       canCreateItems: true,
       canAssignOthers: true,
+      canMoveToDone: true,
       assignableRoles: ['OWNER', 'MANAGER', 'MEMBER'],
     });
     expect(await get(manager.cookie)).toMatchObject({
@@ -99,6 +100,7 @@ describe('members and roles (e2e)', () => {
       canManageMembers: false,
       canCreateItems: true,
       canAssignOthers: true,
+      canMoveToDone: true,
       assignableRoles: ['MEMBER'],
     });
     expect(await get(member.cookie)).toMatchObject({
@@ -106,6 +108,7 @@ describe('members and roles (e2e)', () => {
       canManageMembers: false,
       canCreateItems: false,
       canAssignOthers: false,
+      canMoveToDone: false,
       assignableRoles: [],
     });
   });
