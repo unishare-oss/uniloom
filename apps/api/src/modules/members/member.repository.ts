@@ -81,3 +81,15 @@ export const deleteMember = (
     where: { projectId_userId: { projectId, userId } },
   });
 };
+
+/** Frees every ticket in the project assigned to `userId`, e.g. when they leave. */
+export const unassignAll = (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+) => {
+  return tx.item.updateMany({
+    where: { projectId, assigneeId: userId },
+    data: { assigneeId: null },
+  });
+};

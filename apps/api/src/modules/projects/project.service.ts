@@ -46,6 +46,7 @@ export const getProject = async (projectId: string, userId: string) => {
     role,
     canManageMembers: role === 'OWNER',
     canCreateItems: CREATORS.includes(role),
+    canAssignOthers: CREATORS.includes(role),
     assignableRoles: assignableRoles(role),
   };
 };

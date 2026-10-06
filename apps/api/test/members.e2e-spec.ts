@@ -91,18 +91,21 @@ describe('members and roles (e2e)', () => {
       role: 'OWNER',
       canManageMembers: true,
       canCreateItems: true,
+      canAssignOthers: true,
       assignableRoles: ['OWNER', 'MANAGER', 'MEMBER'],
     });
     expect(await get(manager.cookie)).toMatchObject({
       role: 'MANAGER',
       canManageMembers: false,
       canCreateItems: true,
+      canAssignOthers: true,
       assignableRoles: ['MEMBER'],
     });
     expect(await get(member.cookie)).toMatchObject({
       role: 'MEMBER',
       canManageMembers: false,
       canCreateItems: false,
+      canAssignOthers: false,
       assignableRoles: [],
     });
   });
@@ -321,6 +324,38 @@ describe('members and roles (e2e)', () => {
     );
     expect(stuck.status).toBe(409);
     expect(await read(stuck)).toMatchObject({ code: 'last_owner' });
+  });
+
+  it('unassigns tickets of someone who leaves or is removed', async () => {
+    const w = await setup();
+    const leaver = await w.join('MEMBER');
+    const removed = await w.join('MEMBER');
+    const stays = await w.join('MEMBER');
+    const ticket = async (assigneeId: string) => {
+      const res = await api.send(
+        'POST',
+        `/api/projects/${w.id}/items`,
+        w.owner.cookie,
+        { kind: 'TASK', title: 'T', assigneeId },
+      );
+      return ((await read(res)) as { id: string }).id;
+    };
+    const left = await ticket(leaver.id);
+    const gone = await ticket(removed.id);
+    const kept = await ticket(stays.id);
+
+    await api.send('DELETE', `${w.path}/${leaver.id}`, leaver.cookie);
+    await api.send('DELETE', `${w.path}/${removed.id}`, w.owner.cookie);
+
+    const assignee = async (id: string) =>
+      (
+        (await read(
+          await api.send('GET', `/api/items/${id}`, w.owner.cookie),
+        )) as { assigneeId: string | null }
+      ).assigneeId;
+    expect(await assignee(left)).toBeNull();
+    expect(await assignee(gone)).toBeNull();
+    expect(await assignee(kept)).toBe(stays.id);
   });
 
   it('makes a sole owner hand over ownership before leaving', async () => {

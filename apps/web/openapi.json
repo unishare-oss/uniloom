@@ -520,6 +520,9 @@
                     "canCreateItems": {
                       "type": "boolean"
                     },
+                    "canAssignOthers": {
+                      "type": "boolean"
+                    },
                     "assignableRoles": {
                       "type": "array",
                       "items": {
@@ -551,6 +554,7 @@
                     "role",
                     "canManageMembers",
                     "canCreateItems",
+                    "canAssignOthers",
                     "assignableRoles"
                   ]
                 }

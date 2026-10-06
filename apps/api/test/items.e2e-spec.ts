@@ -648,6 +648,69 @@ describe('items (e2e)', () => {
         ).status,
       ).toBe(200);
     });
+
+    it('lets owners and managers assign anyone, and a member only claim or unclaim', async () => {
+      const { w, item, manager, member } = await withRoles();
+      const me = async (cookie: string) =>
+        ((await read(await api.send('GET', '/api/me', cookie))) as Item).id;
+      const ownerId = await me(w.cookie);
+      const managerId = await me(manager);
+      const memberId = await me(member);
+      const set = async (cookie: string, assigneeId: string | null) => {
+        const res = await api.send('PATCH', `/api/items/${item.id}`, cookie, {
+          assigneeId,
+        });
+        return {
+          status: res.status,
+          body: (await read(res)) as Item & { code?: string },
+        };
+      };
+
+      // Member: can't assign someone else, can claim a free ticket
+      expect(await set(member, managerId)).toMatchObject({
+        status: 403,
+        body: { code: 'forbidden' },
+      });
+      expect(await set(member, memberId)).toMatchObject({
+        status: 200,
+        body: { assigneeId: memberId },
+      });
+      // Member: can unclaim their own
+      expect(await set(member, null)).toMatchObject({
+        status: 200,
+        body: { assigneeId: null },
+      });
+      // Manager assigns an Owner; a member can't take it or unassign it
+      expect(await set(manager, ownerId)).toMatchObject({
+        status: 200,
+        body: { assigneeId: ownerId },
+      });
+      expect((await set(member, memberId)).status).toBe(403);
+      expect((await set(member, null)).status).toBe(403);
+      // Owner reassigns and unassigns
+      expect(await set(w.cookie, managerId)).toMatchObject({
+        status: 200,
+        body: { assigneeId: managerId },
+      });
+      expect(await set(w.cookie, null)).toMatchObject({
+        status: 200,
+        body: { assigneeId: null },
+      });
+      // Same assignee again is no change, so a member's other edits still work
+      expect(
+        (
+          await api.send('PATCH', `/api/items/${item.id}`, member, {
+            title: 'Same',
+            assigneeId: null,
+          })
+        ).status,
+      ).toBe(200);
+      // A non-member is still invalid_assignee for an owner
+      const outsider = await api.signInReady();
+      expect((await set(w.cookie, await me(outsider.cookie))).body.code).toBe(
+        'invalid_assignee',
+      );
+    });
   });
 
   it('answers 404 to someone outside the project, on every route', async () => {
