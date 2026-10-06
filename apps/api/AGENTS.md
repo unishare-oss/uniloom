@@ -18,6 +18,8 @@ apps/api/
 │   │   ├── items/           # items, states, blocked-by
 │   │   └── uniauth/         # uniAuth receivers and event tokens
 │   ├── auth/                # Better Auth (`auth`), session and consent middleware
+│   ├── utils/               # Helpers used by 3+ modules, one file per topic (none yet)
+│   ├── types/               # Types used by 3+ modules (none yet)
 │   ├── db/                  # prisma.ts: the Prisma client and connection
 │   ├── http.ts              # apiSuccess, apiError, parseBody, idParam
 │   ├── openapi.ts           # describe() for routes, spec options
@@ -35,14 +37,21 @@ apps/api/
 Each feature is a folder `src/modules/<features>/` with files named after the singular
 (`users/user.routes.ts`). Add only the files the feature needs:
 
-| File                      | Holds                                                                      |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `<feature>.routes.ts`     | The `Hono` router, plain Hono style: `userRoutes.get('/me', getMe)`        |
-| `<feature>.handlers.ts`   | Plain `(c: Context) => …` functions: read input, call the service, respond |
-| `<feature>.service.ts`    | Business rules and workflows; no HTTP                                      |
-| `<feature>.repository.ts` | Prisma queries; no rules                                                   |
-| `<feature>.schema.ts`     | Request validation (zod), used by the routes                               |
-| `*.spec.ts`               | Unit tests next to the code they test                                      |
+| File                      | Holds                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| `<feature>.routes.ts`     | The `Hono` router, plain Hono style: `userRoutes.get('/me', getMe)`            |
+| `<feature>.handlers.ts`   | Plain `(c: Context) => …` functions: read input, call the service, respond     |
+| `<feature>.service.ts`    | Business rules and workflows; no HTTP                                          |
+| `<feature>.repository.ts` | Prisma queries; no rules                                                       |
+| `<feature>.schema.ts`     | Request validation (zod), used by the routes                                   |
+| `<feature>.types.ts`      | The module's `type`s and `interface`s (row types, shapes); zod stays in schema |
+| `<feature>.utils.ts`      | Small pure helpers, no database, no HTTP: row-to-response mappers, formatting  |
+| `<feature>.rules.ts`      | Pure workflow rule checks (`items/item.rules.ts`), shared by REST and MCP      |
+| `*.spec.ts`               | Unit tests next to the code they test                                          |
+
+Code used by three or more modules moves to `src/utils/` (functions, one file per topic)
+or `src/types/` (types); code used by one or two modules stays in its module. See
+[ADR-0009](../../docs/adr/0009-module-types-and-utils.md).
 
 Import with the `@/` alias (`@/db/prisma.js`, `@/auth/auth.js`) for anything outside the
 file's own folder; keep `./` only for files in the same folder.

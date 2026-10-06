@@ -26,7 +26,9 @@ queries) and `<feature>.schema.ts` (validation), with tests next to them. A modu
 only the files it needs. Like Unigym's `src/modules/<feature>/`, with plain functions
 instead of Nest classes. Only repositories touch the database, importing the Prisma client from
 `src/db/`. (Amended by [ADR-0008](0008-services-run-transactions.md): services may
-start a transaction and pass `tx` to repository functions.)
+start a transaction and pass `tx` to repository functions. Amended by
+[ADR-0009](0009-module-types-and-utils.md): modules also keep `<feature>.types.ts` and
+`<feature>.utils.ts`.)
 
 ## Consequences
 

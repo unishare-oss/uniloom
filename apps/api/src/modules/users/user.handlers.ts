@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import { apiSuccess } from '@/http.js';
-import { giveConsent, toMe } from './user.service.js';
+import { giveConsent } from './user.service.js';
+import { toMe } from './user.utils.js';
 
 export const getMe = (c: Context) => apiSuccess(c, toMe(c.var.user));
 
