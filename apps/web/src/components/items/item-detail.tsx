@@ -2,9 +2,12 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   ChevronRight,
   Pencil,
+  Trash2,
   UserMinus,
   UserPlus,
   X,
@@ -54,10 +57,14 @@ import {
   getListDeletedItemsQueryKey,
   getListItemsQueryKey,
   useAddBlocker,
+  useAddChecklistEntry,
+  useDeleteChecklistEntry,
   useDeleteItem,
   useGetItem,
   useListItems,
   useRemoveBlocker,
+  useReorderChecklist,
+  useUpdateChecklistEntry,
   useUpdateItem,
   type getItemResponse,
 } from "@/lib/api/generated/items/items";
@@ -271,6 +278,290 @@ const Description = ({
   );
 };
 
+type Entry = GetItem200["checklist"][number];
+
+/** One checklist entry: tick (asks for evidence), edit inline, move, delete. */
+const ChecklistRow = ({
+  entry,
+  first,
+  last,
+  busy,
+  onUpdate,
+  onDelete,
+  onMove,
+}: {
+  entry: Entry;
+  first: boolean;
+  last: boolean;
+  busy: boolean;
+  onUpdate: (
+    data: { text?: string; done?: boolean; evidence?: string },
+    onDone: () => void,
+  ) => void;
+  onDelete: () => void;
+  onMove: (step: -1 | 1) => void;
+}) => {
+  // "view", "evidence" (ticking, asking for evidence) or "edit".
+  const [mode, setMode] = useState<"view" | "evidence" | "edit">("view");
+  const [text, setText] = useState(entry.text);
+  const [evidence, setEvidence] = useState(entry.evidence ?? "");
+  const close = () => setMode("view");
+  const startEdit = () => {
+    setText(entry.text);
+    setEvidence(entry.evidence ?? "");
+    setMode("edit");
+  };
+  const startTick = () => {
+    setEvidence(entry.evidence ?? "");
+    setMode("evidence");
+  };
+
+  if (mode === "edit") {
+    return (
+      <li className="flex flex-col gap-2 border-b px-3.5 py-2.5 last:border-b-0">
+        <Input
+          aria-label="Entry text"
+          autoFocus
+          maxLength={500}
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+        />
+        <Input
+          aria-label="Evidence"
+          placeholder="Evidence: a commit, test name or link (optional)"
+          maxLength={500}
+          value={evidence}
+          onChange={(event) => setEvidence(event.target.value)}
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={close}>
+            Cancel
+          </Button>
+          <Button
+            disabled={busy || !text.trim()}
+            onClick={() => onUpdate({ text, evidence }, close)}
+          >
+            Save
+          </Button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex flex-col gap-2 border-b px-3.5 py-2.5 last:border-b-0">
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          aria-label={`${entry.text}, done`}
+          checked={entry.done || mode === "evidence"}
+          disabled={busy}
+          onChange={() =>
+            entry.done ? onUpdate({ done: false }, close) : startTick()
+          }
+          className="mt-1 size-4 shrink-0 accent-primary"
+        />
+        <div className="min-w-0 flex-1">
+          <p
+            className={
+              entry.done
+                ? "break-words text-muted-foreground line-through"
+                : "break-words"
+            }
+          >
+            {entry.text}
+          </p>
+          {entry.evidence && (
+            <p className="break-words text-sm text-muted-foreground">
+              {entry.evidence}
+            </p>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Move up"
+            disabled={busy || first}
+            onClick={() => onMove(-1)}
+          >
+            <ArrowUp />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Move down"
+            disabled={busy || last}
+            onClick={() => onMove(1)}
+          >
+            <ArrowDown />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Edit"
+            onClick={startEdit}
+          >
+            <Pencil />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Delete"
+            disabled={busy}
+            onClick={onDelete}
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </div>
+      {mode === "evidence" && (
+        <div className="flex items-center gap-2 pl-7">
+          <Input
+            aria-label="Evidence"
+            placeholder="Evidence: a commit, test name or link (optional)"
+            autoFocus
+            maxLength={500}
+            value={evidence}
+            onChange={(event) => setEvidence(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter")
+                onUpdate({ done: true, evidence }, close);
+              if (event.key === "Escape") close();
+            }}
+          />
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => onUpdate({ done: true }, close)}
+          >
+            Skip
+          </Button>
+        </div>
+      )}
+    </li>
+  );
+};
+
+/** The done-when checklist: its entries and an input to add one. */
+const Checklist = ({
+  itemId,
+  entries,
+  refresh,
+  onError,
+}: {
+  itemId: string;
+  entries: Entry[];
+  refresh: () => Promise<unknown>;
+  onError: (err: { message: string }) => void;
+}) => {
+  const [text, setText] = useState("");
+  const queryClient = useQueryClient();
+  const add = useAddChecklistEntry({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const update = useUpdateChecklistEntry({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const remove = useDeleteChecklistEntry({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const reorder = useReorderChecklist({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const busy =
+    add.isPending || update.isPending || remove.isPending || reorder.isPending;
+
+  const addEntry = () => {
+    // The add stays pending until the refresh is done, so a repeated Enter can't add twice.
+    if (add.isPending || !text.trim()) return;
+    add.mutate(
+      { id: itemId, data: { text } },
+      { onSuccess: () => setText("") },
+    );
+  };
+  /** Swaps the entry with its neighbour on screen at once, then saves the new order. */
+  const move = async (index: number, step: -1 | 1) => {
+    const moved = [...entries];
+    [moved[index], moved[index + step]] = [moved[index + step], moved[index]];
+    const itemKey = getGetItemQueryKey(itemId);
+    // Wait, or a cancelled refetch can roll the cache back over the new order.
+    await queryClient.cancelQueries({ queryKey: itemKey });
+    const previous = queryClient.getQueryData<getItemResponse>(itemKey);
+    queryClient.setQueryData<getItemResponse>(
+      itemKey,
+      (old) =>
+        old && {
+          ...old,
+          data: {
+            ...old.data,
+            checklist: moved.map((entry, i) => ({ ...entry, position: i })),
+          },
+        },
+    );
+    reorder.mutate(
+      { id: itemId, data: { ids: moved.map((entry) => entry.id) } },
+      { onError: () => queryClient.setQueryData(itemKey, previous) },
+    );
+  };
+
+  return (
+    <section aria-labelledby="checklist" className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <h2 id="checklist" className="font-semibold">
+          Checklist
+        </h2>
+        {entries.length > 0 && (
+          <span className="text-xs font-semibold text-muted-foreground">
+            {entries.filter((entry) => entry.done).length}/{entries.length}
+          </span>
+        )}
+      </div>
+      {entries.length > 0 && (
+        <ul className="overflow-hidden rounded-lg border bg-card">
+          {entries.map((entry, index) => (
+            <ChecklistRow
+              key={entry.id}
+              entry={entry}
+              first={index === 0}
+              last={index === entries.length - 1}
+              busy={busy}
+              onUpdate={(data, onDone) =>
+                update.mutate(
+                  { id: itemId, entryId: entry.id, data },
+                  { onSuccess: onDone },
+                )
+              }
+              onDelete={() => remove.mutate({ id: itemId, entryId: entry.id })}
+              onMove={(step) => void move(index, step)}
+            />
+          ))}
+        </ul>
+      )}
+      <div className="flex items-center gap-2">
+        <Input
+          aria-label="New checklist entry"
+          placeholder="Add a done-when entry"
+          maxLength={500}
+          value={text}
+          readOnly={add.isPending}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") addEntry();
+          }}
+        />
+        <Button
+          variant="secondary"
+          disabled={add.isPending || !text.trim()}
+          onClick={addEntry}
+        >
+          Add
+        </Button>
+      </div>
+    </section>
+  );
+};
+
 /** One item: its fields, what it waits on, and delete. */
 export const ItemDetail = ({
   projectId,
@@ -436,6 +727,13 @@ export const ItemDetail = ({
             value={item.description}
             saving={update.isPending}
             onSave={(description) => save({ description })}
+          />
+
+          <Checklist
+            itemId={item.id}
+            entries={item.checklist}
+            refresh={refresh}
+            onError={onError}
           />
 
           {children.length > 0 && (
