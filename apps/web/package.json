@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bun run api:generate && bun --bun next dev --webpack -p 3013",
+    "dev": "bun run api:generate && bun --bun next dev -p 3013",
     "build": "bun run api:generate && bun --bun next build --webpack",
     "start": "bun --bun next start",
     "lint": "eslint",
