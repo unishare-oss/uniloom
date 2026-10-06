@@ -116,9 +116,9 @@ flowchart TD
 
 Commits:
 
-- `cc0bf49` docs: plan 11 checklist
-- `8f80858` feat(api): checklist entries on items
-- `70bef47` feat(web): checklist on the item page
+- `9a2070b` docs: plan 11 checklist
+- `b6a2695` feat(api): checklist entries on items
+- `48d1c0f` feat(web): checklist on the item page
 
 What changed and how:
 
