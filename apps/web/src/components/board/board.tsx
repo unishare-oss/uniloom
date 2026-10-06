@@ -224,7 +224,9 @@ export const Board = ({ projectId }: { projectId: string }) => {
           setTimeout(() => (justDragged.current = false));
         }}
       >
-        <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-6 pb-6 sm:snap-none">
+        {/* relative: the cards' sr-only labels are absolute; without it they escape this
+            scroller and widen the whole page. */}
+        <div className="relative flex snap-x snap-mandatory gap-2 overflow-x-auto px-6 pb-6 sm:snap-none">
           {(!project || !items) &&
             [0, 1, 2, 3].map((n) => (
               <Skeleton
