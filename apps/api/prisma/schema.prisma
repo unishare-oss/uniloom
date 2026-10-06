@@ -212,6 +212,7 @@ model Item {
 
   blockedBy ItemBlock[] @relation("BlockedItem")
   blocking  ItemBlock[] @relation("BlockerItem")
+  checklist ChecklistEntry[]
 
   @@unique([projectId, number])
   @@index([projectId, stateId, deletedAt])
@@ -231,4 +232,21 @@ model ItemBlock {
   @@id([blockedId, blockerId])
   @@index([blockerId])
   @@map("item_block")
+}
+
+/// One done-when entry of an item. Positions run 0..n-1 per item.
+model ChecklistEntry {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  itemId    String   @db.Uuid
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  text      String
+  done      Boolean  @default(false)
+  /// Free text: a commit SHA, test name or link.
+  evidence  String?
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([itemId, position])
+  @@map("checklist_entry")
 }

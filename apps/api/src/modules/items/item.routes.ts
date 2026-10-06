@@ -3,21 +3,29 @@ import { z } from 'zod';
 import { describe } from '@/openapi.js';
 import {
   deleteBlocker,
+  deleteChecklistEntry,
   deleteItemById,
   getDeletedItems,
   getItemById,
   getProjectItems,
+  patchChecklistEntry,
   patchItem,
   postBlocker,
+  postChecklistEntry,
   postRestoreItem,
   postProjectItem,
+  putChecklistOrder,
 } from './item.handlers.js';
 import {
   addBlockerSchema,
+  addChecklistEntrySchema,
+  checklistEntrySchema,
   createItemSchema,
   deletedItemRowSchema,
   itemRowSchema,
   itemSchema,
+  reorderChecklistSchema,
+  updateChecklistEntrySchema,
   updateItemSchema,
 } from './item.schema.js';
 
@@ -128,4 +136,52 @@ itemRoutes.delete(
     data: z.null(),
   }),
   deleteBlocker,
+);
+itemRoutes.post(
+  '/items/:id/checklist',
+  describe({
+    tag: 'items',
+    operationId: 'addChecklistEntry',
+    summary: 'Add a done-when entry at the end of the checklist',
+    pathParams: ['id'],
+    body: addChecklistEntrySchema,
+    data: checklistEntrySchema,
+    status: 201,
+  }),
+  postChecklistEntry,
+);
+itemRoutes.put(
+  '/items/:id/checklist/order',
+  describe({
+    tag: 'items',
+    operationId: 'reorderChecklist',
+    summary: 'Set the checklist order from a list of every entry id',
+    pathParams: ['id'],
+    body: reorderChecklistSchema,
+    data: z.array(checklistEntrySchema),
+  }),
+  putChecklistOrder,
+);
+itemRoutes.patch(
+  '/items/:id/checklist/:entryId',
+  describe({
+    tag: 'items',
+    operationId: 'updateChecklistEntry',
+    summary: "Edit an entry's text, tick or untick it, set its evidence",
+    pathParams: ['id', 'entryId'],
+    body: updateChecklistEntrySchema,
+    data: checklistEntrySchema,
+  }),
+  patchChecklistEntry,
+);
+itemRoutes.delete(
+  '/items/:id/checklist/:entryId',
+  describe({
+    tag: 'items',
+    operationId: 'deleteChecklistEntry',
+    summary: 'Delete an entry and close the gap',
+    pathParams: ['id', 'entryId'],
+    data: z.null(),
+  }),
+  deleteChecklistEntry,
 );

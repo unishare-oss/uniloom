@@ -6,6 +6,7 @@ const itemView = {
   project: { select: { keyPrefix: true, mode: true } },
   state: { select: { id: true, name: true, key: true, category: true } },
   blockedBy: { select: { blockerId: true } },
+  checklist: { orderBy: { position: 'asc' } },
 } as const;
 
 // Deleted items (deletedAt set) are kept in the table but never returned: every lookup
@@ -147,4 +148,58 @@ export const insertLink = (
 
 export const deleteLink = (blockedId: string, blockerId: string) => {
   return prisma.itemBlock.deleteMany({ where: { blockedId, blockerId } });
+};
+
+/**
+ * Locks the item row until the transaction ends, so concurrent checklist changes on it
+ * run one at a time. Call it first, before reading the entries you change.
+ */
+export const lockItem = (tx: Prisma.TransactionClient, itemId: string) => {
+  return tx.$queryRaw`SELECT 1 FROM "item" WHERE "id" = ${itemId}::uuid FOR UPDATE`;
+};
+
+/** The item's checklist entries, in order. */
+export const findChecklist = (tx: Prisma.TransactionClient, itemId: string) => {
+  return tx.checklistEntry.findMany({
+    where: { itemId },
+    orderBy: { position: 'asc' },
+  });
+};
+
+/** One entry of the item: an entry of another item is not found. */
+export const findEntry = (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  entryId: string,
+) => {
+  return tx.checklistEntry.findFirst({ where: { id: entryId, itemId } });
+};
+
+export const insertEntry = (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  text: string,
+  position: number,
+) => {
+  return tx.checklistEntry.create({ data: { itemId, text, position } });
+};
+
+export const updateEntry = (
+  tx: Prisma.TransactionClient,
+  id: string,
+  data: { text?: string; done?: boolean; evidence?: string | null },
+) => {
+  return tx.checklistEntry.update({ where: { id }, data });
+};
+
+export const deleteEntry = (tx: Prisma.TransactionClient, id: string) => {
+  return tx.checklistEntry.delete({ where: { id } });
+};
+
+export const setEntryPosition = (
+  tx: Prisma.TransactionClient,
+  id: string,
+  position: number,
+) => {
+  return tx.checklistEntry.update({ where: { id }, data: { position } });
 };

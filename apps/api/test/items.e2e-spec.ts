@@ -6,6 +6,14 @@ const freshPrefix = () =>
     String.fromCharCode(65 + Math.floor(Math.random() * 26)),
   ).join('');
 
+interface Entry {
+  id: string;
+  text: string;
+  done: boolean;
+  evidence: string | null;
+  position: number;
+}
+
 interface Item {
   id: string;
   key: string;
@@ -14,6 +22,7 @@ interface Item {
   parentId: string | null;
   assigneeId: string | null;
   blockedBy: string[];
+  checklist: Entry[];
 }
 
 describe('items (e2e)', () => {
@@ -710,6 +719,195 @@ describe('items (e2e)', () => {
       expect((await set(w.cookie, await me(outsider.cookie))).body.code).toBe(
         'invalid_assignee',
       );
+    });
+  });
+
+  describe('checklist', () => {
+    /** A project with a task and a member who joined as the owner. */
+    const withTask = async () => {
+      const w = await project('STANDARD');
+      const item = (await w.add({ kind: 'TASK', title: 'T' })).body;
+      const joined = await api.signInReady();
+      const invited = await api.send(
+        'POST',
+        `/api/projects/${w.id}/members`,
+        w.cookie,
+        { email: joined.profile.email, role: 'MEMBER' },
+      );
+      expect(invited.status).toBe(201);
+      const url = `/api/items/${item.id}/checklist`;
+      const add = async (text: string, cookie = w.cookie) =>
+        (await read(await api.send('POST', url, cookie, { text }))) as Entry;
+      const list = async () =>
+        (
+          (await read(
+            await api.send('GET', `/api/items/${item.id}`, w.cookie),
+          )) as Item
+        ).checklist;
+      return { w, item, url, add, list, member: joined.cookie };
+    };
+
+    it('adds entries at the end, for any member, and returns them with the item', async () => {
+      const { w, url, add, list, member } = await withTask();
+      const res = await api.send('POST', url, w.cookie, { text: '  First  ' });
+      expect(res.status).toBe(201);
+      expect(await read(res)).toEqual({
+        id: expect.any(String),
+        text: 'First',
+        done: false,
+        evidence: null,
+        position: 0,
+      });
+      await add('Second', member);
+      expect((await list()).map((e) => [e.text, e.position])).toEqual([
+        ['First', 0],
+        ['Second', 1],
+      ]);
+    });
+
+    it('gives two adds at the same time different positions', async () => {
+      const { w, url, list } = await withTask();
+      const results = await Promise.all([
+        api.send('POST', url, w.cookie, { text: 'A' }),
+        api.send('POST', url, w.cookie, { text: 'B' }),
+        api.send('POST', url, w.cookie, { text: 'C' }),
+      ]);
+      expect(results.map((r) => r.status)).toEqual([201, 201, 201]);
+      expect((await list()).map((e) => e.position)).toEqual([0, 1, 2]);
+    });
+
+    it('ticks with evidence, keeps the evidence on untick, and clears it when empty', async () => {
+      const { w, url, add, list } = await withTask();
+      const entry = await add('Tests pass');
+      const patch = (body: object) =>
+        api.send('PATCH', `${url}/${entry.id}`, w.cookie, body);
+
+      expect(
+        await read(await patch({ done: true, evidence: 'a1b2c3d' })),
+      ).toMatchObject({
+        done: true,
+        evidence: 'a1b2c3d',
+      });
+      expect(await read(await patch({ done: false }))).toMatchObject({
+        done: false,
+        evidence: 'a1b2c3d',
+      });
+      expect(
+        await read(await patch({ text: 'Tests pass in CI' })),
+      ).toMatchObject({
+        text: 'Tests pass in CI',
+        evidence: 'a1b2c3d',
+      });
+      expect(await read(await patch({ evidence: '' }))).toMatchObject({
+        evidence: null,
+      });
+      expect((await list())[0].text).toBe('Tests pass in CI');
+    });
+
+    it('refuses empty text with 400', async () => {
+      const { w, url, add } = await withTask();
+      const entry = await add('X');
+      for (const text of ['', '   '])
+        expect((await api.send('POST', url, w.cookie, { text })).status).toBe(
+          400,
+        );
+      expect(
+        (await api.send('PATCH', `${url}/${entry.id}`, w.cookie, { text: ' ' }))
+          .status,
+      ).toBe(400);
+    });
+
+    it('answers 404 for a non-member, a deleted item and an entry of another item', async () => {
+      const { w, item, url, add } = await withTask();
+      const entry = await add('Mine');
+      const other = (await w.add({ kind: 'TASK', title: 'Other' })).body;
+      const otherUrl = `/api/items/${other.id}/checklist`;
+      const outsider = (await api.signInReady()).cookie;
+
+      const refused = await Promise.all([
+        api.send('POST', url, outsider, { text: 'X' }),
+        api.send('PATCH', `${url}/${entry.id}`, outsider, { done: true }),
+        api.send('DELETE', `${url}/${entry.id}`, outsider),
+        api.send('PUT', `${url}/order`, outsider, { ids: [entry.id] }),
+        api.send('PATCH', `${otherUrl}/${entry.id}`, w.cookie, { done: true }),
+        api.send('DELETE', `${otherUrl}/${entry.id}`, w.cookie),
+      ]);
+      expect(refused.map((r) => r.status)).toEqual(Array(6).fill(404));
+      expect(
+        (await api.send('GET', `/api/items/${item.id}`, w.cookie)).status,
+      ).toBe(200);
+
+      expect(
+        (await api.send('DELETE', `/api/items/${item.id}`, w.cookie)).status,
+      ).toBe(200);
+      const gone = await Promise.all([
+        api.send('POST', url, w.cookie, { text: 'X' }),
+        api.send('PATCH', `${url}/${entry.id}`, w.cookie, { done: true }),
+        api.send('DELETE', `${url}/${entry.id}`, w.cookie),
+        api.send('PUT', `${url}/order`, w.cookie, { ids: [entry.id] }),
+      ]);
+      expect(gone.map((r) => r.status)).toEqual(Array(4).fill(404));
+    });
+
+    it('deletes an entry and closes the gap', async () => {
+      const { w, url, add, list } = await withTask();
+      const [a, b, c] = [await add('A'), await add('B'), await add('C')];
+      const res = await api.send('DELETE', `${url}/${b.id}`, w.cookie);
+      expect(res.status).toBe(200);
+      expect((await list()).map((e) => [e.id, e.position])).toEqual([
+        [a.id, 0],
+        [c.id, 1],
+      ]);
+      expect(
+        (await api.send('DELETE', `${url}/${b.id}`, w.cookie)).status,
+      ).toBe(404);
+    });
+
+    it('reorders, and answers 400 invalid_order unless ids are exactly the entries', async () => {
+      const { w, url, add, list } = await withTask();
+      const [a, b, c] = [await add('A'), await add('B'), await add('C')];
+      const put = (ids: string[]) =>
+        api.send('PUT', `${url}/order`, w.cookie, { ids });
+
+      const ok = await put([c.id, a.id, b.id]);
+      expect(ok.status).toBe(200);
+      expect(((await read(ok)) as Entry[]).map((e) => e.text)).toEqual([
+        'C',
+        'A',
+        'B',
+      ]);
+      expect((await list()).map((e) => [e.text, e.position])).toEqual([
+        ['C', 0],
+        ['A', 1],
+        ['B', 2],
+      ]);
+
+      const other = (await w.add({ kind: 'TASK', title: 'O' })).body;
+      const foreign = (await read(
+        await api.send('POST', `/api/items/${other.id}/checklist`, w.cookie, {
+          text: 'F',
+        }),
+      )) as Entry;
+      for (const ids of [
+        [a.id, b.id],
+        [a.id, a.id, b.id],
+        [a.id, b.id, c.id, c.id],
+        [a.id, b.id, foreign.id],
+        [],
+      ]) {
+        const res = await put(ids);
+        expect(res.status).toBe(400);
+        expect(await read(res)).toMatchObject({ code: 'invalid_order' });
+      }
+      expect((await list()).map((e) => e.text)).toEqual(['C', 'A', 'B']);
+    });
+
+    it('keeps the entries with a deleted item and brings them back on restore', async () => {
+      const { w, item, add, list } = await withTask();
+      await add('Stays');
+      await api.send('DELETE', `/api/items/${item.id}`, w.cookie);
+      await api.send('POST', `/api/items/${item.id}/restore`, w.cookie);
+      expect((await list()).map((e) => e.text)).toEqual(['Stays']);
     });
   });
 

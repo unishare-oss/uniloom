@@ -14,8 +14,10 @@ import type {
 } from '../src/generated/prisma/enums.js';
 import {
   addBlocker,
+  addChecklistEntry,
   createProjectItem,
   removeItem,
+  updateChecklistEntry,
 } from '../src/modules/items/item.service.js';
 import { createProject } from '../src/modules/projects/project.service.js';
 
@@ -235,6 +237,34 @@ const seedGuided = async (ownerId: string) => {
     parentId: board.id,
     state: 'Backlog',
   });
+
+  // Checklist: half ticked, one entry with evidence.
+  const checklist = await item({
+    kind: 'SLICE',
+    title: 'Checklist: tick the rest, add evidence, reorder',
+    parentId: board.id,
+    state: 'In Progress',
+  });
+  const texts = [
+    'The endpoint answers 404 to a non-member',
+    'Tests cover the empty-text case',
+    'The item page shows the new section',
+    'The seed has a slice to try it on',
+  ];
+  const entries = [];
+  for (const text of texts)
+    entries.push(await addChecklistEntry(checklist.id, ownerId, { text }));
+  await updateChecklistEntry(checklist.id, entries[0].id, ownerId, {
+    done: true,
+    evidence: 'a1b2c3d',
+  });
+  await updateChecklistEntry(checklist.id, entries[1].id, ownerId, {
+    done: true,
+  });
+  note(
+    checklist.key,
+    'tick an entry → asks for evidence (Enter saves, Skip leaves it empty); edit, move and delete entries; add one with empty text → refused',
+  );
 };
 
 /** Standard, you own it: task → subtask. */
