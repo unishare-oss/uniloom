@@ -174,14 +174,7 @@ export const AppSidebar = () => {
           href="/profile"
           className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted"
         >
-          {me && (
-            <Avatar
-              name={me.name}
-              image={me.image}
-              size={40}
-              className="rounded-[10px]"
-            />
-          )}
+          {me && <Avatar name={me.name} image={me.image} size={40} />}
           <span className="flex min-w-0 flex-col">
             <span className="truncate font-semibold text-foreground">
               {me?.name ?? "Profile"}

@@ -35,15 +35,17 @@ import {
   getListItemsQueryKey,
   useCreateItem,
 } from "@/lib/api/generated/items/items";
+import { useListMembers } from "@/lib/api/generated/members/members";
 import type {
   GetProject200,
   ListItems200Item,
 } from "@/lib/api/generated/uniloomAPI.schemas";
 
 const NO_PARENT = "none";
+const UNASSIGNED = "unassigned";
 
 /**
- * Kind, title, parent, priority and description. The item starts in the first state; the
+ * Kind, title, parent, priority, assignee and description. The item starts in the first state; the
  * API checks which kinds may sit under which.
  */
 export const NewItemDialog = ({
@@ -62,7 +64,11 @@ export const NewItemDialog = ({
   const [title, setTitle] = useState("");
   const [parentId, setParentId] = useState(NO_PARENT);
   const [priority, setPriority] = useState<Priority>("NONE");
+  const [assigneeId, setAssigneeId] = useState(UNASSIGNED);
   const [description, setDescription] = useState("");
+  const { data: members } = useListMembers(project.id, {
+    query: { select: (r) => r.data },
+  });
   const create = useCreateItem({
     mutation: {
       onSuccess: async (res) => {
@@ -74,6 +80,7 @@ export const NewItemDialog = ({
         setTitle("");
         setDescription("");
         setParentId(NO_PARENT);
+        setAssigneeId(UNASSIGNED);
       },
       onError: (err) => toast.error(err.message),
     },
@@ -84,6 +91,14 @@ export const NewItemDialog = ({
     ...items.map((item) => ({
       value: item.id,
       label: `${item.key} · ${item.title}`,
+    })),
+  ];
+
+  const assignees = [
+    { value: UNASSIGNED, label: "Unassigned" },
+    ...(members ?? []).map((member) => ({
+      value: member.userId,
+      label: member.name,
     })),
   ];
 
@@ -102,6 +117,7 @@ export const NewItemDialog = ({
                 title: title.trim(),
                 priority,
                 parentId: parentId === NO_PARENT ? null : parentId,
+                assigneeId: assigneeId === UNASSIGNED ? null : assigneeId,
                 ...(description.trim() && { description }),
               },
             });
@@ -181,6 +197,26 @@ export const NewItemDialog = ({
                 {parents.map((parent) => (
                   <SelectItem key={parent.value} value={parent.value}>
                     {parent.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label>Assignee</Label>
+            <Select
+              value={assigneeId}
+              onValueChange={(value) => setAssigneeId(value as string)}
+              items={assignees}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {assignees.map((assignee) => (
+                  <SelectItem key={assignee.value} value={assignee.value}>
+                    {assignee.label}
                   </SelectItem>
                 ))}
               </SelectContent>

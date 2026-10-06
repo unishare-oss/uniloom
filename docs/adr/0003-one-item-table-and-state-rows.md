@@ -1,6 +1,6 @@
 # ADR-0003: One item table, states as rows, UUIDv7 ids
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-03
 
 ## Context

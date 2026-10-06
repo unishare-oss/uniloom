@@ -311,6 +311,23 @@ const seedMember = async (ownerId: string) => {
     parentId: feature.id,
     state: 'Backlog',
   });
+  const free = await item({
+    kind: 'SLICE',
+    title: 'Slice nobody has. Click Claim → it is yours',
+    parentId: feature.id,
+  });
+  const yours = await item({
+    kind: 'SLICE',
+    title: 'Slice assigned to you. Click Unclaim → it is free again',
+    parentId: feature.id,
+    assigneeId: ownerId,
+  });
+  const taken = await item({
+    kind: 'SLICE',
+    title: "Slice assigned to Mya. Open it → no Claim, you can't take it",
+    parentId: feature.id,
+    assigneeId: mya.id,
+  });
   note(
     'TM',
     'you are a MEMBER here: no New item, Add subtask, Delete or Restore',
@@ -319,6 +336,9 @@ const seedMember = async (ownerId: string) => {
     slice.key,
     'drag to another column, edit the title, set a blocker → works',
   );
+  note(free.key, 'Assignee shows Claim → click it, your avatar appears');
+  note(yours.key, 'Assignee is you with Unclaim → click it, it is free again');
+  note(taken.key, 'Assignee is Mya, no button; a direct PATCH → 403 forbidden');
   note('TM members', 'no add-member form, no Remove; you can still Leave');
 };
 

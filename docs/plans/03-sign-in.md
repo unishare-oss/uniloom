@@ -1,6 +1,6 @@
 # 03: Sign-in with uniAuth
 
-Status: In Review
+Status: Done
 
 ## Scope
 

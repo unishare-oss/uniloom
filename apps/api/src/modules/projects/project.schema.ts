@@ -42,6 +42,8 @@ export const projectDetailSchema = projectSchema.extend({
   canManageMembers: z.boolean(),
   /** Whether the caller may create, delete and restore items (owners, managers). */
   canCreateItems: z.boolean(),
+  /** Whether the caller may set anyone as a ticket's assignee (owners, managers). */
+  canAssignOthers: z.boolean(),
   /** The roles the caller may give when adding a member. */
   assignableRoles: z.array(z.enum(Role)),
 });

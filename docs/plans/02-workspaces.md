@@ -1,6 +1,6 @@
 # 02: Workspaces and people
 
-Status: In Review
+Status: Done
 
 ## Scope
 

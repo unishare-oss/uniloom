@@ -3,20 +3,23 @@
 import { useDraggable } from "@dnd-kit/core";
 import Link from "next/link";
 import type { MouseEvent } from "react";
-import {
-  AssigneeIcon,
-  KindIcon,
-  PriorityIcon,
-} from "@/components/items/item-meta";
-import type { ListItems200Item } from "@/lib/api/generated/uniloomAPI.schemas";
+import { KindIcon, PriorityIcon } from "@/components/items/item-meta";
+import { Avatar, EmptyAvatar } from "@/components/user/avatar";
+import type {
+  ListItems200Item,
+  ListMembers200Item,
+} from "@/lib/api/generated/uniloomAPI.schemas";
 import { cn } from "@/lib/utils";
 
 /** The card's face, shared by the card on the board and the one being dragged. */
 export const CardFace = ({
   item,
+  assignee,
   done,
 }: {
   item: ListItems200Item;
+  /** The member who has it, if any. */
+  assignee?: ListMembers200Item;
   done: boolean;
 }) => {
   return (
@@ -34,7 +37,18 @@ export const CardFace = ({
         </span>
         <span className="ml-auto flex items-center gap-1.5">
           <PriorityIcon priority={item.priority} />
-          <AssigneeIcon assigned={item.assigneeId !== null} />
+          {assignee && (
+            <span title={assignee.name}>
+              <Avatar name={assignee.name} image={assignee.image} size={20} />
+              <span className="sr-only">Assigned to {assignee.name}</span>
+            </span>
+          )}
+          {item.assigneeId === null && (
+            <span>
+              <EmptyAvatar />
+              <span className="sr-only">Unassigned</span>
+            </span>
+          )}
         </span>
       </div>
     </>
@@ -44,11 +58,13 @@ export const CardFace = ({
 /** A card on the board: a link to the item that can be dragged to another column. */
 export const ItemCard = ({
   item,
+  assignee,
   href,
   done,
   onClick,
 }: {
   item: ListItems200Item;
+  assignee?: ListMembers200Item;
   href: string;
   done: boolean;
   onClick: (event: MouseEvent) => void;
@@ -71,7 +87,7 @@ export const ItemCard = ({
         isDragging && "opacity-40",
       )}
     >
-      <CardFace item={item} done={done} />
+      <CardFace item={item} assignee={assignee} done={done} />
     </Link>
   );
 };

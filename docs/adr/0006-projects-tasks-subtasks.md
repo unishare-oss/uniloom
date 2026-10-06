@@ -1,6 +1,6 @@
 # ADR-0006: Projects hold tasks and subtasks
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-05
 
 ## Context

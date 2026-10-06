@@ -1,4 +1,4 @@
-import { kindError, wouldCreateCycle } from './item.service.js';
+import { kindError, mayAssign, wouldCreateCycle } from './item.service.js';
 
 describe('kindError', () => {
   it.each([
@@ -49,5 +49,32 @@ describe('wouldCreateCycle', () => {
     const links = [link('A', 'C'), link('B', 'C'), link('C', 'D')];
     expect(wouldCreateCycle(links, 'D', 'A')).toBe(true);
     expect(wouldCreateCycle(links, 'E', 'A')).toBe(false);
+  });
+});
+
+describe('mayAssign', () => {
+  it.each(['OWNER', 'MANAGER'] as const)(
+    'lets %s set anyone or nobody',
+    (role) => {
+      expect(mayAssign(role, 'me', null, 'mya')).toBe(true);
+      expect(mayAssign(role, 'me', 'mya', 'ko')).toBe(true);
+      expect(mayAssign(role, 'me', 'mya', null)).toBe(true);
+      expect(mayAssign(role, 'me', null, 'me')).toBe(true);
+    },
+  );
+
+  it('lets a member claim a free ticket and unclaim their own', () => {
+    expect(mayAssign('MEMBER', 'me', null, 'me')).toBe(true);
+    expect(mayAssign('MEMBER', 'me', 'me', null)).toBe(true);
+  });
+
+  it.each([
+    [null, 'mya'], // assign someone else
+    ['mya', 'me'], // take Mya's ticket
+    ['mya', null], // unassign someone else
+    ['mya', 'ko'], // reassign
+    ['me', 'mya'], // hand over their own
+  ] as const)('refuses a member changing %s to %s', (from, to) => {
+    expect(mayAssign('MEMBER', 'me', from, to)).toBe(false);
   });
 });

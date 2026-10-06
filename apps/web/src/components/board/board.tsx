@@ -33,6 +33,7 @@ import type {
   GetProject200StatesItem,
   ListItems200Item,
 } from "@/lib/api/generated/uniloomAPI.schemas";
+import { useListMembers } from "@/lib/api/generated/members/members";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
 
@@ -56,6 +57,9 @@ export const Board = ({ projectId }: { projectId: string }) => {
     query: { select: (r) => r.data, retry: false },
   });
   const { data: items, error: itemsError } = useListItems(projectId, {
+    query: { select: (r) => r.data },
+  });
+  const { data: members } = useListMembers(projectId, {
     query: { select: (r) => r.data },
   });
   const updateItem = useUpdateItem();
@@ -96,6 +100,8 @@ export const Board = ({ projectId }: { projectId: string }) => {
       item.key.toLowerCase().includes(query) ||
       item.title.toLowerCase().includes(query),
   );
+  const assigneeOf = (item: Row) =>
+    members?.find((member) => member.userId === item.assigneeId);
   const listKey = getListItemsQueryKey(projectId);
 
   const moveItem = async (item: Row, state: State) => {
@@ -234,6 +240,7 @@ export const Board = ({ projectId }: { projectId: string }) => {
                   <ItemCard
                     key={item.id}
                     item={item}
+                    assignee={assigneeOf(item)}
                     href={`/p/${projectId}/items/${item.id}`}
                     done={state.category === "DONE"}
                     onClick={(event) => {
@@ -249,7 +256,11 @@ export const Board = ({ projectId }: { projectId: string }) => {
         <DragOverlay>
           {dragged && (
             <div className="flex w-[252px] -rotate-2 cursor-grabbing flex-col gap-3 rounded-[4px] bg-card p-3 shadow-lifted">
-              <CardFace item={dragged} done={false} />
+              <CardFace
+                item={dragged}
+                assignee={assigneeOf(dragged)}
+                done={false}
+              />
             </div>
           )}
         </DragOverlay>

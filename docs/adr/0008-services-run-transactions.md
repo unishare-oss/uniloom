@@ -1,6 +1,6 @@
 # ADR-0008: Services run transactions; repositories take `tx`
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-05
 
 ## Context

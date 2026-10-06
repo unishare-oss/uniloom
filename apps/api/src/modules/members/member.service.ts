@@ -10,6 +10,7 @@ import {
   findUserByEmail,
   insertMember,
   lockProject,
+  unassignAll,
   updateRole,
 } from './member.repository.js';
 
@@ -131,7 +132,10 @@ export const changeRole = async (
   return view(member);
 };
 
-/** An owner removes anyone; anyone removes themselves (leaves). */
+/**
+ * An owner removes anyone; anyone removes themselves (leaves). Their tickets become
+ * unassigned, so others can claim them.
+ */
 export const removeMember = async (
   projectId: string,
   userId: string,
@@ -142,5 +146,6 @@ export const removeMember = async (
     await lockProject(tx, projectId);
     await checkKeepsOwner(tx, projectId, targetId, null);
     await deleteMember(tx, projectId, targetId);
+    await unassignAll(tx, projectId, targetId);
   });
 };

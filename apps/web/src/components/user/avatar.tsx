@@ -1,5 +1,6 @@
 "use client";
 
+import { UserRound } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { isAllowedAvatar, isLocalAvatar } from "@/lib/avatar-hosts";
@@ -14,7 +15,10 @@ const initials = (name: string) => {
   return letters.join("") || "?";
 };
 
-/** The uniAuth avatar, or the person's initials when there is none or it can't load. */
+/**
+ * The uniAuth avatar, or the person's initials when there is none or it can't load. A
+ * rounded square (corners 25% of the size), like the profile in the sidebar.
+ */
 export const Avatar = ({
   name,
   image,
@@ -24,7 +28,7 @@ export const Avatar = ({
   name: string;
   image: string | null;
   size?: number;
-  /** Overrides the round shape, e.g. `rounded-[10px]` in the sidebar. */
+  /** Overrides the rounded-square shape. */
   className?: string;
 }) => {
   const [failed, setFailed] = useState(false);
@@ -37,7 +41,7 @@ export const Avatar = ({
         height={size}
         unoptimized={isLocalAvatar(image)}
         onError={() => setFailed(true)}
-        className={cn("rounded-full object-cover", className)}
+        className={cn("rounded-[25%] object-cover", className)}
         style={{ width: size, height: size }}
       />
     );
@@ -47,12 +51,26 @@ export const Avatar = ({
       aria-hidden
       data-testid="avatar-initials"
       className={cn(
-        "inline-flex items-center justify-center rounded-full bg-muted font-medium text-muted-foreground",
+        "inline-flex items-center justify-center rounded-[25%] bg-muted font-medium text-muted-foreground",
         className,
       )}
       style={{ width: size, height: size, fontSize: size / 2.6 }}
     >
       {initials(name)}
+    </span>
+  );
+};
+
+/** The spot an avatar would fill when nobody is assigned: same shape, dashed and muted. */
+export const EmptyAvatar = ({ size = 20 }: { size?: number }) => {
+  return (
+    <span
+      aria-hidden
+      title="Unassigned"
+      className="inline-flex shrink-0 items-center justify-center rounded-[25%] border border-dashed border-muted-foreground/50 text-muted-foreground/70"
+      style={{ width: size, height: size }}
+    >
+      <UserRound style={{ width: size * 0.6, height: size * 0.6 }} />
     </span>
   );
 };

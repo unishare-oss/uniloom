@@ -1,6 +1,6 @@
 # 06: Web pages for workspaces and items
 
-Status: In Progress
+Status: Done
 
 ## Scope
 
@@ -42,13 +42,13 @@ Left out: labels, checklist, comments (plan 07), mode rules (plan 08), assignee 
 
 - [x] `GET /api/workspaces/:workspaceId` returns the workspace and its states in board
       order; non-members get 404 (e2e)
-- [ ] A signed-in user sees their workspaces on `/` and can create one
-- [ ] The board shows every state as a column, and dragging a card (mouse, touch or
+- [x] A signed-in user sees their workspaces on `/` and can create one
+- [x] The board shows every state as a column, and dragging a card (mouse, touch or
       keyboard) to another column changes its state, undone with a toast if the API refuses
-- [ ] The item page edits title, description, state, priority, parent and blocked-by, and
+- [x] The item page edits title, description, state, priority, parent and blocked-by, and
       deletes the item; a blocked-by cycle shows the API's message
-- [ ] The trash lists deleted items and Restore brings one back to the board
-- [ ] A description renders Markdown (tables, task lists, code) and ```mermaid blocks as
+- [x] The trash lists deleted items and Restore brings one back to the board
+- [x] A description renders Markdown (tables, task lists, code) and ```mermaid blocks as
       diagrams, never raw HTML; Mermaid loads only when a description has a diagram
 
 ## Design
@@ -97,4 +97,11 @@ Today the API accepts any move; once the rules engine lands (plan 08), a refused
 
 ## Changes
 
-To fill in when the work is committed.
+- `debddc8` feat(web): app shell, UI kit and workspace list (`GET /workspaces/:id`, the
+  list and New workspace on `/`, Markdown with lazy Mermaid).
+- `228c817` feat(web): board with drag between states, new item and trash (dnd-kit with
+  mouse, touch and keyboard sensors; optimistic move rolled back with a toast).
+- Planned vs actual: as designed. Afterwards plan 07 renamed workspaces to projects
+  (`/p/[projectId]`, `ProjectList`), so names above are as they were then.
+- Items ticked on 2026-10-05 after checking the code and the running app; they had been
+  left unticked when the work was committed.

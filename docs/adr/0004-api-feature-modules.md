@@ -1,6 +1,6 @@
 # ADR-0004: API code in feature modules
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-03
 
 ## Context

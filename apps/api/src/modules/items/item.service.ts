@@ -4,8 +4,13 @@ import type {
   ItemKind,
   Priority,
   ProjectMode,
+  Role,
 } from '@/generated/prisma/enums.js';
-import { CREATORS, requireRole } from '@/modules/members/member.service.js';
+import {
+  CREATORS,
+  requireRole,
+  ROLES,
+} from '@/modules/members/member.service.js';
 import {
   isProjectMember,
   requireMember,
@@ -55,6 +60,22 @@ export const kindError = (
       ? `a ${kind} can't be under a ${parentKind}`
       : `a ${kind} needs a parent (${parents.filter(Boolean).join(' or ')})`;
   return null;
+};
+
+/**
+ * Whether `role` may change a ticket's assignee from `from` to `to`. Owners and managers
+ * may set anyone; a member may only claim a free ticket or unclaim their own.
+ */
+export const mayAssign = (
+  role: Role,
+  userId: string,
+  from: string | null,
+  to: string | null,
+) => {
+  if (CREATORS.includes(role)) return true;
+  const claim = from === null && to === userId;
+  const unclaim = from === userId && to === null;
+  return claim || unclaim;
 };
 
 /**
@@ -230,6 +251,15 @@ export const updateProjectItem = async (
       id,
     );
   if (input.stateId) await checkState(item.projectId, input.stateId);
+  if (input.assigneeId !== undefined && input.assigneeId !== item.assigneeId) {
+    const { role } = await requireRole(item.projectId, userId, ROLES);
+    if (!mayAssign(role, userId, item.assigneeId, input.assigneeId))
+      throw apiError(
+        403,
+        'forbidden',
+        'Members can only claim a free ticket or unclaim their own',
+      );
+  }
   if (input.assigneeId) await checkAssignee(item.projectId, input.assigneeId);
   return toItem(await updateItem(id, input));
 };
