@@ -77,6 +77,7 @@ describe('Uniloom API (e2e)', () => {
         'listItems',
         'listMembers',
         'listProjects',
+        'moveItem',
         'removeBlocker',
         'removeMember',
         'reorderChecklist',

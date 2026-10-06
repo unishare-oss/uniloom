@@ -6,6 +6,7 @@ import {
   requireRole,
   ROLES,
 } from '@/modules/members/member.service.js';
+import { mayMoveToDone } from '@/modules/items/item.rules.js';
 import {
   createProject as insertProject,
   findProjectDetailForMember,
@@ -47,6 +48,7 @@ export const getProject = async (projectId: string, userId: string) => {
     canManageMembers: role === 'OWNER',
     canCreateItems: CREATORS.includes(role),
     canAssignOthers: CREATORS.includes(role),
+    canMoveToDone: mayMoveToDone(role),
     assignableRoles: assignableRoles(role),
   };
 };

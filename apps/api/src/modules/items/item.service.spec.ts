@@ -1,4 +1,12 @@
-import { kindError, mayAssign, wouldCreateCycle } from './item.service.js';
+import {
+  checklistError,
+  featureDone,
+  kindError,
+  mayAssign,
+  mayMove,
+  mayMoveToDone,
+  wouldCreateCycle,
+} from './item.rules.js';
 
 describe('kindError', () => {
   it.each([
@@ -76,5 +84,119 @@ describe('mayAssign', () => {
     ['me', 'mya'], // hand over their own
   ] as const)('refuses a member changing %s to %s', (from, to) => {
     expect(mayAssign('MEMBER', 'me', from, to)).toBe(false);
+  });
+});
+
+describe('mayMove', () => {
+  it.each(['OWNER', 'MANAGER'] as const)('lets %s move any ticket', (role) => {
+    expect(mayMove(role, 'me', null)).toBe(true);
+    expect(mayMove(role, 'me', 'mya')).toBe(true);
+    expect(mayMove(role, 'me', 'me')).toBe(true);
+  });
+
+  it('lets a member move only a ticket assigned to them', () => {
+    expect(mayMove('MEMBER', 'me', 'me')).toBe(true);
+    expect(mayMove('MEMBER', 'me', 'mya')).toBe(false);
+    expect(mayMove('MEMBER', 'me', null)).toBe(false);
+  });
+});
+
+describe('mayMoveToDone', () => {
+  it('lets owners and managers, not members', () => {
+    expect(mayMoveToDone('OWNER')).toBe(true);
+    expect(mayMoveToDone('MANAGER')).toBe(true);
+    expect(mayMoveToDone('MEMBER')).toBe(false);
+  });
+});
+
+describe('checklistError', () => {
+  const guided = { checklistRequired: true, checklistMin: 3 };
+  const entry = (text: string, done: boolean) => ({ text, done });
+  const full = [entry('a', true), entry('b', true), entry('c', true)];
+  const review = { key: 'in_review', category: 'STARTED' } as const;
+  const done = { key: 'done', category: 'DONE' } as const;
+  const started = { key: 'in_progress', category: 'STARTED' } as const;
+
+  it('allows a full, ticked checklist into In Review and Done', () => {
+    expect(checklistError(guided, 'SLICE', full, review)).toBeNull();
+    expect(checklistError(guided, 'SLICE', full, done)).toBeNull();
+    expect(checklistError(guided, 'SUBTASK', full, done)).toBeNull();
+  });
+
+  it('names how many entries are missing', () => {
+    expect(
+      checklistError(guided, 'SLICE', [entry('a', true)], review),
+    ).toContain('at least 3');
+  });
+
+  it('names the unticked entries', () => {
+    const error = checklistError(
+      guided,
+      'SLICE',
+      [entry('a', true), entry('Write tests', false), entry('Docs', false)],
+      done,
+    );
+    expect(error).toContain('"Write tests"');
+    expect(error).toContain('"Docs"');
+    expect(error).not.toContain('"a"');
+  });
+
+  it('applies to a Done state without the done key (Standard)', () => {
+    expect(
+      checklistError(guided, 'SUBTASK', [], { key: null, category: 'DONE' }),
+    ).toEqual(expect.any(String));
+  });
+
+  it('never gates other states or Canceled, even with unticked entries', () => {
+    const open = [entry('x', false)];
+    const canceled = { key: 'canceled', category: 'CANCELED' } as const;
+    expect(checklistError(guided, 'SLICE', open, started)).toBeNull();
+    expect(checklistError(guided, 'SLICE', open, canceled)).toBeNull();
+  });
+
+  it.each([
+    ['an empty feature', guided, 'FEATURE', done],
+    ['an empty task', guided, 'TASK', done],
+    [
+      'an empty slice when the switch is off',
+      { checklistRequired: false, checklistMin: 3 },
+      'SLICE',
+      done,
+    ],
+  ] as const)('has no minimum for %s', (_name, project, kind, target) => {
+    expect(checklistError(project, kind, [], target)).toBeNull();
+  });
+
+  it('wants every entry ticked on any item, even with the switch off', () => {
+    const off = { checklistRequired: false, checklistMin: null };
+    for (const kind of ['FEATURE', 'TASK', 'SLICE'] as const)
+      expect(checklistError(off, kind, [entry('x', false)], done)).toContain(
+        '"x"',
+      );
+    expect(checklistError(off, 'TASK', [entry('x', true)], done)).toBeNull();
+  });
+
+  it('has no minimum when checklistMin is null, but still wants ticks', () => {
+    const project = { checklistRequired: true, checklistMin: null };
+    expect(checklistError(project, 'SLICE', [], done)).toBeNull();
+    expect(checklistError(project, 'SLICE', [entry('a', false)], done)).toEqual(
+      expect.any(String),
+    );
+  });
+});
+
+describe('featureDone', () => {
+  const child = (category: 'BACKLOG' | 'STARTED' | 'DONE' | 'CANCELED') => ({
+    state: { category },
+  });
+
+  it('is true when every slice is Done or Canceled', () => {
+    expect(featureDone([child('DONE'), child('CANCELED')])).toBe(true);
+  });
+
+  it('is false while a slice is open, and with no slices', () => {
+    expect(featureDone([child('DONE'), child('STARTED')])).toBe(false);
+    expect(featureDone([child('BACKLOG')])).toBe(false);
+    expect(featureDone([])).toBe(false);
   });
 });

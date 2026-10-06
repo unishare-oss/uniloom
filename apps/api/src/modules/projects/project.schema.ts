@@ -44,6 +44,8 @@ export const projectDetailSchema = projectSchema.extend({
   canCreateItems: z.boolean(),
   /** Whether the caller may set anyone as a ticket's assignee (owners, managers). */
   canAssignOthers: z.boolean(),
+  /** Whether the caller may move a ticket into a Done state (owners, managers). */
+  canMoveToDone: z.boolean(),
   /** The roles the caller may give when adding a member. */
   assignableRoles: z.array(z.enum(Role)),
 });

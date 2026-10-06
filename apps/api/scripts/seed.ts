@@ -128,6 +128,20 @@ flowchart LR
 \`\`\`
 `;
 
+/** Adds entries to an item, ticking the first `ticked` of them. */
+const addEntries = async (
+  itemId: string,
+  userId: string,
+  texts: string[],
+  ticked: number,
+) => {
+  for (const [i, text] of texts.entries()) {
+    const entry = await addChecklistEntry(itemId, userId, { text });
+    if (i < ticked)
+      await updateChecklistEntry(itemId, entry.id, userId, { done: true });
+  }
+};
+
 const checks: string[] = [];
 const note = (key: string, what: string) => checks.push(`${key}  ${what}`);
 
@@ -265,6 +279,35 @@ const seedGuided = async (ownerId: string) => {
     checklist.key,
     'tick an entry → asks for evidence (Enter saves, Skip leaves it empty); edit, move and delete entries; add one with empty text → refused',
   );
+
+  // Moves: finishing the last slice finishes its feature.
+  const finishing = await item({
+    kind: 'FEATURE',
+    title: 'Finish my last slice → I go to Done by myself',
+  });
+  await item({
+    kind: 'SLICE',
+    title: 'Done slice (already finished)',
+    parentId: finishing.id,
+    state: 'Done',
+  });
+  const last = await item({
+    kind: 'SLICE',
+    title:
+      'Last open slice: move me to Done → works (checklist is ticked) and my feature goes Done',
+    parentId: finishing.id,
+    state: 'In Review',
+  });
+  await addEntries(
+    last.id,
+    ownerId,
+    ['Entry one', 'Entry two', 'Entry three'],
+    3,
+  );
+  note(
+    last.key,
+    `move to Done → works, and ${finishing.key} moves to Done by itself`,
+  );
 };
 
 /** Standard, you own it: task → subtask. */
@@ -312,7 +355,8 @@ const seedManager = async (ownerId: string) => {
   });
   await item({
     kind: 'SLICE',
-    title: 'Slice in Aligning. Move it to Ready → works for any member',
+    title:
+      'Slice in Aligning. Move it to Ready → works (managers move any ticket)',
     parentId: feature.id,
     state: 'Aligning',
   });
@@ -337,7 +381,7 @@ const seedMember = async (ownerId: string) => {
   const slice = await item({
     kind: 'SLICE',
     title:
-      'Slice. Move it to another column, edit it, set a blocker → all work',
+      'Slice nobody has. Its card does not drag and State is disabled: Claim it, then move it → works',
     parentId: feature.id,
     state: 'Backlog',
   });
@@ -354,21 +398,62 @@ const seedMember = async (ownerId: string) => {
   });
   const taken = await item({
     kind: 'SLICE',
-    title: "Slice assigned to Mya. Open it → no Claim, you can't take it",
+    title:
+      'Slice assigned to Mya. Open it → no Claim, State is disabled, the card does not drag; a direct move → 403',
     parentId: feature.id,
     assigneeId: mya.id,
   });
+  const mine = await item({
+    kind: 'SLICE',
+    title:
+      'Slice assigned to you. Move it to Done → 403 (no Done in State); to In Progress → works',
+    parentId: feature.id,
+    state: 'Ready',
+    assigneeId: ownerId,
+  });
+  const unticked = await item({
+    kind: 'SLICE',
+    title:
+      'Slice assigned to you with an unticked entry. Move it to In Review → 409, naming the entry; tick it, then move → works',
+    parentId: feature.id,
+    state: 'In Progress',
+    assigneeId: ownerId,
+  });
+  await addEntries(
+    unticked.id,
+    mya.id,
+    ['Entry one', 'Entry two', 'Write the tests'],
+    2,
+  );
+  const full = await item({
+    kind: 'SLICE',
+    title:
+      'Slice assigned to you with 6 entries. Add a 7th → 409 checklist_max_exceeded: split this slice',
+    parentId: feature.id,
+    state: 'In Progress',
+    assigneeId: ownerId,
+  });
+  await addEntries(full.id, mya.id, ['1', '2', '3', '4', '5', '6'], 0);
   note(
     'TM',
     'you are a MEMBER here: no New item, Add subtask, Delete or Restore',
   );
   note(
     slice.key,
-    'drag to another column, edit the title, set a blocker → works',
+    'card does not drag, State disabled; Claim it → then State works; edit the title, set a blocker → works',
   );
+  note(mine.key, 'State has no Done; In Progress → works');
+  note(
+    unticked.key,
+    'In Review → refused (409), tick the entry, retry → works',
+  );
+  note(full.key, 'add a 7th checklist entry → refused (409)');
   note(free.key, 'Assignee shows Claim → click it, your avatar appears');
   note(yours.key, 'Assignee is you with Unclaim → click it, it is free again');
-  note(taken.key, 'Assignee is Mya, no button; a direct PATCH → 403 forbidden');
+  note(
+    taken.key,
+    'Assignee is Mya, no button, State disabled; a direct move → 403 forbidden',
+  );
   note('TM members', 'no add-member form, no Remove; you can still Leave');
 };
 

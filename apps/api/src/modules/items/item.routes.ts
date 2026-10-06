@@ -14,6 +14,7 @@ import {
   postChecklistEntry,
   postRestoreItem,
   postProjectItem,
+  postMoveItem,
   putChecklistOrder,
 } from './item.handlers.js';
 import {
@@ -24,6 +25,7 @@ import {
   deletedItemRowSchema,
   itemRowSchema,
   itemSchema,
+  moveItemSchema,
   reorderChecklistSchema,
   updateChecklistEntrySchema,
   updateItemSchema,
@@ -84,12 +86,24 @@ itemRoutes.patch(
     tag: 'items',
     operationId: 'updateItem',
     summary:
-      "Update an item's title, description, priority, assignee, state or parent",
+      "Update an item's title, description, priority, assignee or parent",
     pathParams: ['id'],
     body: updateItemSchema,
     data: itemSchema,
   }),
   patchItem,
+);
+itemRoutes.post(
+  '/items/:id/move',
+  describe({
+    tag: 'items',
+    operationId: 'moveItem',
+    summary: 'Move an item to another state',
+    pathParams: ['id'],
+    body: moveItemSchema,
+    data: itemSchema,
+  }),
+  postMoveItem,
 );
 itemRoutes.delete(
   '/items/:id',
