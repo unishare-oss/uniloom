@@ -103,7 +103,11 @@ flowchart LR
 
 ## Changes
 
-Commits: none yet
+Commits (on `feat/assign-and-claim`):
+
+- `3fcc414` docs: plan 10 assign and claim, claim race tech debt
+- `b4edd39` feat(api): members claim tickets, owners and managers assign, leaving unassigns
+- `8ce6436` feat(web): assignee field with claim, assignee avatars, rounded-square avatars
 
 What changed and how:
 
