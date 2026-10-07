@@ -13,6 +13,7 @@ export const PRESETS: Record<
       approvalRequired: boolean;
       approverNotAuthor: boolean;
       plannedVsActual: boolean;
+      selfClaimAllowed: boolean;
     };
     states: PresetState[];
   }
@@ -27,6 +28,7 @@ export const PRESETS: Record<
       approvalRequired: true,
       approverNotAuthor: true,
       plannedVsActual: true,
+      selfClaimAllowed: true,
     },
     states: [
       { name: 'Triage', key: 'triage', category: 'BACKLOG' },
@@ -49,6 +51,7 @@ export const PRESETS: Record<
       approvalRequired: false,
       approverNotAuthor: false,
       plannedVsActual: false,
+      selfClaimAllowed: true,
     },
     states: [
       { name: 'To Do', key: null, category: 'UNSTARTED' },

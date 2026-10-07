@@ -95,8 +95,7 @@ enum Role {
 
 /// A mode is a preset of the switch columns; owners can change switches afterwards.
 /// States are locked when `mode` is GUIDED, since its rules rely on them.
-/// When `checklistRequired` is on, a checklist has 3 to 6 items: fixed in code, not
-/// stored per project.
+/// The migration adds a CHECK that checklist limits are at least 1 and min <= max.
 model Project {
   id                String        @id @default(uuid(7)) @db.Uuid
   name              String
@@ -112,6 +111,8 @@ model Project {
   approvalRequired  Boolean
   approverNotAuthor Boolean
   plannedVsActual   Boolean
+  /// When off, a member can't claim a free ticket; they can still unclaim their own.
+  selfClaimAllowed  Boolean       @default(true)
   /// Next item number. Increment it in the same transaction that creates the item.
   nextItemNumber    Int           @default(1)
   createdAt         DateTime      @default(now())

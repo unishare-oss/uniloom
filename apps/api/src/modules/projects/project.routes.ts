@@ -4,12 +4,14 @@ import { describe } from '@/openapi.js';
 import {
   getProjectById,
   getProjects,
+  patchProject,
   postProject,
 } from './project.handlers.js';
 import {
   createProjectSchema,
   projectDetailSchema,
   projectSchema,
+  updateProjectSchema,
 } from './project.schema.js';
 
 /** The signed-in user's projects. */
@@ -47,4 +49,17 @@ projectRoutes.get(
     data: projectDetailSchema,
   }),
   getProjectById,
+);
+projectRoutes.patch(
+  '/:projectId',
+  describe({
+    tag: 'projects',
+    operationId: 'updateProject',
+    summary:
+      "Change a project's name, rule switches and checklist limits (owners)",
+    pathParams: ['projectId'],
+    body: updateProjectSchema,
+    data: projectSchema,
+  }),
+  patchProject,
 );

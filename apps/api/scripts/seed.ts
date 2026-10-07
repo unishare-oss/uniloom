@@ -2,7 +2,7 @@
 // case can be tried in the browser. Run `bun run db:seed` after signing in once.
 //
 // SEED_OWNER_EMAIL picks your account (default: the first user who signed in). Reruns
-// replace the seed projects (keys TG, TS, TR, TX) and never touch any other project.
+// replace the seed projects (keys TG, TS, TR, TM, TC, TL, TX) and never touch any other project.
 //
 // A plan that adds a rule adds its cases here: a function per project, item titles that
 // say what to try and what should happen.
@@ -19,13 +19,18 @@ import {
   removeItem,
   updateChecklistEntry,
 } from '../src/modules/items/item.service.js';
-import { createProject } from '../src/modules/projects/project.service.js';
+import {
+  createProject,
+  updateProject,
+} from '../src/modules/projects/project.service.js';
 
 const SEED_PROJECTS = {
   TG: 'Seed · Guided',
   TS: 'Seed · Standard',
   TR: 'Seed · Manager',
   TM: 'Seed · Member',
+  TC: 'Seed · No self-claim',
+  TL: 'Seed · Lowered limits',
   TX: 'Seed · Not a member',
 };
 
@@ -457,6 +462,59 @@ const seedMember = async (ownerId: string) => {
   note('TM members', 'no add-member form, no Remove; you can still Leave');
 };
 
+/** Guided, self-claim off, someone else owns it and you are a member: no Claim button. */
+const seedNoSelfClaim = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const { project, item } = await seedProject('TC', 'GUIDED', mya.id, [
+    { userId: ownerId, role: 'MEMBER' },
+    { userId: ko.id, role: 'MANAGER' },
+  ]);
+  await updateProject(project.id, mya.id, { selfClaimAllowed: false });
+  const free = await item({
+    kind: 'FEATURE',
+    title:
+      'Feature nobody has. Open it → no Claim button; a direct claim → 403',
+  });
+  const yours = await item({
+    kind: 'SLICE',
+    title: 'Slice assigned to you. Click Unclaim → works, it is free again',
+    parentId: free.id,
+    assigneeId: ownerId,
+  });
+  note(
+    free.key,
+    'Assignee shows no Claim button; a direct claim → 403 forbidden',
+  );
+  note(yours.key, 'Unclaim → works; then you cannot claim it back');
+  note(
+    'TC settings',
+    '/p/<id>/settings shows Members can claim tickets off, read-only for you',
+  );
+};
+
+/** Guided, you own it: checklistMax lowered to 3 below a checklist that already has 5. */
+const seedLoweredLimits = async (ownerId: string) => {
+  const [mya] = SEED_USERS;
+  const { project, item } = await seedProject('TL', 'GUIDED', ownerId, [
+    { userId: mya.id, role: 'MEMBER' },
+  ]);
+  const feature = await item({ kind: 'FEATURE', title: 'Feature' });
+  const over = await item({
+    kind: 'SLICE',
+    title:
+      'Checklist has 5 entries but the max is now 3. Add a 6th → 409 checklist_max_exceeded; tick or delete entries as usual',
+    parentId: feature.id,
+    state: 'In Progress',
+  });
+  await addEntries(over.id, ownerId, ['1', '2', '3', '4', '5'], 0);
+  await updateProject(project.id, ownerId, { checklistMax: 3 });
+  note(over.key, 'existing 5 entries stay; adding another → refused (409)');
+  note(
+    'TL settings',
+    'you own it: set Minimum to 5 with Maximum 3 → 400 invalid_checklist_limits; fix and save → works',
+  );
+};
+
 /** Someone else's project you're not in: its URLs must answer 404. */
 const seedOutsider = async () => {
   const [, ko] = SEED_USERS;
@@ -483,6 +541,8 @@ await seedGuided(owner.id);
 await seedStandard(owner.id);
 await seedManager(owner.id);
 await seedMember(owner.id);
+await seedNoSelfClaim(owner.id);
+await seedLoweredLimits(owner.id);
 await seedOutsider();
 console.log(`Seeded for ${owner.name}. Try:\n  ${checks.join('\n  ')}`);
 await prisma.$disconnect();
