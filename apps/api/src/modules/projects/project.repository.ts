@@ -81,3 +81,23 @@ export const findProjectDetailForMember = (
     },
   });
 };
+
+/**
+ * Saves the settings. null if the `project_checklist_limits` CHECK refuses the limits,
+ * e.g. two updates raced past the service's check.
+ */
+export const updateProject = (
+  projectId: string,
+  data: Prisma.ProjectUpdateInput,
+) => {
+  return prisma.project
+    .update({ where: { id: projectId }, data })
+    .catch((error: unknown) => {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.message.includes('project_checklist_limits')
+      )
+        return null;
+      throw error;
+    });
+};

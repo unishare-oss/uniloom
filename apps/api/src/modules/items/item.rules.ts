@@ -34,16 +34,18 @@ export const kindError = (
 
 /**
  * Whether `role` may change a ticket's assignee from `from` to `to`. Owners and managers
- * may set anyone; a member may only claim a free ticket or unclaim their own.
+ * may set anyone; a member may only unclaim their own ticket, or claim a free one when the
+ * project allows self-claim.
  */
 export const mayAssign = (
   role: Role,
   userId: string,
   from: string | null,
   to: string | null,
+  selfClaimAllowed: boolean,
 ) => {
   if (CREATORS.includes(role)) return true;
-  const claim = from === null && to === userId;
+  const claim = selfClaimAllowed && from === null && to === userId;
   const unclaim = from === userId && to === null;
   return claim || unclaim;
 };

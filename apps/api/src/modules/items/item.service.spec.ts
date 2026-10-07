@@ -64,16 +64,26 @@ describe('mayAssign', () => {
   it.each(['OWNER', 'MANAGER'] as const)(
     'lets %s set anyone or nobody',
     (role) => {
-      expect(mayAssign(role, 'me', null, 'mya')).toBe(true);
-      expect(mayAssign(role, 'me', 'mya', 'ko')).toBe(true);
-      expect(mayAssign(role, 'me', 'mya', null)).toBe(true);
-      expect(mayAssign(role, 'me', null, 'me')).toBe(true);
+      expect(mayAssign(role, 'me', null, 'mya', true)).toBe(true);
+      expect(mayAssign(role, 'me', 'mya', 'ko', true)).toBe(true);
+      expect(mayAssign(role, 'me', 'mya', null, true)).toBe(true);
+      expect(mayAssign(role, 'me', null, 'me', true)).toBe(true);
     },
   );
 
   it('lets a member claim a free ticket and unclaim their own', () => {
-    expect(mayAssign('MEMBER', 'me', null, 'me')).toBe(true);
-    expect(mayAssign('MEMBER', 'me', 'me', null)).toBe(true);
+    expect(mayAssign('MEMBER', 'me', null, 'me', true)).toBe(true);
+    expect(mayAssign('MEMBER', 'me', 'me', null, true)).toBe(true);
+  });
+
+  it('refuses a member claim when self-claim is off, but lets them unclaim', () => {
+    expect(mayAssign('MEMBER', 'me', null, 'me', false)).toBe(false);
+    expect(mayAssign('MEMBER', 'me', 'me', null, false)).toBe(true);
+  });
+
+  it('lets owners and managers assign when self-claim is off', () => {
+    expect(mayAssign('OWNER', 'me', null, 'mya', false)).toBe(true);
+    expect(mayAssign('MANAGER', 'me', null, 'me', false)).toBe(true);
   });
 
   it.each([
@@ -83,7 +93,7 @@ describe('mayAssign', () => {
     ['mya', 'ko'], // reassign
     ['me', 'mya'], // hand over their own
   ] as const)('refuses a member changing %s to %s', (from, to) => {
-    expect(mayAssign('MEMBER', 'me', from, to)).toBe(false);
+    expect(mayAssign('MEMBER', 'me', from, to, true)).toBe(false);
   });
 });
 

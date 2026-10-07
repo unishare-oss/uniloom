@@ -140,11 +140,21 @@ export const updateProjectItem = async (
       id,
     );
   if (input.assigneeId !== undefined && input.assigneeId !== item.assigneeId) {
-    if (!itemRules.mayAssign(role, userId, item.assigneeId, input.assigneeId))
+    if (
+      !itemRules.mayAssign(
+        role,
+        userId,
+        item.assigneeId,
+        input.assigneeId,
+        item.project.selfClaimAllowed,
+      )
+    )
       throw apiError(
         403,
         'forbidden',
-        'Members can only claim a free ticket or unclaim their own',
+        item.project.selfClaimAllowed
+          ? 'Members can only claim a free ticket or unclaim their own'
+          : 'Members can only unclaim their own ticket: this project turned off self-claim',
       );
   }
   if (input.assigneeId) await checkAssignee(item.projectId, input.assigneeId);

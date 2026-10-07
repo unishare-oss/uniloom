@@ -8,6 +8,7 @@ import {
 } from '@/modules/members/member.service.js';
 import { mayMoveToDone } from '@/modules/items/item.rules.js';
 import * as projectRepo from './project.repository.js';
+import { limitsError } from './project.rules.js';
 
 /** Creates a project in a mode; the creator becomes its OWNER. */
 export const createProject = async (
@@ -48,6 +49,8 @@ export const getProject = async (projectId: string, userId: string) => {
     canManageMembers: role === 'OWNER',
     canCreateItems: CREATORS.includes(role),
     canAssignOthers: CREATORS.includes(role),
+    canEditSettings: role === 'OWNER',
+    canClaim: CREATORS.includes(role) || project.selfClaimAllowed,
     canMoveToDone: mayMoveToDone(role),
     assignableRoles: assignableRoles(role),
   };
@@ -63,4 +66,45 @@ export const requireMember = async (projectId: string, userId: string) => {
 /** Whether `userId` belongs to the project, e.g. before assigning them an item. */
 export const isProjectMember = (projectId: string, userId: string) => {
   return projectRepo.isMember(projectId, userId);
+};
+
+/**
+ * Owner only: changes the name, switches and checklist limits. The body is merged with
+ * the stored limits before checking them, so lowering the max below the stored min is
+ * refused too. Existing checklists are not touched.
+ */
+export const updateProject = async (
+  projectId: string,
+  userId: string,
+  input: {
+    name?: string;
+    checklistRequired?: boolean;
+    checklistMin?: number | null;
+    checklistMax?: number | null;
+    designRequired?: boolean;
+    approvalRequired?: boolean;
+    approverNotAuthor?: boolean;
+    plannedVsActual?: boolean;
+    selfClaimAllowed?: boolean;
+  },
+) => {
+  await requireRole(projectId, userId, ['OWNER']);
+  const project = await requireMember(projectId, userId);
+  const error = limitsError(
+    input.checklistMin === undefined
+      ? project.checklistMin
+      : input.checklistMin,
+    input.checklistMax === undefined
+      ? project.checklistMax
+      : input.checklistMax,
+  );
+  if (error) throw apiError(400, 'invalid_checklist_limits', error);
+  const updated = await projectRepo.updateProject(projectId, input);
+  if (!updated)
+    throw apiError(
+      400,
+      'invalid_checklist_limits',
+      'The limits changed while saving: reload and try again',
+    );
+  return updated;
 };

@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   Columns3,
   LayoutGrid,
+  Settings,
   SquarePlus,
   Trash2,
   Users,
@@ -106,8 +107,8 @@ export const AppSidebar = () => {
                 <SidebarMenuButton
                   className={linkClass}
                   isActive={
-                    !pathname.endsWith("/trash") &&
-                    !pathname.endsWith("/members")
+                    pathname === `/p/${current.id}` ||
+                    pathname.startsWith(`/p/${current.id}/items/`)
                   }
                   render={<Link href={`/p/${current.id}`} />}
                 >
@@ -133,6 +134,16 @@ export const AppSidebar = () => {
                 >
                   <Users />
                   <span>Members</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className={linkClass}
+                  isActive={pathname.endsWith("/settings")}
+                  render={<Link href={`/p/${current.id}/settings`} />}
+                >
+                  <Settings />
+                  <span>Settings</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

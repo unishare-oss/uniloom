@@ -10,6 +10,7 @@ const itemView = {
       checklistRequired: true,
       checklistMin: true,
       checklistMax: true,
+      selfClaimAllowed: true,
     },
   },
   state: { select: { id: true, name: true, key: true, category: true } },
