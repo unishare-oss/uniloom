@@ -1,3 +1,13 @@
+# [1.3.0](https://github.com/unishare-oss/uniloom/compare/v1.2.0...v1.3.0) (2026-10-07)
+
+
+### Features
+
+* **api:** project labels with exclusive groups ([06a2ad4](https://github.com/unishare-oss/uniloom/commit/06a2ad4970cf9963046c812b3f83a9e63abae815))
+* **web:** grouped label picker, outlined card tags, swap within a group ([9308736](https://github.com/unishare-oss/uniloom/commit/9308736b28e9de0ab405d2ac96897341f93e5f04))
+* **web:** label chips, label picker and labels settings ([52a1213](https://github.com/unishare-oss/uniloom/commit/52a121340a7c4388694320c1dc264a18287c67c2))
+* **web:** pick labels from a select box ([094a428](https://github.com/unishare-oss/uniloom/commit/094a428a28d80cb15ee43d0cd84bc09a233de418))
+
 # [1.2.0](https://github.com/unishare-oss/uniloom/compare/v1.1.0...v1.2.0) (2026-10-07)
 
 
