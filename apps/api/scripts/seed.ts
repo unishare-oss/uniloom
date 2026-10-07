@@ -18,6 +18,7 @@ import {
   createProjectItem,
   removeItem,
   updateChecklistEntry,
+  updateProjectItem,
 } from '../src/modules/items/item.service.js';
 import {
   createProject,
@@ -153,7 +154,7 @@ const note = (key: string, what: string) => checks.push(`${key}  ${what}`);
 /** Guided, you own it: every column, kinds, parents, blocked-by and the trash. */
 const seedGuided = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
-  const { item } = await seedProject('TG', 'GUIDED', ownerId, [
+  const { project, item } = await seedProject('TG', 'GUIDED', ownerId, [
     { userId: mya.id, role: 'MANAGER' },
     { userId: ko.id, role: 'MEMBER' },
   ]);
@@ -312,6 +313,44 @@ const seedGuided = async (ownerId: string) => {
   note(
     last.key,
     `move to Done → works, and ${finishing.key} moves to Done by itself`,
+  );
+
+  // Labels: the project starts with the `type` group; add one free label and one to delete.
+  await prisma.label.createMany({
+    data: [
+      { projectId: project.id, name: 'frontend', color: 'GREEN' },
+      { projectId: project.id, name: 'delete-me', color: 'PINK' },
+    ],
+  });
+  const labels = await prisma.label.findMany({
+    where: { projectId: project.id },
+  });
+  const labelId = (name: string) => labels.find((l) => l.name === name)!.id;
+  const bugged = await item({
+    kind: 'FEATURE',
+    title:
+      'Has bug. Add chore → 409 label_group_conflict (one type); add frontend → works, it combines',
+  });
+  await updateProjectItem(bugged.id, ownerId, { labelIds: [labelId('bug')] });
+  const doomed = await item({
+    kind: 'FEATURE',
+    title:
+      'Has delete-me and enhancement. Delete the delete-me label in Settings → it leaves this item',
+  });
+  await updateProjectItem(doomed.id, ownerId, {
+    labelIds: [labelId('enhancement'), labelId('delete-me')],
+  });
+  note(
+    bugged.key,
+    'label picker: chore is greyed out while bug is on; frontend → works; a direct chore → 409',
+  );
+  note(
+    doomed.key,
+    'Settings → Labels → delete delete-me → confirm; the chip is gone here',
+  );
+  note(
+    'TG labels',
+    'Settings → Labels: rename, recolour, regroup (owner); a name that exists → 409 label_name_taken',
   );
 };
 

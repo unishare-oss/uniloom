@@ -1,7 +1,15 @@
 import type { ProjectMode } from '@/generated/prisma/enums.js';
-import type { PresetState } from './project.types.js';
+import type { PresetLabel, PresetState } from './project.types.js';
 
-/** What a new project gets for its mode: rule switches and states, in board order. */
+/** The `type` group every new project starts with: one of them per item. */
+const TYPE_LABELS: PresetLabel[] = [
+  { name: 'bug', color: 'RED', group: 'type' },
+  { name: 'enhancement', color: 'BLUE', group: 'type' },
+  { name: 'chore', color: 'GRAY', group: 'type' },
+  { name: 'tech-debt', color: 'ORANGE', group: 'type' },
+];
+
+/** What a new project gets for its mode: rule switches, states in board order, and labels. */
 export const PRESETS: Record<
   ProjectMode,
   {
@@ -16,6 +24,7 @@ export const PRESETS: Record<
       selfClaimAllowed: boolean;
     };
     states: PresetState[];
+    labels: PresetLabel[];
   }
 > = {
   GUIDED: {
@@ -41,6 +50,7 @@ export const PRESETS: Record<
       { name: 'Done', key: 'done', category: 'DONE' },
       { name: 'Canceled', key: 'canceled', category: 'CANCELED' },
     ],
+    labels: TYPE_LABELS,
   },
   STANDARD: {
     switches: {
@@ -58,5 +68,6 @@ export const PRESETS: Record<
       { name: 'In Progress', key: null, category: 'STARTED' },
       { name: 'Done', key: null, category: 'DONE' },
     ],
+    labels: TYPE_LABELS,
   },
 };
