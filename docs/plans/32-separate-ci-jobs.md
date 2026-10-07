@@ -1,6 +1,6 @@
 # 32: Separate CI jobs
 
-Status: In Progress
+Status: In Review
 
 ## Scope
 
@@ -14,7 +14,7 @@ publishing and release workflows separate.
 - [x] CI has five independent named jobs: Lint, Typecheck & OpenAPI, Unit tests, Integration tests, and Build, with no sequential job dependencies.
 - [x] Every job installs dependencies and generates the clients it needs; Typecheck checks committed OpenAPI consistency before generating browser hooks, and all original check commands remain covered.
 - [x] PostgreSQL and migration deployment belong only to Integration tests; all jobs retain main/dev push and pull-request triggers and the release-bot exclusion.
-- [ ] Workflow validation and the five dev CI jobs pass; documentation explains the split, and the committed change is promoted to main without modifying Docker/release behavior.
+- [x] Workflow validation and the five dev CI jobs pass; documentation explains the split, and the committed change is promoted to main without modifying Docker/release behavior.
 
 ## Design
 
@@ -48,5 +48,10 @@ release-bot exclusion, Bun 1.4.2, frozen installs, OpenAPI drift check, unit/e2e
 commands, and API/web builds. PostgreSQL and migration deployment are restricted
 to Integration tests. Each job prepares its own necessary generated clients.
 README and the plan index describe the split. actionlint 1.7.12 and git diff --check
-pass. Direct dev/main publication was authorized by the user; dev CI and promotion
-verification follow. No Docker/release workflow changes. The plan stops at In Review.
+pass. Direct dev/main publication was authorized by the user. Implementation commit
+`5b3b448` passed all five independent jobs in [dev CI](https://github.com/unishare-oss/uniloom/actions/runs/37648688645).
+Merged into main as `849aaf7`; both branches are synchronized for direct publication. No Docker/release workflow changes. The plan stops at In Review.
+
+The local commit hooks passed lint/typecheck after stale Next dev/build route types
+were regenerated following the branch checkout. The production build and isolated
+browser checks also passed. No generated artifacts or local credentials were committed.
