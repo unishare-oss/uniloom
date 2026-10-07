@@ -83,17 +83,20 @@ const UNASSIGNED = "unassigned";
 
 /**
  * Who has the item. Owners and managers (`canAssignOthers`) pick anyone; a member sees
- * who has it, with Claim when it's free and Unclaim when it's theirs. The API enforces it.
+ * who has it, with Claim when it's free (and `canClaim`) and Unclaim when it's theirs. The
+ * API enforces it.
  */
 const AssigneeField = ({
   projectId,
   assigneeId,
   canAssignOthers,
+  canClaim,
   onChange,
 }: {
   projectId: string;
   assigneeId: string | null;
   canAssignOthers: boolean;
+  canClaim: boolean;
   onChange: (assigneeId: string | null) => void;
 }) => {
   const { data: members } = useListMembers(projectId, {
@@ -153,7 +156,7 @@ const AssigneeField = ({
           <span className="text-sm text-muted-foreground">Unassigned</span>
         </>
       )}
-      {me && assigneeId === null && (
+      {me && canClaim && assigneeId === null && (
         <Button
           variant="secondary"
           size="sm"
@@ -921,6 +924,7 @@ export const ItemDetail = ({
                 projectId={projectId}
                 assigneeId={item.assigneeId}
                 canAssignOthers={project.canAssignOthers}
+                canClaim={project.canClaim}
                 onChange={(assigneeId) =>
                   void saveNow({ assigneeId }, { assigneeId })
                 }
