@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   Columns3,
   LayoutGrid,
+  Inbox,
   Settings,
   SquarePlus,
   Trash2,
@@ -92,6 +93,16 @@ export const AppSidebar = () => {
               >
                 <LayoutGrid />
                 <span>Projects</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className={linkClass}
+                isActive={pathname === "/reviews"}
+                render={<Link href="/reviews" />}
+              >
+                <Inbox />
+                <span>Review inbox</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
