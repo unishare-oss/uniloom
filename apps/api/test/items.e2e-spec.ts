@@ -1223,6 +1223,7 @@ describe('items (e2e)', () => {
         assigneeId: null,
         canMove: true,
         parentId: null,
+        labels: [],
       },
     ]);
   });

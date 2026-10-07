@@ -1,3 +1,30 @@
+# [1.2.0](https://github.com/unishare-oss/uniloom/compare/v1.1.0...v1.2.0) (2026-10-07)
+
+
+### Bug Fixes
+
+* **web:** keep board card labels inside the scroller so the page doesn't widen ([cb02e3b](https://github.com/unishare-oss/uniloom/commit/cb02e3baeb0f4834c6961e61dbfd265ebfe2748b))
+* **web:** open select dropdowns below their trigger ([86e238c](https://github.com/unishare-oss/uniloom/commit/86e238c72ae951b0c3169d97f0fa54997c2cc8a0))
+
+
+### Features
+
+* **api:** checklist entries on items ([b6a2695](https://github.com/unishare-oss/uniloom/commit/b6a26952f86a790408bf5ba51297dcf2b58780f5))
+* **api:** members claim tickets, owners and managers assign, leaving unassigns ([b4edd39](https://github.com/unishare-oss/uniloom/commit/b4edd395e579972ad53e0a33993a604ae8ebced8))
+* **api:** move endpoint, members move only their tickets, checklist gates ([eb6c262](https://github.com/unishare-oss/uniloom/commit/eb6c2621ce1337ba9a1f2ba3d7776a56fbd6795e))
+* **api:** project settings endpoint and self-claim switch ([11134ef](https://github.com/unishare-oss/uniloom/commit/11134ef232a047d37a50bf682d65dfc843475c0b))
+* manager role, only owners and managers create work ([4c65f3c](https://github.com/unishare-oss/uniloom/commit/4c65f3cbd310a21c5112eab1b9c0b8f34fa8434b))
+* project members and roles ([20f540e](https://github.com/unishare-oss/uniloom/commit/20f540ef57caca712476a3897562aafa52a13dd2))
+* projects instead of workspaces, with tasks and subtasks ([cc3ece5](https://github.com/unishare-oss/uniloom/commit/cc3ece54fb03716d0654d8d69f9e315d2f4f6224))
+* **web:** add the favicon ([52c9ab6](https://github.com/unishare-oss/uniloom/commit/52c9ab620c611cc6dfd8c988795952202eda1a7c))
+* **web:** assignee field with claim, assignee avatars, rounded-square avatars ([8ce6436](https://github.com/unishare-oss/uniloom/commit/8ce64367c43f87c70f9386692ef16e90a1238488))
+* **web:** checklist on the item page ([48d1c0f](https://github.com/unishare-oss/uniloom/commit/48d1c0f7a9e17c48001b55c6d929d15ae7153d95))
+* **web:** collapsible children and blocked-by sections with counts ([5ae90b2](https://github.com/unishare-oss/uniloom/commit/5ae90b28b7c52a3811efc825d8bb42ed4e9fa357))
+* **web:** move endpoint, lock moves members can't make, instant checklist ticks ([ac04b2a](https://github.com/unishare-oss/uniloom/commit/ac04b2a7c733511f7fdf398352e6c57584f934db))
+* **web:** pick blockers from a list, show children, back arrow on item page ([0903523](https://github.com/unishare-oss/uniloom/commit/09035239bc7bc9b01dc1e1650283bf09f0117e96))
+* **web:** project settings page, hide claim when self-claim is off ([c5b1eb9](https://github.com/unishare-oss/uniloom/commit/c5b1eb9b75bd2d8a4e3bd0eb9b43875593af5061))
+* **web:** replace the template logo with the Uniloom bunny ([3d793fc](https://github.com/unishare-oss/uniloom/commit/3d793fc1fe0601f96be8924142c396c0a7cda391))
+
 # [1.1.0](https://github.com/unishare-oss/uniloom/compare/v1.0.0...v1.1.0) (2026-10-05)
 
 

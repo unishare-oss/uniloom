@@ -75,7 +75,7 @@ Mode names are still open: "Standard / Guided" or "Classic / Paired".
 
 - A name, plus a **key prefix** such as `UG`. Items are numbered `UG-1`, `UG-2`, and so on.
 - A mode (Standard or Guided), plus its switch values and label overrides.
-- Labels, for example a `type` group: `bug`, `feature`, `chore`, `tech-debt`.
+- Labels, for example a `type` group: `bug`, `enhancement`, `chore`, `tech-debt`.
 
 ### Users and roles
 

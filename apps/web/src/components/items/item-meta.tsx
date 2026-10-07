@@ -138,3 +138,102 @@ export const stateTopClass = (state: {
     (state.key && TOP_BY_KEY[state.key]) || TOP_BY_CATEGORY[state.category]
   );
 };
+
+export type LabelColor =
+  "GRAY" | "RED" | "ORANGE" | "YELLOW" | "GREEN" | "BLUE" | "PURPLE" | "PINK";
+
+// Whole class names, so Tailwind sees them; the colours are `--label-*` in globals.css.
+const LABEL_COLOR: Record<
+  LabelColor,
+  { name: string; className: string; dot: string }
+> = {
+  GRAY: {
+    name: "Gray",
+    className: "bg-label-gray/15 text-label-gray ring-label-gray/40",
+    dot: "bg-label-gray",
+  },
+  RED: {
+    name: "Red",
+    className: "bg-label-red/15 text-label-red ring-label-red/40",
+    dot: "bg-label-red",
+  },
+  ORANGE: {
+    name: "Orange",
+    className: "bg-label-orange/15 text-label-orange ring-label-orange/40",
+    dot: "bg-label-orange",
+  },
+  YELLOW: {
+    name: "Yellow",
+    className: "bg-label-yellow/15 text-label-yellow ring-label-yellow/40",
+    dot: "bg-label-yellow",
+  },
+  GREEN: {
+    name: "Green",
+    className: "bg-label-green/15 text-label-green ring-label-green/40",
+    dot: "bg-label-green",
+  },
+  BLUE: {
+    name: "Blue",
+    className: "bg-label-blue/15 text-label-blue ring-label-blue/40",
+    dot: "bg-label-blue",
+  },
+  PURPLE: {
+    name: "Purple",
+    className: "bg-label-purple/15 text-label-purple ring-label-purple/40",
+    dot: "bg-label-purple",
+  },
+  PINK: {
+    name: "Pink",
+    className: "bg-label-pink/15 text-label-pink ring-label-pink/40",
+    dot: "bg-label-pink",
+  },
+};
+
+export const LABEL_COLORS = Object.keys(LABEL_COLOR) as LabelColor[];
+export const labelColorName = (color: LabelColor) => LABEL_COLOR[color].name;
+
+/** A label as a small rounded chip in its colour. */
+/** A label's colour as a small square, for menu rows where a full chip is too loud. */
+export const LabelDot = ({ color }: { color: LabelColor }) => {
+  return (
+    <span
+      aria-hidden
+      className={cn("size-2.5 shrink-0 rounded-[2px]", LABEL_COLOR[color].dot)}
+    />
+  );
+};
+
+/** A label as a quiet outlined tag: neutral border and text, only the square is coloured. */
+export const LabelTag = ({
+  name,
+  color,
+}: {
+  name: string;
+  color: LabelColor;
+}) => {
+  return (
+    <span className="inline-flex h-5 max-w-full items-center gap-1 rounded-[3px] border bg-background px-1.5 text-xs text-muted-foreground">
+      <LabelDot color={color} />
+      <span className="truncate">{name}</span>
+    </span>
+  );
+};
+
+export const LabelChip = ({
+  name,
+  color,
+}: {
+  name: string;
+  color: LabelColor;
+}) => {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-5 max-w-full items-center rounded-[3px] px-1.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset",
+        LABEL_COLOR[color].className,
+      )}
+    >
+      <span className="truncate">{name}</span>
+    </span>
+  );
+};

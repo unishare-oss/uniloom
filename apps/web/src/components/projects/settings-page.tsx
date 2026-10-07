@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { LabelsSection } from "@/components/projects/labels-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -211,6 +212,13 @@ export const SettingsPage = ({ projectId }: { projectId: string }) => {
       {error && <p role="alert">{error.message}</p>}
       {!project && !error && <Skeleton className="h-64 w-full rounded-xl" />}
       {project && <SettingsForm key={project.updatedAt} project={project} />}
+      {project && (
+        <LabelsSection
+          projectId={project.id}
+          canCreateLabels={project.canCreateLabels}
+          canEditSettings={project.canEditSettings}
+        />
+      )}
     </main>
   );
 };

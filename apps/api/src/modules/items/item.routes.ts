@@ -86,7 +86,7 @@ itemRoutes.patch(
     tag: 'items',
     operationId: 'updateItem',
     summary:
-      "Update an item's title, description, priority, assignee or parent",
+      "Update an item's title, description, priority, assignee, parent or labels",
     pathParams: ['id'],
     body: updateItemSchema,
     data: itemSchema,

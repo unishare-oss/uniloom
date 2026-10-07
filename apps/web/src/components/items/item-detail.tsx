@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   KindIcon,
+  LabelDot,
   PRIORITIES,
   PriorityIcon,
   StateLozenge,
@@ -44,7 +45,10 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -73,6 +77,7 @@ import type {
   GetItem200,
   UpdateItemBody,
 } from "@/lib/api/generated/uniloomAPI.schemas";
+import { useListLabels } from "@/lib/api/generated/labels/labels";
 import { useListMembers } from "@/lib/api/generated/members/members";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { useGetMe } from "@/lib/api/generated/users/users";
@@ -80,6 +85,106 @@ import { formatDate, timeAgo } from "@/lib/time";
 
 const NO_PARENT = "none";
 const UNASSIGNED = "unassigned";
+
+/**
+ * The project's labels as toggles: on = the item has it. A label whose group is already
+ * used by another label of the item is greyed out; the API refuses it too.
+ */
+const LabelPicker = ({
+  projectId,
+  labels,
+  onChange,
+}: {
+  projectId: string;
+  labels: GetItem200["labels"];
+  onChange: (labels: GetItem200["labels"]) => void;
+}) => {
+  const { data: all } = useListLabels(projectId, {
+    query: { select: (r) => r.data },
+  });
+  // Grouped labels under their group's heading, then the free ones.
+  const groups = [
+    ...new Set((all ?? []).flatMap((label) => label.group ?? [])),
+  ].sort();
+  const ungrouped = (all ?? []).filter((label) => label.group === null);
+
+  return (
+    <Select
+      multiple
+      value={labels.map((l) => l.id)}
+      onValueChange={(ids) => {
+        // One label per group: picking a label drops the other one of its group.
+        const added = (all ?? []).find(
+          (l) => ids.includes(l.id) && !labels.some((on) => on.id === l.id),
+        );
+        onChange(
+          (all ?? [])
+            .filter((l) => ids.includes(l.id))
+            .filter(
+              (l) =>
+                !added ||
+                l.id === added.id ||
+                added.group === null ||
+                l.group !== added.group,
+            )
+            .map((l) => ({ id: l.id, name: l.name, color: l.color })),
+        );
+      }}
+    >
+      <SelectTrigger
+        aria-label="Labels"
+        className="min-h-8 w-full py-1.5 hover:bg-muted/50 focus-visible:bg-muted/50 data-[size=default]:h-auto"
+      >
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+          {labels.map((label) => (
+            <span key={label.id} className="flex items-center gap-1.5">
+              <LabelDot color={label.color} />
+              {label.name}
+            </span>
+          ))}
+          {labels.length === 0 && (
+            <span className="text-muted-foreground">No labels</span>
+          )}
+        </span>
+      </SelectTrigger>
+      <SelectContent>
+        {groups.map((group) => (
+          <SelectGroup key={group}>
+            <SelectLabel>{group}</SelectLabel>
+            {(all ?? [])
+              .filter((label) => label.group === group)
+              .map((label) => (
+                <SelectItem key={label.id} value={label.id}>
+                  <span className="flex items-center gap-2">
+                    <LabelDot color={label.color} />
+                    {label.name}
+                  </span>
+                </SelectItem>
+              ))}
+          </SelectGroup>
+        ))}
+        {groups.length > 0 && ungrouped.length > 0 && <SelectSeparator />}
+        {ungrouped.length > 0 && (
+          <SelectGroup>
+            {ungrouped.map((label) => (
+              <SelectItem key={label.id} value={label.id}>
+                <span className="flex items-center gap-2">
+                  <LabelDot color={label.color} />
+                  {label.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        )}
+        {all?.length === 0 && (
+          <span className="block px-2 py-1.5 text-sm text-muted-foreground">
+            No labels in this project
+          </span>
+        )}
+      </SelectContent>
+    </Select>
+  );
+};
 
 /**
  * Who has the item. Owners and managers (`canAssignOthers`) pick anyone; a member sees
@@ -572,7 +677,22 @@ export const ItemDetail = ({
       }),
     ]);
   const onError = (err: { message: string }) => toast.error(err.message);
-  const update = useUpdateItem({ mutation: { onSuccess: refresh, onError } });
+  // One scope per item: field saves run one at a time in click order, so a quick second
+  // label click can't reach the API before the first. Only the last queued save
+  // refetches, or the reload would flash the older value over the newer optimistic one.
+  const saves = { id: `item-${itemId}` };
+  const update = useUpdateItem({
+    mutation: {
+      scope: saves,
+      onSuccess: () => {
+        const queued = queryClient.isMutating({
+          predicate: (mutation) => mutation.options.scope?.id === saves.id,
+        });
+        if (queued === 1) return refresh();
+      },
+      onError,
+    },
+  });
   const move = useMoveItem({ mutation: { onSuccess: refresh, onError } });
   const addBlocker = useAddBlocker({
     mutation: {
@@ -927,6 +1047,18 @@ export const ItemDetail = ({
                 canClaim={project.canClaim}
                 onChange={(assigneeId) =>
                   void saveNow({ assigneeId }, { assigneeId })
+                }
+              />
+
+              <Label className="text-sm text-muted-foreground">Labels</Label>
+              <LabelPicker
+                projectId={projectId}
+                labels={item.labels}
+                onChange={(labels) =>
+                  void saveNow(
+                    { labelIds: labels.map((l) => l.id) },
+                    { labels },
+                  )
                 }
               />
 

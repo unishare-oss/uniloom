@@ -3,7 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import Link from "next/link";
 import type { MouseEvent } from "react";
-import { KindIcon, PriorityIcon } from "@/components/items/item-meta";
+import { KindIcon, LabelTag, PriorityIcon } from "@/components/items/item-meta";
 import { Avatar, EmptyAvatar } from "@/components/user/avatar";
 import type {
   ListItems200Item,
@@ -25,6 +25,13 @@ export const CardFace = ({
   return (
     <>
       <span className="text-sm leading-snug">{item.title}</span>
+      {item.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {item.labels.map((label) => (
+            <LabelTag key={label.id} name={label.name} color={label.color} />
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-1.5">
         <KindIcon kind={item.kind} />
         <span
