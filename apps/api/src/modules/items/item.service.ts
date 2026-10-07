@@ -15,6 +15,7 @@ import {
   isProjectMember,
   requireMember,
 } from '@/modules/projects/project.service.js';
+import { recordReviewSubmission } from '@/modules/notifications/notification.service.js';
 import * as itemRules from './item.rules.js';
 import { toEntry, toItem, toListRow } from './item.utils.js';
 import * as itemRepo from './item.repository.js';
@@ -194,24 +195,28 @@ export const updateProjectItem = async (
  * checklist gate. A slice that finishes can finish its feature too.
  */
 export const moveItem = async (id: string, userId: string, stateId: string) => {
-  const { item, role } = await loadItem(id, userId);
-  const target = await checkState(item.projectId, stateId);
-  if (target.id === item.state.id) return toItem(item, role, userId);
-  if (!itemRules.mayMove(role, userId, item.assigneeId))
-    throw apiError(
-      403,
-      'forbidden',
-      'Members can only move tickets assigned to them: claim it first',
-    );
-  if (target.category === 'DONE' && !itemRules.mayMoveToDone(role))
-    throw apiError(
-      403,
-      'forbidden',
-      'Only owners and managers can move a ticket to Done',
-    );
-  const row = await prisma.$transaction(async (tx) => {
-    // Locked, so a tick or an added entry can't slip in between the check and the move.
+  const { item: initial } = await loadItem(id, userId);
+  const target = await checkState(initial.projectId, stateId);
+  const result = await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, id);
+    const item = await itemRepo.findItemForMove(tx, id);
+    if (!item) throw apiError(404, 'not_found', 'Item not found');
+    const { role } = await requireRole(item.projectId, userId, ROLES, tx);
+    if (!itemRules.mayMove(role, userId, item.assigneeId, item.state.key))
+      throw apiError(
+        403,
+        item.state.key === 'in_review' ? 'review_locked' : 'forbidden',
+        item.state.key === 'in_review'
+          ? 'Only owners and managers can move work after submission for review'
+          : 'Members can only move tickets assigned to them: claim it first',
+      );
+    if (target.id === item.state.id) return { row: item, role };
+    if (target.category === 'DONE' && !itemRules.mayMoveToDone(role))
+      throw apiError(
+        403,
+        'forbidden',
+        'Only owners and managers can move a ticket to Done',
+      );
     const error = itemRules.checklistError(
       item.project,
       item.kind,
@@ -220,6 +225,16 @@ export const moveItem = async (id: string, userId: string, stateId: string) => {
     );
     if (error) throw apiError(409, 'criteria_incomplete', error);
     const updated = await itemRepo.updateItem(tx, id, { stateId });
+    if (target.key === 'in_review')
+      await recordReviewSubmission(tx, {
+        projectId: item.projectId,
+        itemId: id,
+        actorId: userId,
+        fromStateId: item.stateId,
+        toStateId: target.id,
+        fromStateKey: item.state.key,
+        toStateKey: target.key,
+      });
     const finished = ['DONE', 'CANCELED'].includes(target.category);
     if (finished && item.parentId) {
       // Locked, so two slices finishing at once each see the other as finished.
@@ -245,9 +260,9 @@ export const moveItem = async (id: string, userId: string, stateId: string) => {
           await itemRepo.updateItem(tx, item.parentId, { stateId: done.id });
       }
     }
-    return updated;
+    return { row: updated, role };
   });
-  return toItem(row, role, userId);
+  return toItem(result.row, result.role, userId);
 };
 
 /** Deletes an item. One with children can't be deleted: move or delete them first. */

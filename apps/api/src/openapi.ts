@@ -1,9 +1,15 @@
-import type { ZodType } from 'zod';
+import { z, type ZodType, type ZodObject } from 'zod';
 import {
   describeRoute,
   resolver,
   type GenerateSpecOptions,
+  type DescribeRouteOptions,
 } from 'hono-openapi';
+
+type ParameterSchema = Extract<
+  NonNullable<DescribeRouteOptions['parameters']>[number],
+  { in: string }
+>['schema'];
 
 /**
  * Describes a route for the OpenAPI spec, which the web app turns into typed hooks
@@ -17,6 +23,7 @@ export const describe = (route: {
   summary: string;
   pathParams?: string[];
   body?: ZodType;
+  query?: ZodObject;
   data: ZodType;
   status?: 200 | 201;
 }) => {
@@ -24,12 +31,20 @@ export const describe = (route: {
     tags: [route.tag],
     operationId: route.operationId,
     summary: route.summary,
-    parameters: (route.pathParams ?? []).map((name) => ({
-      name,
-      in: 'path',
-      required: true,
-      schema: { type: 'string', format: 'uuid' },
-    })),
+    parameters: [
+      ...(route.pathParams ?? []).map((name) => ({
+        name,
+        in: 'path' as const,
+        required: true,
+        schema: { type: 'string' as const, format: 'uuid' },
+      })),
+      ...Object.entries(route.query?.shape ?? {}).map(([name, schema]) => ({
+        name,
+        in: 'query' as const,
+        required: !schema.isOptional(),
+        schema: z.toJSONSchema(schema) as ParameterSchema,
+      })),
+    ],
     ...(route.body && {
       requestBody: {
         required: true,

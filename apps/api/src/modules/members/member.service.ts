@@ -26,8 +26,9 @@ export const requireRole = async (
   projectId: string,
   userId: string,
   roles: Role[],
+  db: Prisma.TransactionClient = prisma,
 ) => {
-  const member = await memberRepo.findMember(projectId, userId);
+  const member = await memberRepo.findMember(projectId, userId, db);
   if (!member) throw apiError(404, 'not_found', 'Project not found');
   if (!roles.includes(member.role))
     throw apiError(403, 'forbidden', 'Your role cannot do this');

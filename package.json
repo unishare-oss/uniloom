@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "bun run dev:api & bun run dev:web & wait",
+    "dev": "bun run dev:api & bun run dev:web & bun run dev:worker & wait",
     "dev:api": "bun run --cwd apps/api dev",
     "dev:web": "bun run --cwd apps/web dev",
     "up": "docker compose up -d --build --wait",
@@ -22,7 +22,8 @@
     "api:generate": "bun run --cwd apps/web api:generate",
     "db:up": "ssh oracle 'mkdir -p ~/uniloom' && scp -q docker-compose.yml oracle:uniloom/ && ssh oracle 'cd ~/uniloom && echo DB_HOST_IP=$(tailscale ip -4) > .env && sudo docker compose up -d --wait db'",
     "db:down": "ssh oracle 'cd ~/uniloom && sudo docker compose stop db'",
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "dev:worker": "bun run --cwd apps/api notifications:worker"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
