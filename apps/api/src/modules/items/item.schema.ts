@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LabelColor } from '@/generated/prisma/enums.js';
 
 const priority = z.enum(['URGENT', 'HIGH', 'MEDIUM', 'LOW', 'NONE']);
 
@@ -18,6 +19,8 @@ export const updateItemSchema = z.object({
   parentId: z.uuid().nullable().optional(),
   priority: priority.optional(),
   assigneeId: z.string().min(1).nullable().optional(),
+  /** Replaces the item's labels; two of one group are refused. */
+  labelIds: z.array(z.uuid()).max(50).optional(),
 });
 
 export const moveItemSchema = z.object({ stateId: z.uuid() });
@@ -49,6 +52,12 @@ export const updateChecklistEntrySchema = z.object({
 
 export const reorderChecklistSchema = z.object({ ids: z.array(z.uuid()) });
 
+export const itemLabelSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  color: z.enum(LabelColor),
+});
+
 export const itemSchema = z.object({
   id: z.uuid(),
   key: z.string(),
@@ -72,6 +81,8 @@ export const itemSchema = z.object({
   blockedBy: z.array(z.uuid()),
   /** The done-when entries, in order. */
   checklist: z.array(checklistEntrySchema),
+  /** The item's labels, by name. */
+  labels: z.array(itemLabelSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -86,6 +97,7 @@ export const itemRowSchema = z.object({
   assigneeId: z.string().nullable(),
   canMove: z.boolean(),
   parentId: z.uuid().nullable(),
+  labels: z.array(itemLabelSchema),
 });
 
 export const deletedItemRowSchema = itemRowSchema.extend({

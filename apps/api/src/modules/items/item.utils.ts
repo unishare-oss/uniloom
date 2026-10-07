@@ -13,6 +13,9 @@ export const toEntry = (row: EntryRow) => {
   };
 };
 
+/** The item's labels, flattened from the join rows. */
+const toLabels = (row: ItemRow) => row.labels.map((link) => link.label);
+
 /** One item, as the API returns it. */
 export const toItem = (row: ItemRow, role: Role, userId: string) => {
   return {
@@ -30,6 +33,7 @@ export const toItem = (row: ItemRow, role: Role, userId: string) => {
     createdById: row.createdById,
     blockedBy: row.blockedBy.map((link) => link.blockerId),
     checklist: row.checklist.map(toEntry),
+    labels: toLabels(row),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -47,5 +51,6 @@ export const toListRow = (row: ItemRow, role: Role, userId: string) => {
     assigneeId: row.assigneeId,
     canMove: mayMove(role, userId, row.assigneeId),
     parentId: row.parentId,
+    labels: toLabels(row),
   };
 };

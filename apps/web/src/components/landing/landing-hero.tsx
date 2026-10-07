@@ -1,6 +1,6 @@
 import { ArrowRight, Check, Terminal } from "lucide-react";
 import Link from "next/link";
-import { KindIcon } from "@/components/items/item-meta";
+import { KindIcon } from "@/components/items/kind-icon";
 
 const checks = [
   "One uniAuth account",

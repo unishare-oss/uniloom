@@ -2,6 +2,7 @@ import {
   checklistError,
   featureDone,
   kindError,
+  labelGroupError,
   mayAssign,
   mayMove,
   mayMoveToDone,
@@ -208,5 +209,43 @@ describe('featureDone', () => {
     expect(featureDone([child('DONE'), child('STARTED')])).toBe(false);
     expect(featureDone([child('BACKLOG')])).toBe(false);
     expect(featureDone([])).toBe(false);
+  });
+});
+
+describe('labelGroupError', () => {
+  it('is null for no labels, free labels and one label per group', () => {
+    expect(labelGroupError([])).toBeNull();
+    expect(
+      labelGroupError([
+        { name: 'frontend', group: null },
+        { name: 'docs', group: null },
+      ]),
+    ).toBeNull();
+    expect(
+      labelGroupError([
+        { name: 'bug', group: 'type' },
+        { name: 'frontend', group: null },
+        { name: 'p1', group: 'priority' },
+      ]),
+    ).toBeNull();
+  });
+
+  it('names the group when two labels share it', () => {
+    expect(
+      labelGroupError([
+        { name: 'bug', group: 'type' },
+        { name: 'chore', group: 'type' },
+      ]),
+    ).toContain('"type"');
+  });
+
+  it('names the first group used twice', () => {
+    const error = labelGroupError([
+      { name: 'a', group: 'size' },
+      { name: 'b', group: 'type' },
+      { name: 'c', group: 'type' },
+      { name: 'd', group: 'size' },
+    ]);
+    expect(error).toContain('"type"');
   });
 });
