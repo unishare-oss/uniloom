@@ -63,18 +63,28 @@ describe('Uniloom API (e2e)', () => {
       expect(operations).toEqual([
         'acceptTerms',
         'addBlocker',
+        'addChecklistEntry',
+        'addMember',
+        'changeMemberRole',
         'createItem',
-        'createWorkspace',
+        'createProject',
+        'deleteChecklistEntry',
         'deleteItem',
         'getItem',
         'getMe',
-        'getWorkspace',
+        'getProject',
         'listDeletedItems',
         'listItems',
-        'listWorkspaces',
+        'listMembers',
+        'listProjects',
+        'moveItem',
         'removeBlocker',
+        'removeMember',
+        'reorderChecklist',
         'restoreItem',
+        'updateChecklistEntry',
         'updateItem',
+        'updateProject',
       ]);
       expect(
         Object.keys(spec.paths).some((p) => /auth|uniauth|health/.test(p)),
@@ -323,7 +333,7 @@ describe('Uniloom API (e2e)', () => {
       const { id } = await prisma.user.findUniqueOrThrow({
         where: { email: profile.email },
       });
-      const workspace = await prisma.workspace.create({
+      const project = await prisma.project.create({
         data: {
           name: 'Deletion test',
           keyPrefix: `D${randomUUID().slice(0, 8)}`,
@@ -346,7 +356,7 @@ describe('Uniloom API (e2e)', () => {
       expect(await prisma.account.count({ where: { userId: id } })).toBe(0);
       expect(await prisma.session.count({ where: { userId: id } })).toBe(0);
       expect(await prisma.member.count({ where: { userId: id } })).toBe(0);
-      await prisma.workspace.delete({ where: { id: workspace.id } });
+      await prisma.project.delete({ where: { id: project.id } });
     });
 
     it('user-updated refreshes the copy', async () => {

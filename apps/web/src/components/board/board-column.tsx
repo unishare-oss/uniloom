@@ -4,7 +4,7 @@ import { useDndContext, useDroppable } from "@dnd-kit/core";
 import type { ReactNode } from "react";
 import { stateTopClass } from "@/components/items/item-meta";
 import type {
-  GetWorkspace200StatesItem,
+  GetProject200StatesItem,
   ListItems200Item,
 } from "@/lib/api/generated/uniloomAPI.schemas";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ export const BoardColumn = ({
   children,
   count,
 }: {
-  state: GetWorkspace200StatesItem;
+  state: GetProject200StatesItem;
   children: ReactNode;
   count: number;
 }) => {

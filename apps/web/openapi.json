@@ -106,13 +106,13 @@
         }
       }
     },
-    "/api/workspaces": {
+    "/api/projects": {
       "post": {
-        "operationId": "createWorkspace",
+        "operationId": "createProject",
         "tags": [
-          "workspaces"
+          "projects"
         ],
-        "summary": "Create a workspace with its mode's states; you become its owner",
+        "summary": "Create a project with its mode's states; you become its owner",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -149,7 +149,7 @@
         },
         "responses": {
           "201": {
-            "description": "Create a workspace with its mode's states; you become its owner",
+            "description": "Create a project with its mode's states; you become its owner",
             "content": {
               "application/json": {
                 "schema": {
@@ -212,6 +212,9 @@
                     "plannedVsActual": {
                       "type": "boolean"
                     },
+                    "selfClaimAllowed": {
+                      "type": "boolean"
+                    },
                     "nextItemNumber": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -240,6 +243,7 @@
                     "approvalRequired",
                     "approverNotAuthor",
                     "plannedVsActual",
+                    "selfClaimAllowed",
                     "nextItemNumber",
                     "createdAt",
                     "updatedAt"
@@ -251,15 +255,15 @@
         }
       },
       "get": {
-        "operationId": "listWorkspaces",
+        "operationId": "listProjects",
         "tags": [
-          "workspaces"
+          "projects"
         ],
-        "summary": "Your workspaces",
+        "summary": "Your projects",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Your workspaces",
+            "description": "Your projects",
             "content": {
               "application/json": {
                 "schema": {
@@ -324,6 +328,9 @@
                       "plannedVsActual": {
                         "type": "boolean"
                       },
+                      "selfClaimAllowed": {
+                        "type": "boolean"
+                      },
                       "nextItemNumber": {
                         "type": "integer",
                         "minimum": -9007199254740991,
@@ -352,6 +359,7 @@
                       "approvalRequired",
                       "approverNotAuthor",
                       "plannedVsActual",
+                      "selfClaimAllowed",
                       "nextItemNumber",
                       "createdAt",
                       "updatedAt"
@@ -364,16 +372,16 @@
         }
       }
     },
-    "/api/workspaces/{workspaceId}": {
+    "/api/projects/{projectId}": {
       "get": {
-        "operationId": "getWorkspace",
+        "operationId": "getProject",
         "tags": [
-          "workspaces"
+          "projects"
         ],
-        "summary": "A workspace with its states in board order",
+        "summary": "A project with its states in board order",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -384,7 +392,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A workspace with its states in board order",
+            "description": "A project with its states in board order",
             "content": {
               "application/json": {
                 "schema": {
@@ -447,6 +455,9 @@
                     "plannedVsActual": {
                       "type": "boolean"
                     },
+                    "selfClaimAllowed": {
+                      "type": "boolean"
+                    },
                     "nextItemNumber": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -505,6 +516,43 @@
                           "position"
                         ]
                       }
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "OWNER",
+                        "MANAGER",
+                        "MEMBER"
+                      ]
+                    },
+                    "canManageMembers": {
+                      "type": "boolean"
+                    },
+                    "canCreateItems": {
+                      "type": "boolean"
+                    },
+                    "canAssignOthers": {
+                      "type": "boolean"
+                    },
+                    "canEditSettings": {
+                      "type": "boolean"
+                    },
+                    "canClaim": {
+                      "type": "boolean"
+                    },
+                    "canMoveToDone": {
+                      "type": "boolean"
+                    },
+                    "assignableRoles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "OWNER",
+                          "MANAGER",
+                          "MEMBER"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -519,10 +567,202 @@
                     "approvalRequired",
                     "approverNotAuthor",
                     "plannedVsActual",
+                    "selfClaimAllowed",
                     "nextItemNumber",
                     "createdAt",
                     "updatedAt",
-                    "states"
+                    "states",
+                    "role",
+                    "canManageMembers",
+                    "canCreateItems",
+                    "canAssignOthers",
+                    "canEditSettings",
+                    "canClaim",
+                    "canMoveToDone",
+                    "assignableRoles"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateProject",
+        "tags": [
+          "projects"
+        ],
+        "summary": "Change a project's name, rule switches and checklist limits (owners)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "checklistRequired": {
+                    "type": "boolean"
+                  },
+                  "checklistMin": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "checklistMax": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "designRequired": {
+                    "type": "boolean"
+                  },
+                  "approvalRequired": {
+                    "type": "boolean"
+                  },
+                  "approverNotAuthor": {
+                    "type": "boolean"
+                  },
+                  "plannedVsActual": {
+                    "type": "boolean"
+                  },
+                  "selfClaimAllowed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Change a project's name, rule switches and checklist limits (owners)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "keyPrefix": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "STANDARD",
+                        "GUIDED"
+                      ]
+                    },
+                    "checklistRequired": {
+                      "type": "boolean"
+                    },
+                    "checklistMin": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "checklistMax": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "designRequired": {
+                      "type": "boolean"
+                    },
+                    "approvalRequired": {
+                      "type": "boolean"
+                    },
+                    "approverNotAuthor": {
+                      "type": "boolean"
+                    },
+                    "plannedVsActual": {
+                      "type": "boolean"
+                    },
+                    "selfClaimAllowed": {
+                      "type": "boolean"
+                    },
+                    "nextItemNumber": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "keyPrefix",
+                    "mode",
+                    "checklistRequired",
+                    "checklistMin",
+                    "checklistMax",
+                    "designRequired",
+                    "approvalRequired",
+                    "approverNotAuthor",
+                    "plannedVsActual",
+                    "selfClaimAllowed",
+                    "nextItemNumber",
+                    "createdAt",
+                    "updatedAt"
                   ]
                 }
               }
@@ -531,16 +771,16 @@
         }
       }
     },
-    "/api/workspaces/{workspaceId}/items": {
+    "/api/projects/{projectId}/items": {
       "get": {
         "operationId": "listItems",
         "tags": [
           "items"
         ],
-        "summary": "The workspace's items",
+        "summary": "The project's items",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -551,7 +791,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The workspace's items",
+            "description": "The project's items",
             "content": {
               "application/json": {
                 "schema": {
@@ -570,9 +810,8 @@
                       "kind": {
                         "type": "string",
                         "enum": [
-                          "PROJECT",
-                          "ISSUE",
-                          "SUB_ISSUE",
+                          "TASK",
+                          "SUBTASK",
                           "FEATURE",
                           "SLICE"
                         ]
@@ -613,6 +852,9 @@
                           "null"
                         ]
                       },
+                      "canMove": {
+                        "type": "boolean"
+                      },
                       "parentId": {
                         "anyOf": [
                           {
@@ -634,6 +876,7 @@
                       "state",
                       "priority",
                       "assigneeId",
+                      "canMove",
                       "parentId"
                     ]
                   }
@@ -648,10 +891,10 @@
         "tags": [
           "items"
         ],
-        "summary": "Create an item",
+        "summary": "Create an item (owners and managers)",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -670,9 +913,8 @@
                   "kind": {
                     "type": "string",
                     "enum": [
-                      "PROJECT",
-                      "ISSUE",
-                      "SUB_ISSUE",
+                      "TASK",
+                      "SUBTASK",
                       "FEATURE",
                       "SLICE"
                     ]
@@ -735,7 +977,7 @@
         },
         "responses": {
           "201": {
-            "description": "Create an item",
+            "description": "Create an item (owners and managers)",
             "content": {
               "application/json": {
                 "schema": {
@@ -749,7 +991,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -757,9 +999,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -821,6 +1062,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -847,6 +1091,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -861,16 +1142,18 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -881,16 +1164,16 @@
         }
       }
     },
-    "/api/workspaces/{workspaceId}/items/deleted": {
+    "/api/projects/{projectId}/items/deleted": {
       "get": {
         "operationId": "listDeletedItems",
         "tags": [
           "items"
         ],
-        "summary": "The workspace's trash: deleted items, newest first",
+        "summary": "The project's trash: deleted items, newest first",
         "parameters": [
           {
-            "name": "workspaceId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -901,7 +1184,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The workspace's trash: deleted items, newest first",
+            "description": "The project's trash: deleted items, newest first",
             "content": {
               "application/json": {
                 "schema": {
@@ -920,9 +1203,8 @@
                       "kind": {
                         "type": "string",
                         "enum": [
-                          "PROJECT",
-                          "ISSUE",
-                          "SUB_ISSUE",
+                          "TASK",
+                          "SUBTASK",
                           "FEATURE",
                           "SLICE"
                         ]
@@ -963,6 +1245,9 @@
                           "null"
                         ]
                       },
+                      "canMove": {
+                        "type": "boolean"
+                      },
                       "parentId": {
                         "anyOf": [
                           {
@@ -989,6 +1274,7 @@
                       "state",
                       "priority",
                       "assigneeId",
+                      "canMove",
                       "parentId",
                       "deletedAt"
                     ]
@@ -1034,7 +1320,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1042,9 +1328,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1106,6 +1391,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1132,6 +1420,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1146,16 +1471,18 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1170,7 +1497,7 @@
         "tags": [
           "items"
         ],
-        "summary": "Update an item's title, description, priority, assignee, state or parent",
+        "summary": "Update an item's title, description, priority, assignee or parent",
         "parameters": [
           {
             "name": "id",
@@ -1230,11 +1557,6 @@
                         "type": "null"
                       }
                     ]
-                  },
-                  "stateId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 }
               }
@@ -1243,7 +1565,7 @@
         },
         "responses": {
           "200": {
-            "description": "Update an item's title, description, priority, assignee, state or parent",
+            "description": "Update an item's title, description, priority, assignee or parent",
             "content": {
               "application/json": {
                 "schema": {
@@ -1257,7 +1579,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1265,9 +1587,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1329,6 +1650,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1355,6 +1679,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1369,16 +1730,18 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1393,7 +1756,7 @@
         "tags": [
           "items"
         ],
-        "summary": "Delete an item (it can be restored)",
+        "summary": "Delete an item, restorable (owners and managers)",
         "parameters": [
           {
             "name": "id",
@@ -1407,7 +1770,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Delete an item (it can be restored)",
+            "description": "Delete an item, restorable (owners and managers)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1419,13 +1782,13 @@
         }
       }
     },
-    "/api/items/{id}/restore": {
+    "/api/items/{id}/move": {
       "post": {
-        "operationId": "restoreItem",
+        "operationId": "moveItem",
         "tags": [
           "items"
         ],
-        "summary": "Restore a deleted item",
+        "summary": "Move an item to another state",
         "parameters": [
           {
             "name": "id",
@@ -1437,9 +1800,29 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stateId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "stateId"
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Restore a deleted item",
+            "description": "Move an item to another state",
             "content": {
               "application/json": {
                 "schema": {
@@ -1453,7 +1836,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1461,9 +1844,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1525,6 +1907,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1551,6 +1936,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1565,16 +1987,225 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/restore": {
+      "post": {
+        "operationId": "restoreItem",
+        "tags": [
+          "items"
+        ],
+        "summary": "Restore a deleted item (owners and managers)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restore a deleted item (owners and managers)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "TASK",
+                        "SUBTASK",
+                        "FEATURE",
+                        "SLICE"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "key": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "BACKLOG",
+                            "UNSTARTED",
+                            "STARTED",
+                            "DONE",
+                            "CANCELED"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "key",
+                        "category"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "URGENT",
+                        "HIGH",
+                        "MEDIUM",
+                        "LOW",
+                        "NONE"
+                      ]
+                    },
+                    "assigneeId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "canMove": {
+                      "type": "boolean"
+                    },
+                    "parentId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdById": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "blockedBy": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "key",
+                    "projectId",
+                    "kind",
+                    "title",
+                    "description",
+                    "state",
+                    "priority",
+                    "assigneeId",
+                    "canMove",
+                    "parentId",
+                    "createdById",
+                    "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1639,7 +2270,7 @@
                     "key": {
                       "type": "string"
                     },
-                    "workspaceId": {
+                    "projectId": {
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -1647,9 +2278,8 @@
                     "kind": {
                       "type": "string",
                       "enum": [
-                        "PROJECT",
-                        "ISSUE",
-                        "SUB_ISSUE",
+                        "TASK",
+                        "SUBTASK",
                         "FEATURE",
                         "SLICE"
                       ]
@@ -1711,6 +2341,9 @@
                         "null"
                       ]
                     },
+                    "canMove": {
+                      "type": "boolean"
+                    },
                     "parentId": {
                       "anyOf": [
                         {
@@ -1737,6 +2370,43 @@
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       }
                     },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "evidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "done",
+                          "evidence",
+                          "position"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1751,16 +2421,18 @@
                   "required": [
                     "id",
                     "key",
-                    "workspaceId",
+                    "projectId",
                     "kind",
                     "title",
                     "description",
                     "state",
                     "priority",
                     "assigneeId",
+                    "canMove",
                     "parentId",
                     "createdById",
                     "blockedBy",
+                    "checklist",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1801,6 +2473,629 @@
         "responses": {
           "200": {
             "description": "Remove a \"waits on\" link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/checklist": {
+      "post": {
+        "operationId": "addChecklistEntry",
+        "tags": [
+          "items"
+        ],
+        "summary": "Add a done-when entry at the end of the checklist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Add a done-when entry at the end of the checklist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "done": {
+                      "type": "boolean"
+                    },
+                    "evidence": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text",
+                    "done",
+                    "evidence",
+                    "position"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/checklist/order": {
+      "put": {
+        "operationId": "reorderChecklist",
+        "tags": [
+          "items"
+        ],
+        "summary": "Set the checklist order from a list of every entry id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "ids"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Set the checklist order from a list of every entry id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "done": {
+                        "type": "boolean"
+                      },
+                      "evidence": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "position": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "text",
+                      "done",
+                      "evidence",
+                      "position"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/checklist/{entryId}": {
+      "patch": {
+        "operationId": "updateChecklistEntry",
+        "tags": [
+          "items"
+        ],
+        "summary": "Edit an entry's text, tick or untick it, set its evidence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "done": {
+                    "type": "boolean"
+                  },
+                  "evidence": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edit an entry's text, tick or untick it, set its evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "done": {
+                      "type": "boolean"
+                    },
+                    "evidence": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text",
+                    "done",
+                    "evidence",
+                    "position"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteChecklistEntry",
+        "tags": [
+          "items"
+        ],
+        "summary": "Delete an entry and close the gap",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete an entry and close the gap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/members": {
+      "get": {
+        "operationId": "listMembers",
+        "tags": [
+          "members"
+        ],
+        "summary": "The project members with their roles, owners first",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The project members with their roles, owners first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "image": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "OWNER",
+                          "MANAGER",
+                          "MEMBER"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "userId",
+                      "name",
+                      "email",
+                      "image",
+                      "role",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "addMember",
+        "tags": [
+          "members"
+        ],
+        "summary": "Add someone who already has an account, by email (owners any role, managers Member only)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "OWNER",
+                      "MANAGER",
+                      "MEMBER"
+                    ]
+                  }
+                },
+                "required": [
+                  "email",
+                  "role"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Add someone who already has an account, by email (owners any role, managers Member only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "OWNER",
+                        "MANAGER",
+                        "MEMBER"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "name",
+                    "email",
+                    "image",
+                    "role",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/members/{userId}": {
+      "patch": {
+        "operationId": "changeMemberRole",
+        "tags": [
+          "members"
+        ],
+        "summary": "Change a member's role (owners only)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "userId",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "OWNER",
+                      "MANAGER",
+                      "MEMBER"
+                    ]
+                  }
+                },
+                "required": [
+                  "role"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Change a member's role (owners only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "OWNER",
+                        "MANAGER",
+                        "MEMBER"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "name",
+                    "email",
+                    "image",
+                    "role",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeMember",
+        "tags": [
+          "members"
+        ],
+        "summary": "Remove a member (owners), or leave the project (yourself)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "userId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remove a member (owners), or leave the project (yourself)",
             "content": {
               "application/json": {
                 "schema": {

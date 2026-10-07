@@ -1,6 +1,6 @@
 # ADR-0004: API code in feature modules
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-03
 
 ## Context
@@ -25,7 +25,10 @@ and responses, plain `(c: Context)` functions), `<feature>.service.ts` (rules an
 queries) and `<feature>.schema.ts` (validation), with tests next to them. A module adds
 only the files it needs. Like Unigym's `src/modules/<feature>/`, with plain functions
 instead of Nest classes. Only repositories touch the database, importing the Prisma client from
-`src/db/`.
+`src/db/`. (Amended by [ADR-0008](0008-services-run-transactions.md): services may
+start a transaction and pass `tx` to repository functions. Amended by
+[ADR-0009](0009-module-types-and-utils.md): modules also keep `<feature>.types.ts` and
+`<feature>.utils.ts`.)
 
 ## Consequences
 

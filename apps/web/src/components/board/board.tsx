@@ -26,18 +26,19 @@ import {
   getGetItemQueryKey,
   getListItemsQueryKey,
   useListItems,
-  useUpdateItem,
+  useMoveItem,
   type listItemsResponse,
 } from "@/lib/api/generated/items/items";
 import type {
-  GetWorkspace200StatesItem,
+  GetProject200StatesItem,
   ListItems200Item,
 } from "@/lib/api/generated/uniloomAPI.schemas";
-import { useGetWorkspace } from "@/lib/api/generated/workspaces/workspaces";
+import { useListMembers } from "@/lib/api/generated/members/members";
+import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
 
 type Row = ListItems200Item;
-type State = GetWorkspace200StatesItem;
+type State = GetProject200StatesItem;
 
 // Space picks a card up and drops it; Enter still opens the card's link.
 const keyboardCodes = {
@@ -47,18 +48,21 @@ const keyboardCodes = {
 };
 
 /**
- * The workspace's states as columns. Dragging a card to another column moves it at once
+ * The project's states as columns. Dragging a card to another column moves it at once
  * and saves; if the API refuses, the card goes back and a toast says why.
  */
-export const Board = ({ workspaceId }: { workspaceId: string }) => {
+export const Board = ({ projectId }: { projectId: string }) => {
   const queryClient = useQueryClient();
-  const { data: workspace, error } = useGetWorkspace(workspaceId, {
+  const { data: project, error } = useGetProject(projectId, {
     query: { select: (r) => r.data, retry: false },
   });
-  const { data: items, error: itemsError } = useListItems(workspaceId, {
+  const { data: items, error: itemsError } = useListItems(projectId, {
     query: { select: (r) => r.data },
   });
-  const updateItem = useUpdateItem();
+  const { data: members } = useListMembers(projectId, {
+    query: { select: (r) => r.data },
+  });
+  const move = useMoveItem();
   const [search, setSearch] = useState("");
   const [dragged, setDragged] = useState<Row | null>(null);
   // A drag ends with a click on the card; this keeps it from opening the item.
@@ -79,14 +83,14 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
       <main className="flex flex-col items-start gap-3 px-6 py-12">
         <p role="alert">{loadError.message}</p>
         <Link href="/" className="text-primary underline underline-offset-4">
-          Back to your workspaces
+          Back to your projects
         </Link>
       </main>
     );
   }
 
   // Columns appear once both the states and the items are in.
-  const states = workspace && items ? workspace.states : [];
+  const states = project && items ? project.states : [];
   const stateName = (id: string | number | undefined) =>
     states.find((s) => s.id === id)?.name ?? "";
   const query = search.trim().toLowerCase();
@@ -96,7 +100,9 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
       item.key.toLowerCase().includes(query) ||
       item.title.toLowerCase().includes(query),
   );
-  const listKey = getListItemsQueryKey(workspaceId);
+  const assigneeOf = (item: Row) =>
+    members?.find((member) => member.userId === item.assigneeId);
+  const listKey = getListItemsQueryKey(projectId);
 
   const moveItem = async (item: Row, state: State) => {
     if (item.state.id === state.id) return;
@@ -115,7 +121,7 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
           ),
         },
     );
-    updateItem.mutate(
+    move.mutate(
       { id: item.id, data: { stateId: state.id } },
       {
         onError: (err) => {
@@ -164,10 +170,10 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
           className="flex gap-1.5 text-sm text-muted-foreground"
         >
           <Link href="/" className="hover:text-foreground">
-            Workspaces
+            Projects
           </Link>
           <span>/</span>
-          <span>{workspace?.name ?? "…"}</span>
+          <span>{project?.name ?? "…"}</span>
         </nav>
         <h1 className="text-2xl font-medium tracking-tight">Board</h1>
       </div>
@@ -185,15 +191,15 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
               className="h-9 w-56 bg-card pl-8 dark:bg-card"
             />
           </label>
-          {workspace && (
+          {project && (
             <StateLozenge
-              name={workspace.mode === "GUIDED" ? "Guided" : "Standard"}
+              name={project.mode === "GUIDED" ? "Guided" : "Standard"}
             />
           )}
         </div>
-        {workspace && items && (
+        {project?.canCreateItems && items && (
           <NewItemDialog
-            workspace={workspace}
+            project={project}
             items={items}
             trigger={
               <Button className="h-9 px-3">
@@ -218,8 +224,10 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
           setTimeout(() => (justDragged.current = false));
         }}
       >
-        <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-6 pb-6 sm:snap-none">
-          {(!workspace || !items) &&
+        {/* relative: the cards' sr-only labels are absolute; without it they escape this
+            scroller and widen the whole page. */}
+        <div className="relative flex snap-x snap-mandatory gap-2 overflow-x-auto px-6 pb-6 sm:snap-none">
+          {(!project || !items) &&
             [0, 1, 2, 3].map((n) => (
               <Skeleton
                 key={n}
@@ -234,7 +242,8 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
                   <ItemCard
                     key={item.id}
                     item={item}
-                    href={`/w/${workspaceId}/items/${item.id}`}
+                    assignee={assigneeOf(item)}
+                    href={`/p/${projectId}/items/${item.id}`}
                     done={state.category === "DONE"}
                     onClick={(event) => {
                       if (justDragged.current) event.preventDefault();
@@ -249,7 +258,11 @@ export const Board = ({ workspaceId }: { workspaceId: string }) => {
         <DragOverlay>
           {dragged && (
             <div className="flex w-[252px] -rotate-2 cursor-grabbing flex-col gap-3 rounded-[4px] bg-card p-3 shadow-lifted">
-              <CardFace item={dragged} done={false} />
+              <CardFace
+                item={dragged}
+                assignee={assigneeOf(dragged)}
+                done={false}
+              />
             </div>
           )}
         </DragOverlay>

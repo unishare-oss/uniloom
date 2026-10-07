@@ -1,7 +1,17 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Pencil, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,6 +26,7 @@ import {
   type Priority,
 } from "@/components/items/item-meta";
 import { Markdown } from "@/components/markdown/markdown";
+import { Avatar, EmptyAvatar } from "@/components/user/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,10 +57,15 @@ import {
   getListDeletedItemsQueryKey,
   getListItemsQueryKey,
   useAddBlocker,
+  useAddChecklistEntry,
+  useDeleteChecklistEntry,
   useDeleteItem,
   useGetItem,
   useListItems,
+  useMoveItem,
   useRemoveBlocker,
+  useReorderChecklist,
+  useUpdateChecklistEntry,
   useUpdateItem,
   type getItemResponse,
 } from "@/lib/api/generated/items/items";
@@ -57,10 +73,114 @@ import type {
   GetItem200,
   UpdateItemBody,
 } from "@/lib/api/generated/uniloomAPI.schemas";
-import { useGetWorkspace } from "@/lib/api/generated/workspaces/workspaces";
+import { useListMembers } from "@/lib/api/generated/members/members";
+import { useGetProject } from "@/lib/api/generated/projects/projects";
+import { useGetMe } from "@/lib/api/generated/users/users";
 import { formatDate, timeAgo } from "@/lib/time";
 
 const NO_PARENT = "none";
+const UNASSIGNED = "unassigned";
+
+/**
+ * Who has the item. Owners and managers (`canAssignOthers`) pick anyone; a member sees
+ * who has it, with Claim when it's free (and `canClaim`) and Unclaim when it's theirs. The
+ * API enforces it.
+ */
+const AssigneeField = ({
+  projectId,
+  assigneeId,
+  canAssignOthers,
+  canClaim,
+  onChange,
+}: {
+  projectId: string;
+  assigneeId: string | null;
+  canAssignOthers: boolean;
+  canClaim: boolean;
+  onChange: (assigneeId: string | null) => void;
+}) => {
+  const { data: members } = useListMembers(projectId, {
+    query: { select: (r) => r.data },
+  });
+  const { data: me } = useGetMe({ query: { select: (r) => r.data } });
+  const assignee = members?.find((member) => member.userId === assigneeId);
+
+  if (canAssignOthers) {
+    const options = [
+      { value: UNASSIGNED, label: "Unassigned" },
+      ...(members ?? []).map((member) => ({
+        value: member.userId,
+        label: member.name,
+      })),
+    ];
+    return (
+      <Select
+        value={assigneeId ?? UNASSIGNED}
+        onValueChange={(value) =>
+          onChange(value === UNASSIGNED ? null : (value as string))
+        }
+        items={options}
+      >
+        <SelectTrigger
+          aria-label="Assignee"
+          className="w-full hover:bg-muted/50 focus-visible:bg-muted/50"
+        >
+          {assignee && (
+            <Avatar name={assignee.name} image={assignee.image} size={20} />
+          )}
+          {assigneeId === null && <EmptyAvatar />}
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      {assignee && (
+        <>
+          <Avatar name={assignee.name} image={assignee.image} size={20} />
+          <span className="min-w-0 truncate text-sm">{assignee.name}</span>
+        </>
+      )}
+      {assigneeId === null && (
+        <>
+          <EmptyAvatar />
+          <span className="text-sm text-muted-foreground">Unassigned</span>
+        </>
+      )}
+      {me && canClaim && assigneeId === null && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="ml-auto"
+          onClick={() => onChange(me.id)}
+        >
+          <UserPlus />
+          Claim
+        </Button>
+      )}
+      {me && assigneeId === me.id && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="ml-auto"
+          onClick={() => onChange(null)}
+        >
+          <UserMinus />
+          Unclaim
+        </Button>
+      )}
+    </div>
+  );
+};
 
 /** Rendered description; Edit opens Write / Preview with Save and Cancel. */
 const Description = ({
@@ -162,12 +282,267 @@ const Description = ({
   );
 };
 
+type Entry = GetItem200["checklist"][number];
+
+/** One checklist entry: tick, edit inline, move, delete. */
+const ChecklistRow = ({
+  entry,
+  first,
+  last,
+  busy,
+  onUpdate,
+  onToggle,
+  onDelete,
+  onMove,
+}: {
+  entry: Entry;
+  first: boolean;
+  last: boolean;
+  busy: boolean;
+  onUpdate: (data: { text: string }, onDone: () => void) => void;
+  onToggle: () => void;
+  onDelete: () => void;
+  onMove: (step: -1 | 1) => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(entry.text);
+  const close = () => setEditing(false);
+  const startEdit = () => {
+    setText(entry.text);
+    setEditing(true);
+  };
+
+  if (editing) {
+    return (
+      <li className="flex flex-col gap-2 border-b px-3.5 py-2.5 last:border-b-0">
+        <Input
+          aria-label="Entry text"
+          autoFocus
+          maxLength={500}
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={close}>
+            Cancel
+          </Button>
+          <Button
+            disabled={busy || !text.trim()}
+            onClick={() => onUpdate({ text }, close)}
+          >
+            Save
+          </Button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex flex-col gap-2 border-b px-3.5 py-2.5 last:border-b-0">
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          aria-label={`${entry.text}, done`}
+          checked={entry.done}
+          disabled={busy}
+          onChange={onToggle}
+          className="mt-1 size-4 shrink-0 accent-primary"
+        />
+        <div className="min-w-0 flex-1">
+          <p
+            className={
+              entry.done
+                ? "break-words text-muted-foreground line-through"
+                : "break-words"
+            }
+          >
+            {entry.text}
+          </p>
+          {entry.evidence && (
+            <p className="break-words text-sm text-muted-foreground">
+              {entry.evidence}
+            </p>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Move up"
+            disabled={busy || first}
+            onClick={() => onMove(-1)}
+          >
+            <ArrowUp />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Move down"
+            disabled={busy || last}
+            onClick={() => onMove(1)}
+          >
+            <ArrowDown />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Edit"
+            onClick={startEdit}
+          >
+            <Pencil />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Delete"
+            disabled={busy}
+            onClick={onDelete}
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </div>
+    </li>
+  );
+};
+
+/** The done-when checklist: its entries and an input to add one. */
+const Checklist = ({
+  itemId,
+  entries,
+  refresh,
+  onError,
+}: {
+  itemId: string;
+  entries: Entry[];
+  refresh: () => Promise<unknown>;
+  onError: (err: { message: string }) => void;
+}) => {
+  const [text, setText] = useState("");
+  const queryClient = useQueryClient();
+  const add = useAddChecklistEntry({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const update = useUpdateChecklistEntry({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const remove = useDeleteChecklistEntry({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const reorder = useReorderChecklist({
+    mutation: { onSuccess: refresh, onError },
+  });
+  const busy =
+    add.isPending || update.isPending || remove.isPending || reorder.isPending;
+
+  const addEntry = () => {
+    // The add stays pending until the refresh is done, so a repeated Enter can't add twice.
+    if (add.isPending || !text.trim()) return;
+    add.mutate(
+      { id: itemId, data: { text } },
+      { onSuccess: () => setText("") },
+    );
+  };
+  const itemKey = getGetItemQueryKey(itemId);
+  /** Shows `checklist` at once, before the save; returns the cache to restore on error. */
+  const showChecklist = async (checklist: Entry[]) => {
+    // Wait, or a cancelled refetch can roll the cache back over the new checklist.
+    await queryClient.cancelQueries({ queryKey: itemKey });
+    const previous = queryClient.getQueryData<getItemResponse>(itemKey);
+    queryClient.setQueryData<getItemResponse>(
+      itemKey,
+      (old) => old && { ...old, data: { ...old.data, checklist } },
+    );
+    return previous;
+  };
+  /** Swaps the entry with its neighbour on screen at once, then saves the new order. */
+  const move = async (index: number, step: -1 | 1) => {
+    const moved = [...entries];
+    [moved[index], moved[index + step]] = [moved[index + step], moved[index]];
+    const previous = await showChecklist(
+      moved.map((entry, i) => ({ ...entry, position: i })),
+    );
+    reorder.mutate(
+      { id: itemId, data: { ids: moved.map((entry) => entry.id) } },
+      { onError: () => queryClient.setQueryData(itemKey, previous) },
+    );
+  };
+  /** Ticks or unticks the entry on screen at once, then saves it. */
+  const toggle = async (entry: Entry) => {
+    const done = !entry.done;
+    const previous = await showChecklist(
+      entries.map((row) => (row.id === entry.id ? { ...row, done } : row)),
+    );
+    update.mutate(
+      { id: itemId, entryId: entry.id, data: { done } },
+      { onError: () => queryClient.setQueryData(itemKey, previous) },
+    );
+  };
+
+  return (
+    <section aria-labelledby="checklist" className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <h2 id="checklist" className="font-semibold">
+          Checklist
+        </h2>
+        {entries.length > 0 && (
+          <span className="text-xs font-semibold text-muted-foreground">
+            {entries.filter((entry) => entry.done).length}/{entries.length}
+          </span>
+        )}
+      </div>
+      {entries.length > 0 && (
+        <ul className="overflow-hidden rounded-lg border bg-card">
+          {entries.map((entry, index) => (
+            <ChecklistRow
+              key={entry.id}
+              entry={entry}
+              first={index === 0}
+              last={index === entries.length - 1}
+              busy={busy}
+              onUpdate={(data, onDone) =>
+                update.mutate(
+                  { id: itemId, entryId: entry.id, data },
+                  { onSuccess: onDone },
+                )
+              }
+              onToggle={() => void toggle(entry)}
+              onDelete={() => remove.mutate({ id: itemId, entryId: entry.id })}
+              onMove={(step) => void move(index, step)}
+            />
+          ))}
+        </ul>
+      )}
+      <div className="flex items-center gap-2">
+        <Input
+          aria-label="New checklist entry"
+          placeholder="Add a done-when entry"
+          maxLength={500}
+          value={text}
+          readOnly={add.isPending}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") addEntry();
+          }}
+        />
+        <Button
+          variant="secondary"
+          disabled={add.isPending || !text.trim()}
+          onClick={addEntry}
+        >
+          Add
+        </Button>
+      </div>
+    </section>
+  );
+};
+
 /** One item: its fields, what it waits on, and delete. */
 export const ItemDetail = ({
-  workspaceId,
+  projectId,
   itemId,
 }: {
-  workspaceId: string;
+  projectId: string;
   itemId: string;
 }) => {
   const router = useRouter();
@@ -175,37 +550,33 @@ export const ItemDetail = ({
   const { data: item, error } = useGetItem(itemId, {
     query: { select: (r) => r.data, retry: false },
   });
-  const { data: workspace, error: workspaceError } = useGetWorkspace(
-    workspaceId,
-    { query: { select: (r) => r.data } },
-  );
-  const { data: items, error: itemsError } = useListItems(workspaceId, {
+  const { data: project, error: projectError } = useGetProject(projectId, {
     query: { select: (r) => r.data },
   });
-  const [blockerKey, setBlockerKey] = useState("");
-  // An item opened under another workspace's URL (the API already checked you may see
-  // it): go to its own workspace, so its states, parents and sidebar match.
-  const elsewhere = item && item.workspaceId !== workspaceId;
+  const { data: items, error: itemsError } = useListItems(projectId, {
+    query: { select: (r) => r.data },
+  });
+  // An item opened under another project's URL (the API already checked you may see
+  // it): go to its own project, so its states, parents and sidebar match.
+  const elsewhere = item && item.projectId !== projectId;
   useEffect(() => {
     if (item && elsewhere)
-      router.replace(`/w/${item.workspaceId}/items/${item.id}`);
+      router.replace(`/p/${item.projectId}/items/${item.id}`);
   }, [item, elsewhere, router]);
 
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(itemId) }),
       queryClient.invalidateQueries({
-        queryKey: getListItemsQueryKey(workspaceId),
+        queryKey: getListItemsQueryKey(projectId),
       }),
     ]);
   const onError = (err: { message: string }) => toast.error(err.message);
   const update = useUpdateItem({ mutation: { onSuccess: refresh, onError } });
+  const move = useMoveItem({ mutation: { onSuccess: refresh, onError } });
   const addBlocker = useAddBlocker({
     mutation: {
-      onSuccess: async () => {
-        setBlockerKey("");
-        await refresh();
-      },
+      onSuccess: refresh,
       onError,
     },
   });
@@ -217,25 +588,25 @@ export const ItemDetail = ({
       onSuccess: async (res) => {
         toast.success(successMessage(res));
         await queryClient.invalidateQueries({
-          queryKey: getListItemsQueryKey(workspaceId),
+          queryKey: getListItemsQueryKey(projectId),
         });
         void queryClient.invalidateQueries({
-          queryKey: getListDeletedItemsQueryKey(workspaceId),
+          queryKey: getListDeletedItemsQueryKey(projectId),
         });
-        router.push(`/w/${workspaceId}`);
+        router.push(`/p/${projectId}`);
       },
       onError,
     },
   });
 
   // Any of the three failing is an error, never an endless skeleton.
-  const loadError = error ?? workspaceError ?? itemsError;
+  const loadError = error ?? projectError ?? itemsError;
   if (loadError && !elsewhere) {
     return (
       <main className="flex flex-col items-start gap-3 px-6 py-12">
         <p role="alert">{loadError.message}</p>
         <Link
-          href={`/w/${workspaceId}`}
+          href={`/p/${projectId}`}
           className="text-primary underline underline-offset-4"
         >
           Back to the board
@@ -243,7 +614,7 @@ export const ItemDetail = ({
       </main>
     );
   }
-  if (!item || !workspace || !items || elsewhere) {
+  if (!item || !project || !items || elsewhere) {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
         <Skeleton className="h-5 w-40" />
@@ -271,8 +642,23 @@ export const ItemDetail = ({
       { onError: () => queryClient.setQueryData(itemKey, previous) },
     );
   };
+  // Moving has its own endpoint; the picker shows the new state at once, a refusal
+  // puts the old one back.
+  const moveNow = async (stateId: string, shown: Partial<GetItem200>) => {
+    const itemKey = getGetItemQueryKey(item.id);
+    await queryClient.cancelQueries({ queryKey: itemKey });
+    const previous = queryClient.getQueryData<getItemResponse>(itemKey);
+    queryClient.setQueryData<getItemResponse>(
+      itemKey,
+      (old) => old && { ...old, data: { ...old.data, ...shown } },
+    );
+    move.mutate(
+      { id: item.id, data: { stateId } },
+      { onError: () => queryClient.setQueryData(itemKey, previous) },
+    );
+  };
   const byId = new Map(items.map((row) => [row.id, row]));
-  const states = workspace.states;
+  const states = project.states;
   const category = (stateId: string) =>
     states.find((s) => s.id === stateId)?.category;
   const parents = [
@@ -281,6 +667,11 @@ export const ItemDetail = ({
       .filter((row) => row.id !== item.id)
       .map((row) => ({ value: row.id, label: `${row.key} · ${row.title}` })),
   ];
+  const children = items.filter((row) => row.parentId === item.id);
+  // Every other item it doesn't already wait on; the API still refuses loops.
+  const blockerOptions = items
+    .filter((row) => row.id !== item.id && !item.blockedBy.includes(row.id))
+    .map((row) => ({ value: row.id, label: `${row.key} · ${row.title}` }));
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-7">
@@ -289,9 +680,10 @@ export const ItemDetail = ({
         className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
       >
         <Link
-          href={`/w/${workspaceId}`}
-          className="rounded-sm transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          href={`/p/${projectId}`}
+          className="flex items-center gap-1.5 rounded-sm transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
+          <ArrowLeft className="size-4" />
           Board
         </Link>
         <span aria-hidden>/</span>
@@ -328,11 +720,59 @@ export const ItemDetail = ({
             onSave={(description) => save({ description })}
           />
 
-          <section aria-labelledby="blocked-by" className="flex flex-col gap-3">
-            <h2 id="blocked-by" className="font-semibold">
-              Blocked by
-            </h2>
-            <div className="rounded-lg border bg-card">
+          <Checklist
+            itemId={item.id}
+            entries={item.checklist}
+            refresh={refresh}
+            onError={onError}
+          />
+
+          {children.length > 0 && (
+            <details open className="group">
+              <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 ease-out group-open:rotate-90" />
+                <h2 id="children" className="font-semibold">
+                  {item.kind === "FEATURE" ? "Slices" : "Subtasks"}
+                </h2>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {children.length}
+                </span>
+              </summary>
+              <div className="mt-3 overflow-hidden rounded-lg border bg-card">
+                {children.map((child) => (
+                  <Link
+                    key={child.id}
+                    href={`/p/${projectId}/items/${child.id}`}
+                    className="flex items-center gap-3 border-b px-3.5 py-2.5 transition-colors duration-150 ease-out outline-none last:border-b-0 hover:bg-muted/50 focus-visible:bg-muted/50"
+                  >
+                    <KindIcon kind={child.kind} />
+                    <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                      {child.key}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {child.title}
+                    </span>
+                    <StateLozenge
+                      name={child.state.name}
+                      category={category(child.state.id)}
+                    />
+                  </Link>
+                ))}
+              </div>
+            </details>
+          )}
+
+          <details open className="group">
+            <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 ease-out group-open:rotate-90" />
+              <h2 id="blocked-by" className="font-semibold">
+                Blocked by
+              </h2>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {item.blockedBy.length}
+              </span>
+            </summary>
+            <div className="mt-3 rounded-lg border bg-card">
               {item.blockedBy.map((blockerId) => {
                 const blocker = byId.get(blockerId);
                 return (
@@ -342,7 +782,7 @@ export const ItemDetail = ({
                   >
                     {blocker && <KindIcon kind={blocker.kind} />}
                     <Link
-                      href={`/w/${workspaceId}/items/${blockerId}`}
+                      href={`/p/${projectId}/items/${blockerId}`}
                       className="flex min-w-0 flex-1 items-center gap-2.5 rounded-sm outline-none hover:underline focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span className="shrink-0 text-xs font-semibold text-muted-foreground">
@@ -371,38 +811,42 @@ export const ItemDetail = ({
                   </div>
                 );
               })}
-              <form
-                className="flex items-center gap-2 p-2.5"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const key = blockerKey.trim().toUpperCase();
-                  const blocker = items.find((row) => row.key === key);
-                  if (!blocker)
-                    return void toast.error(`No item ${key} in this workspace`);
-                  addBlocker.mutate({
-                    id: item.id,
-                    data: { blockerId: blocker.id },
-                  });
-                }}
-              >
-                <Input
-                  aria-label="Item this one waits on"
-                  placeholder={`Wait on another item, e.g. ${workspace.keyPrefix}-1`}
-                  value={blockerKey}
-                  onChange={(event) => setBlockerKey(event.target.value)}
-                  className="h-9"
-                />
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="h-9"
-                  disabled={!blockerKey.trim() || addBlocker.isPending}
+              <div className="p-2.5">
+                <Select
+                  value={null}
+                  onValueChange={(blockerId) => {
+                    if (blockerId)
+                      addBlocker.mutate({
+                        id: item.id,
+                        data: { blockerId: blockerId as string },
+                      });
+                  }}
+                  items={blockerOptions}
+                  disabled={!blockerOptions.length || addBlocker.isPending}
                 >
-                  Add
-                </Button>
-              </form>
+                  <SelectTrigger
+                    aria-label="Item this one waits on"
+                    className="h-9 w-full"
+                  >
+                    <SelectValue
+                      placeholder={
+                        blockerOptions.length
+                          ? "Wait on another item"
+                          : "No other items to wait on"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {blockerOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </section>
+          </details>
         </div>
 
         <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-6">
@@ -415,12 +859,10 @@ export const ItemDetail = ({
                   const state = states.find((s) => s.id === stateId);
                   if (!state) return;
                   const { id, name, key, category } = state;
-                  void saveNow(
-                    { stateId: id },
-                    { state: { id, name, key, category } },
-                  );
+                  void moveNow(id, { state: { id, name, key, category } });
                 }}
                 items={states.map((s) => ({ value: s.id, label: s.name }))}
+                disabled={!item.canMove}
               >
                 <SelectTrigger
                   aria-label="State"
@@ -432,11 +874,18 @@ export const ItemDetail = ({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {states.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
+                  {states
+                    .filter(
+                      (s) =>
+                        project.canMoveToDone ||
+                        s.category !== "DONE" ||
+                        s.id === item.state.id,
+                    )
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 
@@ -469,6 +918,17 @@ export const ItemDetail = ({
                   ))}
                 </SelectContent>
               </Select>
+
+              <Label className="text-sm text-muted-foreground">Assignee</Label>
+              <AssigneeField
+                projectId={projectId}
+                assigneeId={item.assigneeId}
+                canAssignOthers={project.canAssignOthers}
+                canClaim={project.canClaim}
+                onChange={(assigneeId) =>
+                  void saveNow({ assigneeId }, { assigneeId })
+                }
+              />
 
               <Label className="text-sm text-muted-foreground">Parent</Label>
               <Select
@@ -509,34 +969,36 @@ export const ItemDetail = ({
             </dl>
           </div>
 
-          <div className="flex flex-col gap-2.5 rounded-xl border bg-card p-4">
-            <p className="text-sm text-muted-foreground">
-              Deleting moves it to the trash. You can restore it from there.
-            </p>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={<Button variant="destructive">Delete item</Button>}
-              />
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {item.key}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    It moves to the trash, and you can restore it from there.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    disabled={remove.isPending}
-                    onClick={() => remove.mutate({ id: item.id })}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          {project.canCreateItems && (
+            <div className="flex flex-col gap-2.5 rounded-xl border bg-card p-4">
+              <p className="text-sm text-muted-foreground">
+                Deleting moves it to the trash. You can restore it from there.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={<Button variant="destructive">Delete item</Button>}
+                />
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {item.key}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      It moves to the trash, and you can restore it from there.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      disabled={remove.isPending}
+                      onClick={() => remove.mutate({ id: item.id })}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </aside>
       </div>
     </main>

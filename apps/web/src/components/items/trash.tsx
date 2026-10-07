@@ -16,16 +16,16 @@ import {
   useListDeletedItems,
   useRestoreItem,
 } from "@/lib/api/generated/items/items";
-import { useGetWorkspace } from "@/lib/api/generated/workspaces/workspaces";
+import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { timeAgo } from "@/lib/time";
 
 /** Deleted items, newest first, each with Restore. */
-export const Trash = ({ workspaceId }: { workspaceId: string }) => {
+export const Trash = ({ projectId }: { projectId: string }) => {
   const queryClient = useQueryClient();
-  const { data: deleted, error } = useListDeletedItems(workspaceId, {
+  const { data: deleted, error } = useListDeletedItems(projectId, {
     query: { select: (r) => r.data },
   });
-  const { data: workspace } = useGetWorkspace(workspaceId, {
+  const { data: project } = useGetProject(projectId, {
     query: { select: (r) => r.data },
   });
   const restore = useRestoreItem({
@@ -34,10 +34,10 @@ export const Trash = ({ workspaceId }: { workspaceId: string }) => {
         toast.success(successMessage(res));
         await Promise.all([
           queryClient.invalidateQueries({
-            queryKey: getListDeletedItemsQueryKey(workspaceId),
+            queryKey: getListDeletedItemsQueryKey(projectId),
           }),
           queryClient.invalidateQueries({
-            queryKey: getListItemsQueryKey(workspaceId),
+            queryKey: getListItemsQueryKey(projectId),
           }),
         ]);
       },
@@ -45,14 +45,14 @@ export const Trash = ({ workspaceId }: { workspaceId: string }) => {
     },
   });
   const category = (stateId: string) =>
-    workspace?.states.find((s) => s.id === stateId)?.category;
+    project?.states.find((s) => s.id === stateId)?.category;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8">
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Trash</h1>
         <p className="text-muted-foreground">
-          Deleted items stay here until you restore them.
+          Deleted items stay here until an owner or manager restores them.
         </p>
       </div>
 
@@ -103,13 +103,15 @@ export const Trash = ({ workspaceId }: { workspaceId: string }) => {
                     {timeAgo(item.deletedAt)}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <Button
-                      variant="outline"
-                      disabled={restore.isPending}
-                      onClick={() => restore.mutate({ id: item.id })}
-                    >
-                      Restore
-                    </Button>
+                    {project?.canCreateItems && (
+                      <Button
+                        variant="outline"
+                        disabled={restore.isPending}
+                        onClick={() => restore.mutate({ id: item.id })}
+                      >
+                        Restore
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

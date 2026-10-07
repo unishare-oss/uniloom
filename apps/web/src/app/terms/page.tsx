@@ -19,7 +19,7 @@ const TermsPage = () => {
       <h2>Ending your use</h2>
       <p>
         You can stop using Uniloom at any time. Deleting your uniAuth account
-        also deletes your Uniloom account and your workspace memberships.
+        also deletes your Uniloom account and your project memberships.
       </p>
     </LegalPage>
   );

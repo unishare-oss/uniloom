@@ -10,7 +10,7 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
   --font-heading: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  /* Uniloom: the outline and offset shadow of the sidebar and workspace cards. */
+  /* Uniloom: the outline and offset shadow of the sidebar and project cards. */
   --color-ink: var(--ink);
   --shadow-hard: 4px 4px 0 var(--ink);
   --shadow-hard-lg: 6px 6px 0 var(--ink);
@@ -21,7 +21,7 @@
   --color-feature: var(--feature);
   --color-slice: var(--slice);
   --color-project: var(--project);
-  --color-issue: var(--issue);
+  --color-task: var(--task);
   --color-urgent: var(--urgent);
   --color-done: var(--done);
   --color-done-foreground: var(--done-foreground);
@@ -112,7 +112,7 @@
   --feature: #c2410c;
   --slice: #0f766e;
   --project: #7c3aed;
-  --issue: #2563eb;
+  --task: #2563eb;
   --urgent: #dc2626;
   --done: #dcfce7;
   --done-foreground: #166534;
@@ -171,7 +171,7 @@
   --feature: #ea580c;
   --slice: #0d9488;
   --project: #8b5cf6;
-  --issue: #3b82f6;
+  --task: #3b82f6;
   --urgent: #f87171;
   --done: #14532d;
   --done-foreground: #bbf7d0;

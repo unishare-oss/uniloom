@@ -1,8 +1,6 @@
 import {
   CircleDot,
-  CircleUserRound,
   CornerDownRight,
-  FolderKanban,
   GitCommitHorizontal,
   Grid3x3,
   OctagonAlert,
@@ -14,7 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ItemKind = "FEATURE" | "SLICE" | "PROJECT" | "ISSUE" | "SUB_ISSUE";
+export type ItemKind = "FEATURE" | "SLICE" | "TASK" | "SUBTASK";
 export type Priority = "URGENT" | "HIGH" | "MEDIUM" | "LOW" | "NONE";
 export type StateCategory =
   "BACKLOG" | "UNSTARTED" | "STARTED" | "DONE" | "CANCELED";
@@ -22,17 +20,16 @@ export type StateCategory =
 /** The kinds a mode's items can have, in the order the New item form lists them. */
 export const KINDS_BY_MODE: Record<"GUIDED" | "STANDARD", ItemKind[]> = {
   GUIDED: ["FEATURE", "SLICE"],
-  STANDARD: ["PROJECT", "ISSUE", "SUB_ISSUE"],
+  STANDARD: ["TASK", "SUBTASK"],
 };
 
 const KIND: Record<ItemKind, { label: string; icon: LucideIcon; bg: string }> =
   {
     FEATURE: { label: "Feature", icon: Grid3x3, bg: "bg-feature" },
     SLICE: { label: "Slice", icon: GitCommitHorizontal, bg: "bg-slice" },
-    PROJECT: { label: "Project", icon: FolderKanban, bg: "bg-project" },
-    ISSUE: { label: "Issue", icon: CircleDot, bg: "bg-issue" },
-    SUB_ISSUE: {
-      label: "Sub-issue",
+    TASK: { label: "Task", icon: CircleDot, bg: "bg-task" },
+    SUBTASK: {
+      label: "Subtask",
       icon: CornerDownRight,
       bg: "bg-muted-foreground",
     },
@@ -109,20 +106,6 @@ export const StateLozenge = ({
     >
       {name}
     </span>
-  );
-};
-
-/** Who the item is assigned to; members come later (§14 step 6), so only yes or no. */
-export const AssigneeIcon = ({ assigned }: { assigned: boolean }) => {
-  return (
-    <CircleUserRound
-      role="img"
-      aria-label={assigned ? "Assigned" : "Unassigned"}
-      className={cn(
-        "size-5 shrink-0",
-        assigned ? "text-primary" : "text-muted-foreground/60",
-      )}
-    />
   );
 };
 

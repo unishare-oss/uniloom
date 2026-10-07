@@ -15,6 +15,14 @@ export const metadata: Metadata = {
   title: "Uniloom",
   description:
     "A design-first work tracker for building software with a coding agent",
+  // The logo kit's head snippet. The files are in public/.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 const RootLayout = ({ children }: { children: ReactNode }) => {

@@ -1,6 +1,6 @@
 # 04: Items
 
-Status: In Progress
+Status: Done
 
 ## Scope
 
@@ -24,8 +24,7 @@ moves (checklists, designs, approval), roles beyond OWNER, invites.
 - [x] Items get sequential `KEY-n` numbers per workspace, also under concurrent creates
 - [x] Kind/parent rules per mode and blocked-by rules return the documented errors
 - [x] Non-members get 404 on every workspace and item route
-- [ ] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included (local checks pass;
-      CI runs once the branch is pushed)
+- [x] `lint`, `typecheck`, `test`, `test:e2e`, `build` pass, CI included
 
 ## Design
 

@@ -2,42 +2,48 @@ import type { Context } from 'hono';
 import { idParam, apiSuccess, parseBody } from '@/http.js';
 import {
   addBlockerSchema,
+  addChecklistEntrySchema,
   createItemSchema,
+  moveItemSchema,
+  reorderChecklistSchema,
+  updateChecklistEntrySchema,
   updateItemSchema,
 } from './item.schema.js';
 import {
   addBlocker,
-  createWorkspaceItem,
+  addChecklistEntry,
+  createProjectItem,
   getItem,
-  listWorkspaceItems,
+  listProjectItems,
+  moveItem,
   removeBlocker,
-  listWorkspaceDeletedItems,
+  listProjectDeletedItems,
+  removeChecklistEntry,
   removeItem,
-  restoreWorkspaceItem,
-  updateWorkspaceItem,
+  reorderChecklist,
+  restoreProjectItem,
+  updateChecklistEntry,
+  updateProjectItem,
 } from './item.service.js';
 
-export const getWorkspaceItems = async (c: Context) =>
-  apiSuccess(
-    c,
-    await listWorkspaceItems(idParam(c, 'workspaceId'), c.var.user.id),
-  );
+export const getProjectItems = async (c: Context) =>
+  apiSuccess(c, await listProjectItems(idParam(c, 'projectId'), c.var.user.id));
 
 export const getDeletedItems = async (c: Context) =>
   apiSuccess(
     c,
-    await listWorkspaceDeletedItems(idParam(c, 'workspaceId'), c.var.user.id),
+    await listProjectDeletedItems(idParam(c, 'projectId'), c.var.user.id),
   );
 
 export const postRestoreItem = async (c: Context) => {
-  const item = await restoreWorkspaceItem(idParam(c, 'id'), c.var.user.id);
+  const item = await restoreProjectItem(idParam(c, 'id'), c.var.user.id);
   return apiSuccess(c, item, `${item.key} restored`);
 };
 
-export const postWorkspaceItem = async (c: Context) => {
-  const workspaceId = idParam(c, 'workspaceId');
+export const postProjectItem = async (c: Context) => {
+  const projectId = idParam(c, 'projectId');
   const input = await parseBody(c, createItemSchema);
-  const item = await createWorkspaceItem(workspaceId, c.var.user.id, input);
+  const item = await createProjectItem(projectId, c.var.user.id, input);
   return apiSuccess(c, item, `${item.key} created`, 201);
 };
 
@@ -47,8 +53,15 @@ export const getItemById = async (c: Context) =>
 export const patchItem = async (c: Context) => {
   const id = idParam(c, 'id');
   const input = await parseBody(c, updateItemSchema);
-  const item = await updateWorkspaceItem(id, c.var.user.id, input);
+  const item = await updateProjectItem(id, c.var.user.id, input);
   return apiSuccess(c, item, `${item.key} updated`);
+};
+
+export const postMoveItem = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const { stateId } = await parseBody(c, moveItemSchema);
+  const item = await moveItem(id, c.var.user.id, stateId);
+  return apiSuccess(c, item, `${item.key} moved`);
 };
 
 export const deleteItemById = async (c: Context) => {
@@ -70,4 +83,45 @@ export const postBlocker = async (c: Context) => {
 export const deleteBlocker = async (c: Context) => {
   await removeBlocker(idParam(c, 'id'), c.var.user.id, idParam(c, 'blockerId'));
   return apiSuccess(c, null, 'Blocker removed');
+};
+
+export const postChecklistEntry = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const input = await parseBody(c, addChecklistEntrySchema);
+  return apiSuccess(
+    c,
+    await addChecklistEntry(id, c.var.user.id, input),
+    'Checklist entry added',
+    201,
+  );
+};
+
+export const patchChecklistEntry = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const entryId = idParam(c, 'entryId');
+  const input = await parseBody(c, updateChecklistEntrySchema);
+  return apiSuccess(
+    c,
+    await updateChecklistEntry(id, entryId, c.var.user.id, input),
+    'Checklist entry updated',
+  );
+};
+
+export const deleteChecklistEntry = async (c: Context) => {
+  await removeChecklistEntry(
+    idParam(c, 'id'),
+    idParam(c, 'entryId'),
+    c.var.user.id,
+  );
+  return apiSuccess(c, null, 'Checklist entry deleted');
+};
+
+export const putChecklistOrder = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const { ids } = await parseBody(c, reorderChecklistSchema);
+  return apiSuccess(
+    c,
+    await reorderChecklist(id, c.var.user.id, ids),
+    'Checklist reordered',
+  );
 };

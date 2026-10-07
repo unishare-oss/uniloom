@@ -4,14 +4,16 @@ import {
   ChevronLeft,
   Columns3,
   LayoutGrid,
+  Settings,
   SquarePlus,
   Trash2,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Avatar } from "@/components/user/avatar";
-import { NewWorkspaceDialog } from "@/components/workspaces/new-workspace-dialog";
+import { NewProjectDialog } from "@/components/projects/new-project-dialog";
 import { LogoMark } from "@/components/shell/logo";
 import {
   Sidebar,
@@ -25,9 +27,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { WorkspaceChip } from "@/components/workspaces/workspace-chip";
+import { ProjectChip } from "@/components/projects/project-chip";
 import { useGetMe } from "@/lib/api/generated/users/users";
-import { useListWorkspaces } from "@/lib/api/generated/workspaces/workspaces";
+import { useListProjects } from "@/lib/api/generated/projects/projects";
 
 // The active link is a filled block with an ink outline and offset shadow (UniShare's look).
 const linkClass =
@@ -36,21 +38,21 @@ const labelClass =
   "font-mono text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase";
 
 /**
- * Workspaces, the open workspace's Board and Trash, the other workspaces, and the
+ * Projects, the open project's Board and Trash, the other projects, and the
  * profile. A slide-out sheet on phones (shadcn's Sidebar handles both).
  */
 export const AppSidebar = () => {
   const pathname = usePathname();
-  const { workspaceId } = useParams<{ workspaceId?: string }>();
+  const { projectId } = useParams<{ projectId?: string }>();
   const { setOpenMobile, toggleSidebar } = useSidebar();
-  const { data: workspaces } = useListWorkspaces({
+  const { data: projects } = useListProjects({
     query: { select: (r) => r.data },
   });
   const { data: me } = useGetMe({
     query: { select: (r) => r.data, retry: false },
   });
-  const current = workspaces?.find((w) => w.id === workspaceId);
-  const others = workspaces?.filter((w) => w.id !== workspaceId) ?? [];
+  const current = projects?.find((w) => w.id === projectId);
+  const others = projects?.filter((w) => w.id !== projectId) ?? [];
 
   // On a phone, close the sheet after following a link.
   useEffect(() => setOpenMobile(false), [pathname, setOpenMobile]);
@@ -89,7 +91,7 @@ export const AppSidebar = () => {
                 render={<Link href="/" />}
               >
                 <LayoutGrid />
-                <span>Workspaces</span>
+                <span>Projects</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -104,8 +106,11 @@ export const AppSidebar = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   className={linkClass}
-                  isActive={!pathname.endsWith("/trash")}
-                  render={<Link href={`/w/${current.id}`} />}
+                  isActive={
+                    pathname === `/p/${current.id}` ||
+                    pathname.startsWith(`/p/${current.id}/items/`)
+                  }
+                  render={<Link href={`/p/${current.id}`} />}
                 >
                   <Columns3 />
                   <span>Board</span>
@@ -115,10 +120,30 @@ export const AppSidebar = () => {
                 <SidebarMenuButton
                   className={linkClass}
                   isActive={pathname.endsWith("/trash")}
-                  render={<Link href={`/w/${current.id}/trash`} />}
+                  render={<Link href={`/p/${current.id}/trash`} />}
                 >
                   <Trash2 />
                   <span>Trash</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className={linkClass}
+                  isActive={pathname.endsWith("/members")}
+                  render={<Link href={`/p/${current.id}/members`} />}
+                >
+                  <Users />
+                  <span>Members</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className={linkClass}
+                  isActive={pathname.endsWith("/settings")}
+                  render={<Link href={`/p/${current.id}/settings`} />}
+                >
+                  <Settings />
+                  <span>Settings</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -127,26 +152,26 @@ export const AppSidebar = () => {
 
         <SidebarGroup>
           <SidebarGroupLabel className={labelClass}>
-            {current ? "Switch to" : "Your workspaces"}
+            {current ? "Switch to" : "Your projects"}
           </SidebarGroupLabel>
           <SidebarMenu className="gap-1">
-            {others.map((workspace) => (
-              <SidebarMenuItem key={workspace.id}>
+            {others.map((project) => (
+              <SidebarMenuItem key={project.id}>
                 <SidebarMenuButton
                   className={linkClass}
-                  render={<Link href={`/w/${workspace.id}`} />}
+                  render={<Link href={`/p/${project.id}`} />}
                 >
-                  <WorkspaceChip keyPrefix={workspace.keyPrefix} />
-                  <span>{workspace.name}</span>
+                  <ProjectChip keyPrefix={project.keyPrefix} />
+                  <span>{project.name}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
             <SidebarMenuItem>
-              <NewWorkspaceDialog
+              <NewProjectDialog
                 trigger={
                   <SidebarMenuButton className={linkClass}>
                     <SquarePlus />
-                    <span>New workspace</span>
+                    <span>New project</span>
                   </SidebarMenuButton>
                 }
               />
@@ -160,14 +185,7 @@ export const AppSidebar = () => {
           href="/profile"
           className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted"
         >
-          {me && (
-            <Avatar
-              name={me.name}
-              image={me.image}
-              size={40}
-              className="rounded-[10px]"
-            />
-          )}
+          {me && <Avatar name={me.name} image={me.image} size={40} />}
           <span className="flex min-w-0 flex-col">
             <span className="truncate font-semibold text-foreground">
               {me?.name ?? "Profile"}

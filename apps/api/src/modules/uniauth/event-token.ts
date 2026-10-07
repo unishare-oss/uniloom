@@ -1,20 +1,11 @@
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
+import type { EventVerifier } from './uniauth.types.js';
 
 export const LOGOUT_EVENT =
   'http://schemas.openid.net/event/backchannel-logout';
 export const USER_DELETED_EVENT = 'urn:uniauth:event:user-deleted';
 export const USER_UPDATED_EVENT = 'urn:uniauth:event:user-updated';
 const EVENTS = [LOGOUT_EVENT, USER_DELETED_EVENT, USER_UPDATED_EVENT];
-
-export interface UniauthEvent {
-  sub: string;
-  data: Record<string, unknown>;
-}
-
-export type EventVerifier = (
-  token: string,
-  event: string,
-) => Promise<UniauthEvent | null>;
 
 /**
  * Returns a function that verifies a uniAuth event token: signed with uniAuth's key, for this
