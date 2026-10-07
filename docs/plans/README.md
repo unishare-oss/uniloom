@@ -56,3 +56,6 @@ UI-first plan 29, then authorized the live backend and integration work. Plans 3
 
 Future improvement: finer recipient selection. Email/push delivery, batching windows,
 self-notification preferences, and independent move rate limits are deferred.
+
+[32: Separate CI jobs](32-separate-ci-jobs.md) splits the existing CI workflow into
+five independent checks; the user authorized direct changes on dev and main.
