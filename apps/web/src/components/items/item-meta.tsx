@@ -138,3 +138,65 @@ export const stateTopClass = (state: {
     (state.key && TOP_BY_KEY[state.key]) || TOP_BY_CATEGORY[state.category]
   );
 };
+
+export type LabelColor =
+  "GRAY" | "RED" | "ORANGE" | "YELLOW" | "GREEN" | "BLUE" | "PURPLE" | "PINK";
+
+// Whole class names, so Tailwind sees them; the colours are `--label-*` in globals.css.
+const LABEL_COLOR: Record<LabelColor, { name: string; className: string }> = {
+  GRAY: {
+    name: "Gray",
+    className: "bg-label-gray/15 text-label-gray ring-label-gray/40",
+  },
+  RED: {
+    name: "Red",
+    className: "bg-label-red/15 text-label-red ring-label-red/40",
+  },
+  ORANGE: {
+    name: "Orange",
+    className: "bg-label-orange/15 text-label-orange ring-label-orange/40",
+  },
+  YELLOW: {
+    name: "Yellow",
+    className: "bg-label-yellow/15 text-label-yellow ring-label-yellow/40",
+  },
+  GREEN: {
+    name: "Green",
+    className: "bg-label-green/15 text-label-green ring-label-green/40",
+  },
+  BLUE: {
+    name: "Blue",
+    className: "bg-label-blue/15 text-label-blue ring-label-blue/40",
+  },
+  PURPLE: {
+    name: "Purple",
+    className: "bg-label-purple/15 text-label-purple ring-label-purple/40",
+  },
+  PINK: {
+    name: "Pink",
+    className: "bg-label-pink/15 text-label-pink ring-label-pink/40",
+  },
+};
+
+export const LABEL_COLORS = Object.keys(LABEL_COLOR) as LabelColor[];
+export const labelColorName = (color: LabelColor) => LABEL_COLOR[color].name;
+
+/** A label as a small rounded chip in its colour. */
+export const LabelChip = ({
+  name,
+  color,
+}: {
+  name: string;
+  color: LabelColor;
+}) => {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-5 max-w-full items-center rounded-full px-2 text-xs font-medium whitespace-nowrap ring-1 ring-inset",
+        LABEL_COLOR[color].className,
+      )}
+    >
+      <span className="truncate">{name}</span>
+    </span>
+  );
+};

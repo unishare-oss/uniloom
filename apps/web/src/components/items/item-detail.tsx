@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   KindIcon,
+  LabelChip,
   PRIORITIES,
   PriorityIcon,
   StateLozenge,
@@ -73,13 +74,83 @@ import type {
   GetItem200,
   UpdateItemBody,
 } from "@/lib/api/generated/uniloomAPI.schemas";
+import { useListLabels } from "@/lib/api/generated/labels/labels";
 import { useListMembers } from "@/lib/api/generated/members/members";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import { formatDate, timeAgo } from "@/lib/time";
+import { cn } from "@/lib/utils";
 
 const NO_PARENT = "none";
 const UNASSIGNED = "unassigned";
+
+/**
+ * The project's labels as toggles: on = the item has it. A label whose group is already
+ * used by another label of the item is greyed out; the API refuses it too.
+ */
+const LabelPicker = ({
+  projectId,
+  labels,
+  onChange,
+}: {
+  projectId: string;
+  labels: GetItem200["labels"];
+  onChange: (labels: GetItem200["labels"]) => void;
+}) => {
+  const { data: all } = useListLabels(projectId, {
+    query: { select: (r) => r.data },
+  });
+  const usedGroups = new Set(
+    (all ?? [])
+      .filter((l) => l.group && labels.some((on) => on.id === l.id))
+      .map((l) => l.group),
+  );
+
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Labels">
+      {(all ?? []).map((label) => {
+        const on = labels.some((l) => l.id === label.id);
+        const blocked =
+          !on && label.group !== null && usedGroups.has(label.group);
+        return (
+          <button
+            key={label.id}
+            type="button"
+            aria-pressed={on}
+            disabled={blocked}
+            title={
+              blocked
+                ? `Already has a "${label.group}" label: remove it first`
+                : undefined
+            }
+            className={cn(
+              "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              !on && "opacity-50 hover:opacity-100",
+              blocked && "cursor-not-allowed opacity-25 hover:opacity-25",
+            )}
+            onClick={() =>
+              onChange(
+                on
+                  ? labels.filter((l) => l.id !== label.id)
+                  : [
+                      ...labels,
+                      { id: label.id, name: label.name, color: label.color },
+                    ],
+              )
+            }
+          >
+            <LabelChip name={label.name} color={label.color} />
+          </button>
+        );
+      })}
+      {all?.length === 0 && (
+        <span className="text-sm text-muted-foreground">
+          No labels in this project
+        </span>
+      )}
+    </div>
+  );
+};
 
 /**
  * Who has the item. Owners and managers (`canAssignOthers`) pick anyone; a member sees
@@ -572,7 +643,22 @@ export const ItemDetail = ({
       }),
     ]);
   const onError = (err: { message: string }) => toast.error(err.message);
-  const update = useUpdateItem({ mutation: { onSuccess: refresh, onError } });
+  // One scope per item: field saves run one at a time in click order, so a quick second
+  // label click can't reach the API before the first. Only the last queued save
+  // refetches, or the reload would flash the older value over the newer optimistic one.
+  const saves = { id: `item-${itemId}` };
+  const update = useUpdateItem({
+    mutation: {
+      scope: saves,
+      onSuccess: () => {
+        const queued = queryClient.isMutating({
+          predicate: (mutation) => mutation.options.scope?.id === saves.id,
+        });
+        if (queued === 1) return refresh();
+      },
+      onError,
+    },
+  });
   const move = useMoveItem({ mutation: { onSuccess: refresh, onError } });
   const addBlocker = useAddBlocker({
     mutation: {
@@ -927,6 +1013,18 @@ export const ItemDetail = ({
                 canClaim={project.canClaim}
                 onChange={(assigneeId) =>
                   void saveNow({ assigneeId }, { assigneeId })
+                }
+              />
+
+              <Label className="text-sm text-muted-foreground">Labels</Label>
+              <LabelPicker
+                projectId={projectId}
+                labels={item.labels}
+                onChange={(labels) =>
+                  void saveNow(
+                    { labelIds: labels.map((l) => l.id) },
+                    { labels },
+                  )
                 }
               />
 

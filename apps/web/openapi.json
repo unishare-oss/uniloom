@@ -537,6 +537,9 @@
                     "canEditSettings": {
                       "type": "boolean"
                     },
+                    "canCreateLabels": {
+                      "type": "boolean"
+                    },
                     "canClaim": {
                       "type": "boolean"
                     },
@@ -577,6 +580,7 @@
                     "canCreateItems",
                     "canAssignOthers",
                     "canEditSettings",
+                    "canCreateLabels",
                     "canClaim",
                     "canMoveToDone",
                     "assignableRoles"
@@ -866,6 +870,40 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "labels": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "GRAY",
+                                "RED",
+                                "ORANGE",
+                                "YELLOW",
+                                "GREEN",
+                                "BLUE",
+                                "PURPLE",
+                                "PINK"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "color"
+                          ]
+                        }
                       }
                     },
                     "required": [
@@ -877,7 +915,8 @@
                       "priority",
                       "assigneeId",
                       "canMove",
-                      "parentId"
+                      "parentId",
+                      "labels"
                     ]
                   }
                 }
@@ -1128,6 +1167,40 @@
                         ]
                       }
                     },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "GRAY",
+                              "RED",
+                              "ORANGE",
+                              "YELLOW",
+                              "GREEN",
+                              "BLUE",
+                              "PURPLE",
+                              "PINK"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "color"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1154,6 +1227,7 @@
                     "createdById",
                     "blockedBy",
                     "checklist",
+                    "labels",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1260,6 +1334,40 @@
                           }
                         ]
                       },
+                      "labels": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "GRAY",
+                                "RED",
+                                "ORANGE",
+                                "YELLOW",
+                                "GREEN",
+                                "BLUE",
+                                "PURPLE",
+                                "PINK"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "color"
+                          ]
+                        }
+                      },
                       "deletedAt": {
                         "type": "string",
                         "format": "date-time",
@@ -1276,6 +1384,7 @@
                       "assigneeId",
                       "canMove",
                       "parentId",
+                      "labels",
                       "deletedAt"
                     ]
                   }
@@ -1457,6 +1566,40 @@
                         ]
                       }
                     },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "GRAY",
+                              "RED",
+                              "ORANGE",
+                              "YELLOW",
+                              "GREEN",
+                              "BLUE",
+                              "PURPLE",
+                              "PINK"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "color"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1483,6 +1626,7 @@
                     "createdById",
                     "blockedBy",
                     "checklist",
+                    "labels",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1497,7 +1641,7 @@
         "tags": [
           "items"
         ],
-        "summary": "Update an item's title, description, priority, assignee or parent",
+        "summary": "Update an item's title, description, priority, assignee, parent or labels",
         "parameters": [
           {
             "name": "id",
@@ -1557,6 +1701,15 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "labelIds": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
                   }
                 }
               }
@@ -1565,7 +1718,7 @@
         },
         "responses": {
           "200": {
-            "description": "Update an item's title, description, priority, assignee or parent",
+            "description": "Update an item's title, description, priority, assignee, parent or labels",
             "content": {
               "application/json": {
                 "schema": {
@@ -1716,6 +1869,40 @@
                         ]
                       }
                     },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "GRAY",
+                              "RED",
+                              "ORANGE",
+                              "YELLOW",
+                              "GREEN",
+                              "BLUE",
+                              "PURPLE",
+                              "PINK"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "color"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1742,6 +1929,7 @@
                     "createdById",
                     "blockedBy",
                     "checklist",
+                    "labels",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -1973,6 +2161,40 @@
                         ]
                       }
                     },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "GRAY",
+                              "RED",
+                              "ORANGE",
+                              "YELLOW",
+                              "GREEN",
+                              "BLUE",
+                              "PURPLE",
+                              "PINK"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "color"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1999,6 +2221,7 @@
                     "createdById",
                     "blockedBy",
                     "checklist",
+                    "labels",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -2180,6 +2403,40 @@
                         ]
                       }
                     },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "GRAY",
+                              "RED",
+                              "ORANGE",
+                              "YELLOW",
+                              "GREEN",
+                              "BLUE",
+                              "PURPLE",
+                              "PINK"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "color"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -2206,6 +2463,7 @@
                     "createdById",
                     "blockedBy",
                     "checklist",
+                    "labels",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -2407,6 +2665,40 @@
                         ]
                       }
                     },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "GRAY",
+                              "RED",
+                              "ORANGE",
+                              "YELLOW",
+                              "GREEN",
+                              "BLUE",
+                              "PURPLE",
+                              "PINK"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "color"
+                        ]
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -2433,6 +2725,7 @@
                     "createdById",
                     "blockedBy",
                     "checklist",
+                    "labels",
                     "createdAt",
                     "updatedAt"
                   ]
@@ -3096,6 +3389,362 @@
         "responses": {
           "200": {
             "description": "Remove a member (owners), or leave the project (yourself)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/labels": {
+      "get": {
+        "operationId": "listLabels",
+        "tags": [
+          "labels"
+        ],
+        "summary": "The project's labels, grouped ones first",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The project's labels, grouped ones first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "projectId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "color": {
+                        "type": "string",
+                        "enum": [
+                          "GRAY",
+                          "RED",
+                          "ORANGE",
+                          "YELLOW",
+                          "GREEN",
+                          "BLUE",
+                          "PURPLE",
+                          "PINK"
+                        ]
+                      },
+                      "group": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "projectId",
+                      "name",
+                      "color",
+                      "group",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLabel",
+        "tags": [
+          "labels"
+        ],
+        "summary": "Add a label (owners and managers; a group is the owner’s)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "color": {
+                    "type": "string",
+                    "enum": [
+                      "GRAY",
+                      "RED",
+                      "ORANGE",
+                      "YELLOW",
+                      "GREEN",
+                      "BLUE",
+                      "PURPLE",
+                      "PINK"
+                    ]
+                  },
+                  "group": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "color"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Add a label (owners and managers; a group is the owner’s)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "GRAY",
+                        "RED",
+                        "ORANGE",
+                        "YELLOW",
+                        "GREEN",
+                        "BLUE",
+                        "PURPLE",
+                        "PINK"
+                      ]
+                    },
+                    "group": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "name",
+                    "color",
+                    "group",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/labels/{id}": {
+      "patch": {
+        "operationId": "updateLabel",
+        "tags": [
+          "labels"
+        ],
+        "summary": "Change a label's name and colour (owners and managers) or its group (owners)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "color": {
+                    "type": "string",
+                    "enum": [
+                      "GRAY",
+                      "RED",
+                      "ORANGE",
+                      "YELLOW",
+                      "GREEN",
+                      "BLUE",
+                      "PURPLE",
+                      "PINK"
+                    ]
+                  },
+                  "group": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Change a label's name and colour (owners and managers) or its group (owners)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "GRAY",
+                        "RED",
+                        "ORANGE",
+                        "YELLOW",
+                        "GREEN",
+                        "BLUE",
+                        "PURPLE",
+                        "PINK"
+                      ]
+                    },
+                    "group": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "name",
+                    "color",
+                    "group",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteLabel",
+        "tags": [
+          "labels"
+        ],
+        "summary": "Delete a label; it leaves every item (owners)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a label; it leaves every item (owners)",
             "content": {
               "application/json": {
                 "schema": {
