@@ -2,11 +2,9 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  KindIcon,
-  StateLozenge,
-  kindLabel,
-} from "@/components/items/item-meta";
+import { KindIcon } from "@/components/items/kind-icon";
+import { kindLabel } from "@/components/items/item-meta";
+import { StateLozenge } from "@/components/items/state-lozenge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { successMessage } from "@/lib/api/fetcher";

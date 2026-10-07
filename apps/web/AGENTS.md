@@ -34,8 +34,10 @@ apps/web/
 ```
 
 `src/app` holds only routing files: a `page.tsx` reads the route params and renders a
-component from `src/components/<feature>/`, one component per file. Browser helpers go
-in `src/lib`. Use Server Components by default and client components when browser
+component from `src/components/<feature>/`. One React component per file, named after
+it (`label-picker.tsx` holds `LabelPicker`); a sub-component gets its own file in the
+same folder, not a local `const`. Small non-component helpers (maps, formatters) may
+stay beside the component that uses them. Browser helpers go in `src/lib`. Use Server Components by default and client components when browser
 behavior requires them. Keep access control and workflow rules in the API.
 
 The web app proxies `/api/*` to the Hono API through `next.config.ts`, so Better
@@ -57,7 +59,7 @@ signed-out visitors.
 Look and parts (ADR-0005): colours only through the CSS variables in `globals.css` (light
 and dark), never hard-coded; shadcn components from `src/components/ui/` (add more with
 `bunx shadcn add`); icons only from `lucide-react`; `KindIcon`, `PriorityIcon` and
-`StateLozenge` (`src/components/items/item-meta.tsx`) wherever an item's kind, priority or state
+`StateLozenge` (`src/components/items/`, their maps in `item-meta.ts`) wherever an item's kind, priority or state
 shows; `Markdown` (`src/components/markdown/markdown.tsx`) for any Markdown, with Mermaid diagrams.
 Signed-in pages render inside `AppShell`. A 401 from the API sends the user to `/login`
 and back (the fetcher does it).
