@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { auth } from '@/auth/auth.js';
 import { requireConsent, requireSession } from '@/auth/middleware.js';
 import { itemRoutes } from '@/modules/items/item.routes.js';
+import { labelRoutes } from '@/modules/labels/label.routes.js';
 import { memberRoutes } from '@/modules/members/member.routes.js';
 import { uniauthRoutes } from '@/modules/uniauth/uniauth.routes.js';
 import { userRoutes } from '@/modules/users/user.routes.js';
@@ -28,3 +29,4 @@ apiRoutes.route('/', memberRoutes);
 
 apiRoutes.route('/', reviewRoutes);
 apiRoutes.route('/', notificationRoutes);
+apiRoutes.route('/', labelRoutes);

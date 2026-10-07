@@ -16,6 +16,10 @@ const itemView = {
   state: { select: { id: true, name: true, key: true, category: true } },
   blockedBy: { select: { blockerId: true } },
   checklist: { orderBy: { position: 'asc' } },
+  labels: {
+    select: { label: { select: { id: true, name: true, color: true } } },
+    orderBy: { label: { name: 'asc' } },
+  },
 } as const;
 
 // Deleted items (deletedAt set) are kept in the table but never returned: every lookup
@@ -100,6 +104,23 @@ export const updateItem = (
   },
 ) => {
   return tx.item.update({ where: { id }, data, include: itemView });
+};
+
+/** The labels with these ids, whatever project they belong to. */
+export const findLabels = (ids: string[]) => {
+  return prisma.label.findMany({ where: { id: { in: ids } } });
+};
+
+/** Replaces the item's labels with `labelIds`. Call it with the item locked. */
+export const setLabels = async (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  labelIds: string[],
+) => {
+  await tx.itemLabel.deleteMany({ where: { itemId } });
+  await tx.itemLabel.createMany({
+    data: labelIds.map((labelId) => ({ itemId, labelId })),
+  });
 };
 
 /** The live item's kind and state, for the parent of an item that just moved. */

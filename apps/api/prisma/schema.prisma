@@ -127,6 +127,7 @@ model Project {
   members Member[]
   states  State[]
   items   Item[]
+  labels  Label[]
 
   @@map("project")
 }
@@ -223,6 +224,7 @@ model Item {
   blockedBy ItemBlock[] @relation("BlockedItem")
   blocking  ItemBlock[] @relation("BlockerItem")
   checklist ChecklistEntry[]
+  labels    ItemLabel[]
 
   @@unique([projectId, number])
   @@index([projectId, stateId, deletedAt])
@@ -306,4 +308,47 @@ model Notification {
   @@index([recipientId, createdAt, id])
   @@index([recipientId, itemId, createdAt, id])
   @@map("notification")
+}
+
+// ---------------------------------------------------------------------------
+// Labels (docs/plans/27-labels.md)
+
+enum LabelColor {
+  GRAY
+  RED
+  ORANGE
+  YELLOW
+  GREEN
+  BLUE
+  PURPLE
+  PINK
+}
+
+/// A project's label. Two labels with the same `group` can't be on one item; a label
+/// without a group combines freely. The group is plain text, so there is no group table.
+model Label {
+  id        String     @id @default(uuid(7)) @db.Uuid
+  projectId String     @db.Uuid
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  color     LabelColor
+  group     String?
+  createdAt DateTime   @default(now())
+
+  items ItemLabel[]
+
+  @@unique([projectId, name])
+  @@map("label")
+}
+
+/// A label on an item. Deleting either side removes the link.
+model ItemLabel {
+  itemId  String @db.Uuid
+  item    Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  labelId String @db.Uuid
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, labelId])
+  @@index([labelId])
+  @@map("item_label")
 }

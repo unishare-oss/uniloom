@@ -131,8 +131,8 @@ the live UI is integrated. POST /api/notifications/unread uses the same full-bat
 
 The user authorized continuing with the live implementation after reviewing the UI.
 
-The user requested removing introductory descriptions, task-title and project navigation
-in Needs review, and retaining inline previews. Live integration uses generated hooks;
+The user requested removing introductory descriptions, adding task-title and project
+navigation in Needs review, and retaining inline previews. Live integration uses generated hooks;
 only loaded history entries become read, with an immediate optimistic indication and
 errors that permit retry. No animation is added.
 
@@ -144,3 +144,8 @@ or approval outcomes. Future event types can use distinct type icons when introd
 
 The user rejected the colored card edges. Removed the state-colored top borders;
 cards return to their prior neutral borders. State labels remain visible on mobile.
+
+Publishing: backend commit `200b139`, inbox UI commit `599fb92`, and dev setup
+commit `315c96d`. Integrated the latest dev label/schema and component changes.
+Review event/worker plans are numbered 30/31 and the architecture ADR is 0011
+to avoid collisions with the newly merged label plans and ADR.

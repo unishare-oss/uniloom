@@ -4,7 +4,7 @@ import type { ProjectMode } from '@/generated/prisma/enums.js';
 import { PRESETS } from './project.presets.js';
 
 /**
- * The project, its mode's switches and states, and the creator as OWNER, together. null
+ * The project, its mode's switches, states and labels, and the creator as OWNER, together. null
  * if the key prefix is taken (the unique index decides, so concurrent creates are safe).
  */
 export const createProject = async (data: {
@@ -27,6 +27,7 @@ export const createProject = async (data: {
             position,
           })),
         },
+        labels: { create: preset.labels },
         members: { create: { userId: data.ownerId, role: 'OWNER' } },
       },
     })

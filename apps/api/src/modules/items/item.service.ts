@@ -71,6 +71,22 @@ const checkAssignee = async (projectId: string, assigneeId: string) => {
     );
 };
 
+/** 400 when a label isn't one of the project's, 409 when two share a group. */
+const checkLabels = async (projectId: string, labelIds: string[]) => {
+  const labels = await itemRepo.findLabels(labelIds);
+  if (
+    labels.length !== labelIds.length ||
+    labels.some((label) => label.projectId !== projectId)
+  )
+    throw apiError(
+      400,
+      'invalid_labels',
+      'Every label must belong to this project',
+    );
+  const error = itemRules.labelGroupError(labels);
+  if (error) throw apiError(409, 'label_group_conflict', error);
+};
+
 export const listProjectItems = async (projectId: string, userId: string) => {
   const { role } = await requireRole(projectId, userId, ROLES);
   return (await itemRepo.listItems(projectId)).map((row) =>
@@ -129,6 +145,7 @@ export const updateProjectItem = async (
     parentId?: string | null;
     priority?: Priority;
     assigneeId?: string | null;
+    labelIds?: string[];
   },
 ) => {
   const { item, role } = await loadItem(id, userId);
@@ -159,9 +176,17 @@ export const updateProjectItem = async (
       );
   }
   if (input.assigneeId) await checkAssignee(item.projectId, input.assigneeId);
-  const row = await prisma.$transaction((tx) =>
-    itemRepo.updateItem(tx, id, input),
-  );
+  const { labelIds: sentIds, ...fields } = input;
+  const labelIds = sentIds && [...new Set(sentIds)];
+  if (labelIds) await checkLabels(item.projectId, labelIds);
+  const row = await prisma.$transaction(async (tx) => {
+    if (labelIds) {
+      // Locked, so two edits can't mix their label sets.
+      await itemRepo.lockItem(tx, id);
+      await itemRepo.setLabels(tx, id, labelIds);
+    }
+    return itemRepo.updateItem(tx, id, fields);
+  });
   return toItem(row, role, userId);
 };
 

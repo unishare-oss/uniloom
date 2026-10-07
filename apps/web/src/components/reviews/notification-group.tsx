@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { KindIcon, StateLozenge } from "@/components/items/item-meta";
+import { KindIcon } from "@/components/items/kind-icon";
+import { StateLozenge } from "@/components/items/state-lozenge";
 import { ReviewItemPreview } from "@/components/reviews/review-item-preview";
 import { Button } from "@/components/ui/button";
 import {

@@ -3,11 +3,9 @@
 import { ChevronDown, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  KindIcon,
-  PriorityIcon,
-  StateLozenge,
-} from "@/components/items/item-meta";
+import { KindIcon } from "@/components/items/kind-icon";
+import { StateLozenge } from "@/components/items/state-lozenge";
+import { PriorityIcon } from "@/components/items/priority-icon";
 import { ReviewItemPreview } from "@/components/reviews/review-item-preview";
 import { Avatar } from "@/components/user/avatar";
 import type { GetReviews200ItemsItem } from "@/lib/api/generated/uniloomAPI.schemas";

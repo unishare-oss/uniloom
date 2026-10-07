@@ -36,6 +36,14 @@
   --color-state-review: var(--state-review);
   --color-state-done: var(--state-done);
   --color-state-canceled: var(--state-canceled);
+  --color-label-gray: var(--label-gray);
+  --color-label-red: var(--label-red);
+  --color-label-orange: var(--label-orange);
+  --color-label-yellow: var(--label-yellow);
+  --color-label-green: var(--label-green);
+  --color-label-blue: var(--label-blue);
+  --color-label-purple: var(--label-purple);
+  --color-label-pink: var(--label-pink);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -127,6 +135,14 @@
   --state-review: #d97706;
   --state-done: #16a34a;
   --state-canceled: #cbd5e1;
+  --label-gray: #475569;
+  --label-red: #b91c1c;
+  --label-orange: #c2410c;
+  --label-yellow: #a16207;
+  --label-green: #15803d;
+  --label-blue: #1d4ed8;
+  --label-purple: #7e22ce;
+  --label-pink: #be185d;
   --card-shadow: 0 1px 1px rgb(15 23 42 / 0.25), 0 0 1px rgb(15 23 42 / 0.31);
   --lifted-shadow:
     0 8px 12px rgb(15 23 42 / 0.15), 0 0 1px rgb(15 23 42 / 0.31);
@@ -186,6 +202,14 @@
   --state-review: #fbbf24;
   --state-done: #4ade80;
   --state-canceled: #52525b;
+  --label-gray: #a1a1aa;
+  --label-red: #f87171;
+  --label-orange: #fb923c;
+  --label-yellow: #facc15;
+  --label-green: #4ade80;
+  --label-blue: #60a5fa;
+  --label-purple: #c084fc;
+  --label-pink: #f472b6;
   --card-shadow: 0 0 0 1px rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.6);
   --lifted-shadow:
     0 8px 16px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.1);

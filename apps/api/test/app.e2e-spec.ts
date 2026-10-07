@@ -67,9 +67,11 @@ describe('Uniloom API (e2e)', () => {
         'addMember',
         'changeMemberRole',
         'createItem',
+        'createLabel',
         'createProject',
         'deleteChecklistEntry',
         'deleteItem',
+        'deleteLabel',
         'getItem',
         'getItemNotifications',
         'getMe',
@@ -78,6 +80,7 @@ describe('Uniloom API (e2e)', () => {
         'getReviews',
         'listDeletedItems',
         'listItems',
+        'listLabels',
         'listMembers',
         'listProjects',
         'moveItem',
@@ -89,6 +92,7 @@ describe('Uniloom API (e2e)', () => {
         'restoreItem',
         'updateChecklistEntry',
         'updateItem',
+        'updateLabel',
         'updateProject',
       ]);
       expect(

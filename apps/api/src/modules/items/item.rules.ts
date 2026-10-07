@@ -116,6 +116,24 @@ export const checklistError = (
   return null;
 };
 
+/**
+ * Why `labels` can't share one item, or null when they can: names the first group that
+ * two of them are in. Labels without a group combine freely.
+ */
+export const labelGroupError = (
+  labels: { name: string; group: string | null }[],
+) => {
+  const seen = new Map<string, string>();
+  for (const label of labels) {
+    if (!label.group) continue;
+    const first = seen.get(label.group);
+    if (first)
+      return `Only one "${label.group}" label per item: "${first}" and "${label.name}" are both in it`;
+    seen.set(label.group, label.name);
+  }
+  return null;
+};
+
 /** Whether a feature is finished: it has slices and each is Done or Canceled. */
 export const featureDone = (
   children: { state: { category: StateCategory } }[],
