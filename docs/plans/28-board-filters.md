@@ -1,6 +1,6 @@
 # 28: Board filters
 
-Status: Ready
+Status: In Review
 
 ## Scope
 
@@ -24,11 +24,12 @@ Left out:
 
 ## Done when
 
-- [ ] A label filter on the board: pick one or more labels; only items with any of them
+- [x] A label filter on the board: pick one or more labels; only items with any of them
       show.
-- [ ] An assignee filter: pick members, "Me" or "Unassigned"; only matching items show.
-- [ ] A feature (or task) filter: pick a parent; the board shows it and its children.
-- [ ] The filters are read from and written to the URL; a Clear button resets them, and
+- [x] An assignee filter: pick members, "Me" or "Unassigned"; only matching items show.
+- [x] An item filter: pick any item (user decision: not only features and tasks); the
+      board shows it and its children.
+- [x] The filters are read from and written to the URL; a Clear button resets them, and
       the board shows a short note when no item matches.
 
 ## Design
@@ -50,4 +51,19 @@ flowchart LR
 
 ## Changes
 
-Filled in at the end.
+Commits:
+
+- `7a04675` feat(web): board filters by label, assignee and item
+
+- `board-filters.tsx` (new): `readFilters`, `matchesFilters`, `hasFilters` and
+  `BoardFilters` (label, assignee and parent dropdowns plus Clear; written with
+  `router.replace`). Assignee choices: "Me", "Unassigned" and each member.
+- `board.tsx`: reads the URL filters and the current user, joins `matchesFilters` to the
+  search check in `shown`, renders `BoardFilters` next to the search box, and shows a
+  short note when the search or a filter leaves no item.
+- `app/p/[projectId]/page.tsx`: `Board` wrapped in `Suspense` (needed by `useSearchParams`).
+
+Planned vs actual: as planned, plus `hasFilters` (shows Clear only when a filter is set)
+and the Suspense wrapper. The item filter lists every item (user decision); picking a feature or task also shows
+its children. No API change.
+Not clicked through in a browser; lint, typecheck and build pass.

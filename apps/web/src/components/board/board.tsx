@@ -14,9 +14,16 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { BoardColumn } from "@/components/board/board-column";
+import {
+  BoardFilters,
+  hasFilters,
+  matchesFilters,
+  readFilters,
+} from "@/components/board/board-filters";
 import { CardFace } from "@/components/board/card-face";
 import { ItemCard } from "@/components/board/item-card";
 import { StateLozenge } from "@/components/items/state-lozenge";
@@ -38,6 +45,7 @@ import { getGetReviewsQueryKey } from "@/lib/api/generated/reviews/reviews";
 import { getGetNotificationsQueryKey } from "@/lib/api/generated/notifications/notifications";
 import { useListMembers } from "@/lib/api/generated/members/members";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
+import { useGetMe } from "@/lib/api/generated/users/users";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
 
 type Row = ListItems200Item;
@@ -65,6 +73,8 @@ export const Board = ({ projectId }: { projectId: string }) => {
   const { data: members } = useListMembers(projectId, {
     query: { select: (r) => r.data },
   });
+  const { data: me } = useGetMe({ query: { select: (r) => r.data } });
+  const filters = readFilters(useSearchParams());
   const move = useMoveItem();
   const [search, setSearch] = useState("");
   const [dragged, setDragged] = useState<Row | null>(null);
@@ -99,9 +109,10 @@ export const Board = ({ projectId }: { projectId: string }) => {
   const query = search.trim().toLowerCase();
   const shown = (items ?? []).filter(
     (item) =>
-      !query ||
-      item.key.toLowerCase().includes(query) ||
-      item.title.toLowerCase().includes(query),
+      (!query ||
+        item.key.toLowerCase().includes(query) ||
+        item.title.toLowerCase().includes(query)) &&
+      matchesFilters(item, filters, me?.id),
   );
   const assigneeOf = (item: Row) =>
     members?.find((member) => member.userId === item.assigneeId);
@@ -200,6 +211,13 @@ export const Board = ({ projectId }: { projectId: string }) => {
               className="h-9 w-56 bg-card pl-8 dark:bg-card"
             />
           </label>
+          {items && members && (
+            <BoardFilters
+              projectId={projectId}
+              items={items}
+              members={members}
+            />
+          )}
           {project && (
             <StateLozenge
               name={project.mode === "GUIDED" ? "Guided" : "Standard"}
@@ -219,6 +237,12 @@ export const Board = ({ projectId }: { projectId: string }) => {
           />
         )}
       </div>
+
+      {items && shown.length === 0 && (query || hasFilters(filters)) && (
+        <p className="px-6 pb-2 text-sm text-muted-foreground">
+          No item matches. Clear the filters or change the search.
+        </p>
+      )}
 
       <DndContext
         sensors={sensors}
