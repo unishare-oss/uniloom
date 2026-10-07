@@ -1,3 +1,12 @@
+# [1.4.0](https://github.com/unishare-oss/uniloom/compare/v1.3.0...v1.4.0) (2026-10-07)
+
+
+### Features
+
+* **api:** add durable review events and notification inbox ([200b139](https://github.com/unishare-oss/uniloom/commit/200b139718d4f001bd468243e6accf274faa429a))
+* **web:** build live review inbox with per-user read controls ([599fb92](https://github.com/unishare-oss/uniloom/commit/599fb923047defc4305a822eebdff19cf56a2404))
+* **web:** indicate pending work in review inbox navigation ([f8053f7](https://github.com/unishare-oss/uniloom/commit/f8053f7f82c851f0af9fd0deacb39a824d65fea8))
+
 # [1.3.0](https://github.com/unishare-oss/uniloom/compare/v1.2.0...v1.3.0) (2026-10-07)
 
 
