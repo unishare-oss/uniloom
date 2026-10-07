@@ -28,7 +28,7 @@ export const toItem = (row: ItemRow, role: Role, userId: string) => {
     state: row.state,
     priority: row.priority,
     assigneeId: row.assigneeId,
-    canMove: mayMove(role, userId, row.assigneeId),
+    canMove: mayMove(role, userId, row.assigneeId, row.state.key),
     parentId: row.parentId,
     createdById: row.createdById,
     blockedBy: row.blockedBy.map((link) => link.blockerId),
@@ -49,7 +49,7 @@ export const toListRow = (row: ItemRow, role: Role, userId: string) => {
     state: { id: row.state.id, name: row.state.name },
     priority: row.priority,
     assigneeId: row.assigneeId,
-    canMove: mayMove(role, userId, row.assigneeId),
+    canMove: mayMove(role, userId, row.assigneeId, row.state.key),
     parentId: row.parentId,
     labels: toLabels(row),
   };

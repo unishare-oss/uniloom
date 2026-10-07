@@ -80,8 +80,12 @@ export const mayMove = (
   role: Role,
   userId: string,
   assigneeId: string | null,
+  sourceStateKey: string | null,
 ) => {
-  return CREATORS.includes(role) || assigneeId === userId;
+  return (
+    CREATORS.includes(role) ||
+    (sourceStateKey !== 'in_review' && assigneeId === userId)
+  );
 };
 
 /** Whether `role` may move a ticket into a Done state. */

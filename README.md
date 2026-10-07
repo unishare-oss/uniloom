@@ -22,17 +22,15 @@ Open <http://127.0.0.1:3013>. The API health endpoint is <http://localhost:3011/
 
 People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md) (OpenID Connect). The API uses Better Auth as the OIDC client and keeps Uniloom's own session; every `/api` route needs a session and acceptance of Uniloom's terms unless it is public (health, `/api/auth/*`, the uniAuth receivers) or `GET /api/me` / `POST /api/users/me/consent`. The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. The e2e tests do not need uniAuth: they start a mock provider.
 
-For development, uniAuth runs on the Oracle VM in `~/uniauth-dev` (server and Postgres in Docker, bound to the Tailscale IP), served over https by `tailscale serve` at <https://oracle.tailcb9a25.ts.net> (tailnet only), with a local client for `http://127.0.0.1:3013`. It must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification. Set in `apps/api/.env`:
+For development, uniAuth is available at <https://auth-dev.psstee.dev> on the Oracle VM, with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`. It must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification. Set in `apps/api/.env`:
 
 ```sh
-UNIAUTH_ISSUER="https://oracle.tailcb9a25.ts.net/api/auth"
+UNIAUTH_ISSUER="https://auth-dev.psstee.dev/api/auth"
 UNIAUTH_CLIENT_ID="…"       # from the local client
 UNIAUTH_CLIENT_SECRET="…"   # from the local client
 ```
 
-and `NEXT_PUBLIC_UNIAUTH_URL="https://oracle.tailcb9a25.ts.net"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013>, not `localhost:3013`: it must match `BETTER_AUTH_URL` and the client's registered redirect. Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
-
-To update that uniAuth, copy the source again and rebuild: `git -C ../uniAuth archive HEAD | ssh oracle 'rm -rf ~/uniauth-dev/src && mkdir ~/uniauth-dev/src && tar -x -C ~/uniauth-dev/src'`, then `ssh oracle 'cd ~/uniauth-dev && sudo docker compose up -d --build --wait server'`.
+and `NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.dev"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013>, not `localhost:3013`: it must match `BETTER_AUTH_URL` and the client's registered redirect. Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
 
 ### Run everything in Docker
 
@@ -59,7 +57,31 @@ Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a
 
 ### Test data
 
-After signing in once, `bun run db:seed` adds test projects with a case for every rule built so far (TG: Guided, TS: Standard, TR: you as manager, TM: you as member, TX: a project you're not in) and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only those five projects. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in.
+After signing in once, `bun run db:seed` adds test projects with a case for every rule built so far (TG: Guided, TS: Standard, TR: you as manager, TM: you as member, TX: a project you're not in) and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only the named seed projects (TG, TS, TR, TM, TC, TL, TX, TI), preserving other projects. TI demonstrates review submissions, return/resubmission, and completed history. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in.
+
+### Review notifications
+
+`bun run dev` starts the API, web app, and an independent notification worker.
+Use `bun run dev:worker` to start the worker alone. The Docker Compose
+`notification-worker` service runs the same entry point after migrations complete.
+A committed submission remains visible in Needs review while the worker is unavailable;
+per-user history appears after delivery. In Review hands move authority to project
+Owners and Managers. Open task and project links from `/reviews` to take action.
+
+The worker claims due events with PostgreSQL row locks, fans out to eligible
+snapshotted recipients, and commits notifications and processing status together.
+Failures retry from 5 seconds to a 5-minute cap; after 10 failures the event has
+`failedAt` set. Logs contain event ids and sanitized errors. To requeue a failed
+event after fixing its cause:
+
+```sh
+bun run --cwd apps/api notifications:retry EVENT_UUID
+```
+
+The command uses database credentials; it is not a public endpoint. Processed
+events and notifications remain for history. A retention policy and task-specific
+reviewers are future improvements. Stop workers before database-backed worker
+tests, which intentionally exercise due-event claims against the dev database.
 
 ## Checks
 

@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   Columns3,
   LayoutGrid,
+  Inbox,
   Settings,
   SquarePlus,
   Trash2,
@@ -28,6 +29,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ProjectChip } from "@/components/projects/project-chip";
+import { useGetReviews } from "@/lib/api/generated/reviews/reviews";
+import { useGetNotifications } from "@/lib/api/generated/notifications/notifications";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import { useListProjects } from "@/lib/api/generated/projects/projects";
 
@@ -51,6 +54,35 @@ export const AppSidebar = () => {
   const { data: me } = useGetMe({
     query: { select: (r) => r.data, retry: false },
   });
+  const reviews = useGetReviews(
+    { limit: 1 },
+    {
+      query: {
+        enabled: !!me?.consentGivenAt,
+        select: (response) => response.data,
+        retry: false,
+      },
+    },
+  );
+  const notifications = useGetNotifications(
+    { limit: 1 },
+    {
+      query: {
+        enabled: !!me?.consentGivenAt,
+        select: (response) => response.data,
+        retry: false,
+      },
+    },
+  );
+  const needsReview = reviews.isSuccess && reviews.data.items.length > 0;
+  const hasUnread =
+    notifications.isSuccess && notifications.data.unreadCount > 0;
+  const inboxStatus =
+    needsReview && hasUnread
+      ? "Tasks waiting for review and unread notifications"
+      : needsReview
+        ? "Tasks waiting for review"
+        : "Unread notifications";
   const current = projects?.find((w) => w.id === projectId);
   const others = projects?.filter((w) => w.id !== projectId) ?? [];
 
@@ -92,6 +124,25 @@ export const AppSidebar = () => {
               >
                 <LayoutGrid />
                 <span>Projects</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className={linkClass}
+                isActive={pathname === "/reviews"}
+                render={<Link href="/reviews" />}
+              >
+                <Inbox />
+                <span className="flex-1">Review inbox</span>
+                {(needsReview || hasUnread) && (
+                  <span
+                    role="status"
+                    title={inboxStatus}
+                    className={`size-2 shrink-0 rounded-full ${pathname === "/reviews" ? "bg-primary-foreground" : "bg-primary"}`}
+                  >
+                    <span className="sr-only">{inboxStatus}</span>
+                  </span>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

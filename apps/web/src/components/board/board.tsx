@@ -34,6 +34,8 @@ import type {
   GetProject200StatesItem,
   ListItems200Item,
 } from "@/lib/api/generated/uniloomAPI.schemas";
+import { getGetReviewsQueryKey } from "@/lib/api/generated/reviews/reviews";
+import { getGetNotificationsQueryKey } from "@/lib/api/generated/notifications/notifications";
 import { useListMembers } from "@/lib/api/generated/members/members";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { NewItemDialog } from "@/components/items/new-item-dialog";
@@ -130,6 +132,12 @@ export const Board = ({ projectId }: { projectId: string }) => {
           toast.error(err.message);
         },
         onSettled: () => {
+          void queryClient.invalidateQueries({
+            queryKey: getGetReviewsQueryKey(),
+          });
+          void queryClient.invalidateQueries({
+            queryKey: getGetNotificationsQueryKey(),
+          });
           void queryClient.invalidateQueries({ queryKey: listKey });
           void queryClient.invalidateQueries({
             queryKey: getGetItemQueryKey(item.id),

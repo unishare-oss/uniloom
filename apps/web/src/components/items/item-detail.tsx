@@ -55,6 +55,8 @@ import type {
   GetItem200,
   UpdateItemBody,
 } from "@/lib/api/generated/uniloomAPI.schemas";
+import { getGetReviewsQueryKey } from "@/lib/api/generated/reviews/reviews";
+import { getGetNotificationsQueryKey } from "@/lib/api/generated/notifications/notifications";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { formatDate, timeAgo } from "@/lib/time";
 import { LabelPicker } from "@/components/items/label-picker";
@@ -115,7 +117,20 @@ export const ItemDetail = ({
       onError,
     },
   });
-  const move = useMoveItem({ mutation: { onSuccess: refresh, onError } });
+  const move = useMoveItem({
+    mutation: {
+      onSuccess: async () => {
+        await Promise.all([
+          refresh(),
+          queryClient.invalidateQueries({ queryKey: getGetReviewsQueryKey() }),
+          queryClient.invalidateQueries({
+            queryKey: getGetNotificationsQueryKey(),
+          }),
+        ]);
+      },
+      onError,
+    },
+  });
   const addBlocker = useAddBlocker({
     mutation: {
       onSuccess: refresh,
