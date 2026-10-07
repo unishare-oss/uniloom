@@ -13,7 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useGetReviews } from "@/lib/api/generated/reviews/reviews";
+import {
+  getGetReviewsQueryKey,
+  useGetReviews,
+} from "@/lib/api/generated/reviews/reviews";
 import {
   getGetNotificationsQueryKey,
   useGetNotifications,
@@ -80,8 +83,12 @@ export const ReviewInbox = () => {
           disabled={reviews.isFetching || notifications.isFetching}
           onClick={() => {
             setRetained([]);
-            void reviews.refetch();
-            void notifications.refetch();
+            void client.invalidateQueries({
+              queryKey: getGetReviewsQueryKey(),
+            });
+            void client.invalidateQueries({
+              queryKey: getGetNotificationsQueryKey(),
+            });
             void client.invalidateQueries({
               predicate: (query) =>
                 typeof query.queryKey[0] === "string" &&

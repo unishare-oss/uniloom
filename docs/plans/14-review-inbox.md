@@ -149,3 +149,10 @@ Publishing: backend commit `200b139`, inbox UI commit `599fb92`, and dev setup
 commit `315c96d`. Integrated the latest dev label/schema and component changes.
 Review event/worker plans are numbered 30/31 and the architecture ADR is 0011
 to avoid collisions with the newly merged label plans and ADR.
+
+User refinement: the sidebar Review inbox link shows a small status dot whenever
+the caller has current review work or unread notifications. Read history alone does
+not keep it active. The tooltip and screen-reader text distinguish pending review
+from unread notifications. Generated bounded queries reuse existing authorization;
+board/detail moves and inbox refresh invalidate inbox queries, as do read/unread
+updates. Status follows the existing mount/focus/manual-refresh behavior.
