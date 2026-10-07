@@ -84,6 +84,7 @@ describe('Uniloom API (e2e)', () => {
         'restoreItem',
         'updateChecklistEntry',
         'updateItem',
+        'updateProject',
       ]);
       expect(
         Object.keys(spec.paths).some((p) => /auth|uniauth|health/.test(p)),
