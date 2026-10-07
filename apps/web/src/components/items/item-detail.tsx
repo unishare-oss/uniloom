@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   KindIcon,
-  LabelChip,
+  LabelDot,
   PRIORITIES,
   PriorityIcon,
   StateLozenge,
@@ -45,7 +45,10 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -99,31 +102,45 @@ const LabelPicker = ({
   const { data: all } = useListLabels(projectId, {
     query: { select: (r) => r.data },
   });
-  const usedGroups = new Set(
-    (all ?? [])
-      .filter((l) => l.group && labels.some((on) => on.id === l.id))
-      .map((l) => l.group),
-  );
+  // Grouped labels under their group's heading, then the free ones.
+  const groups = [
+    ...new Set((all ?? []).flatMap((label) => label.group ?? [])),
+  ].sort();
+  const ungrouped = (all ?? []).filter((label) => label.group === null);
 
   return (
     <Select
       multiple
       value={labels.map((l) => l.id)}
-      onValueChange={(ids) =>
+      onValueChange={(ids) => {
+        // One label per group: picking a label drops the other one of its group.
+        const added = (all ?? []).find(
+          (l) => ids.includes(l.id) && !labels.some((on) => on.id === l.id),
+        );
         onChange(
           (all ?? [])
             .filter((l) => ids.includes(l.id))
+            .filter(
+              (l) =>
+                !added ||
+                l.id === added.id ||
+                added.group === null ||
+                l.group !== added.group,
+            )
             .map((l) => ({ id: l.id, name: l.name, color: l.color })),
-        )
-      }
+        );
+      }}
     >
       <SelectTrigger
         aria-label="Labels"
-        className="h-auto min-h-8 w-full hover:bg-muted/50 focus-visible:bg-muted/50"
+        className="min-h-8 w-full py-1.5 hover:bg-muted/50 focus-visible:bg-muted/50 data-[size=default]:h-auto"
       >
-        <span className="flex min-w-0 flex-1 flex-wrap gap-1">
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
           {labels.map((label) => (
-            <LabelChip key={label.id} name={label.name} color={label.color} />
+            <span key={label.id} className="flex items-center gap-1.5">
+              <LabelDot color={label.color} />
+              {label.name}
+            </span>
           ))}
           {labels.length === 0 && (
             <span className="text-muted-foreground">No labels</span>
@@ -131,22 +148,34 @@ const LabelPicker = ({
         </span>
       </SelectTrigger>
       <SelectContent>
-        {(all ?? []).map((label) => {
-          const on = labels.some((l) => l.id === label.id);
-          // One label per group: the others in a used group can't be picked.
-          const blocked =
-            !on && label.group !== null && usedGroups.has(label.group);
-          return (
-            <SelectItem key={label.id} value={label.id} disabled={blocked}>
-              <LabelChip name={label.name} color={label.color} />
-              {label.group && (
-                <span className="text-xs text-muted-foreground">
-                  {label.group}
+        {groups.map((group) => (
+          <SelectGroup key={group}>
+            <SelectLabel>{group}</SelectLabel>
+            {(all ?? [])
+              .filter((label) => label.group === group)
+              .map((label) => (
+                <SelectItem key={label.id} value={label.id}>
+                  <span className="flex items-center gap-2">
+                    <LabelDot color={label.color} />
+                    {label.name}
+                  </span>
+                </SelectItem>
+              ))}
+          </SelectGroup>
+        ))}
+        {groups.length > 0 && ungrouped.length > 0 && <SelectSeparator />}
+        {ungrouped.length > 0 && (
+          <SelectGroup>
+            {ungrouped.map((label) => (
+              <SelectItem key={label.id} value={label.id}>
+                <span className="flex items-center gap-2">
+                  <LabelDot color={label.color} />
+                  {label.name}
                 </span>
-              )}
-            </SelectItem>
-          );
-        })}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        )}
         {all?.length === 0 && (
           <span className="block px-2 py-1.5 text-sm text-muted-foreground">
             No labels in this project

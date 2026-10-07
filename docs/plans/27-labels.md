@@ -50,7 +50,7 @@ Left out:
       recolour labels; only the owner regroups and deletes them (delete asks to confirm);
       members see it read-only. `GET /projects/:id` returns `canCreateLabels`.
 - [x] Board cards and the item page show labels as coloured chips, and the item page has a
-      label picker that greys out labels whose group is already used on the item.
+      label picker where picking a label swaps out the other one of its group (user decision).
 - [x] The seed has an item that has `bug` (try adding `chore` → refused), a free label
       that combines with `bug`, and a label to delete; titles say what to try.
 
@@ -67,7 +67,7 @@ Left out:
 | `itemView`, `toItem`, schemas (changed) | `items/item.repository.ts`, `item.utils.ts`, `item.schema.ts`         | Include `labels: { label: { id, name, color } }` and flatten to `labels`.                                                                                                                                                                                                                                                     | Done-when 3, 5.                                                                 |
 | `LabelChip`, `LABEL_COLORS`             | `web/components/items/item-meta.tsx`                                  | Colour name → CSS variable classes; a small rounded chip.                                                                                                                                                                                                                                                                     | Done-when 5. With the other item bits (ADR-0005).                               |
 | `LabelsSection`                         | `web/components/projects/labels-section.tsx`                          | Rows of name, colour picker and group inputs with Save and Delete; an add row. Name, colour and the add row need `canCreateLabels`; group and Delete need `canEditSettings`.                                                                                                                                                  | Done-when 4.                                                                    |
-| `LabelPicker`                           | `web/components/items/item-detail.tsx`                                | Multi-select of the project's labels, disabled options for a group already used, calls `useUpdateItem` with `labelIds`.                                                                                                                                                                                                       | Done-when 5.                                                                    |
+| `LabelPicker`                           | `web/components/items/item-detail.tsx`                                | Multi-select of the project's labels; picking a label drops the other one of its group, then calls `useUpdateItem` with `labelIds`.                                                                                                                                                                                           | Done-when 5.                                                                    |
 | `seedLabels`                            | `api/scripts/seed.ts`                                                 | The cases in done-when 6, in the Guided seed project.                                                                                                                                                                                                                                                                         | Done-when 6.                                                                    |
 
 Routes:
@@ -139,9 +139,11 @@ What changed and how:
   changes not touching old items, cascade delete, `canCreateLabels`); the OpenAPI
   operation list in `app.e2e-spec.ts` and the slim-row shape in `items.e2e-spec.ts` follow.
 - Web: `--label-*` colours (light and dark) and `--color-label-*` in `globals.css`;
-  `LabelChip`, `LABEL_COLORS` in `item-meta.tsx`; chips on board cards (`CardFace`);
+  `LabelChip`, `LabelTag`, `LabelDot` and `LABEL_COLORS` in `item-meta.tsx`; outlined
+  tags on board cards (`CardFace`); the picker lists labels under their group's heading
+  with a colour square, and the closed box shows square + name;
   `LabelPicker` in `item-detail.tsx` (a multi-select box, Base UI `Select multiple`;
-  a label whose group is used is disabled); `labels-section.tsx` rendered on the settings page. `openapi.json` and the
+  picking a label swaps out the other one of its group); `labels-section.tsx` rendered on the settings page. `openapi.json` and the
   generated hooks regenerated.
 - Seed: in `TG`, an item with `bug` (add `chore` → refused, `frontend` → works), an item
   with `delete-me` to delete in Settings, and a Labels line in the "Try:" list.
