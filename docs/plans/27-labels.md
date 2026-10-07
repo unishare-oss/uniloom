@@ -140,8 +140,8 @@ What changed and how:
   operation list in `app.e2e-spec.ts` and the slim-row shape in `items.e2e-spec.ts` follow.
 - Web: `--label-*` colours (light and dark) and `--color-label-*` in `globals.css`;
   `LabelChip`, `LABEL_COLORS` in `item-meta.tsx`; chips on board cards (`CardFace`);
-  `LabelPicker` in `item-detail.tsx` (toggle chips, a label whose group is used is
-  disabled); `labels-section.tsx` rendered on the settings page. `openapi.json` and the
+  `LabelPicker` in `item-detail.tsx` (a multi-select box, Base UI `Select multiple`;
+  a label whose group is used is disabled); `labels-section.tsx` rendered on the settings page. `openapi.json` and the
   generated hooks regenerated.
 - Seed: in `TG`, an item with `bug` (add `chore` → refused, `frontend` → works), an item
   with `delete-me` to delete in Settings, and a Labels line in the "Try:" list.

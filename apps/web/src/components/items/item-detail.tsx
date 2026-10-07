@@ -79,7 +79,6 @@ import { useListMembers } from "@/lib/api/generated/members/members";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import { formatDate, timeAgo } from "@/lib/time";
-import { cn } from "@/lib/utils";
 
 const NO_PARENT = "none";
 const UNASSIGNED = "unassigned";
@@ -107,48 +106,54 @@ const LabelPicker = ({
   );
 
   return (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Labels">
-      {(all ?? []).map((label) => {
-        const on = labels.some((l) => l.id === label.id);
-        const blocked =
-          !on && label.group !== null && usedGroups.has(label.group);
-        return (
-          <button
-            key={label.id}
-            type="button"
-            aria-pressed={on}
-            disabled={blocked}
-            title={
-              blocked
-                ? `Already has a "${label.group}" label: remove it first`
-                : undefined
-            }
-            className={cn(
-              "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              !on && "opacity-50 hover:opacity-100",
-              blocked && "cursor-not-allowed opacity-25 hover:opacity-25",
-            )}
-            onClick={() =>
-              onChange(
-                on
-                  ? labels.filter((l) => l.id !== label.id)
-                  : [
-                      ...labels,
-                      { id: label.id, name: label.name, color: label.color },
-                    ],
-              )
-            }
-          >
-            <LabelChip name={label.name} color={label.color} />
-          </button>
-        );
-      })}
-      {all?.length === 0 && (
-        <span className="text-sm text-muted-foreground">
-          No labels in this project
+    <Select
+      multiple
+      value={labels.map((l) => l.id)}
+      onValueChange={(ids) =>
+        onChange(
+          (all ?? [])
+            .filter((l) => ids.includes(l.id))
+            .map((l) => ({ id: l.id, name: l.name, color: l.color })),
+        )
+      }
+    >
+      <SelectTrigger
+        aria-label="Labels"
+        className="h-auto min-h-8 w-full hover:bg-muted/50 focus-visible:bg-muted/50"
+      >
+        <span className="flex min-w-0 flex-1 flex-wrap gap-1">
+          {labels.map((label) => (
+            <LabelChip key={label.id} name={label.name} color={label.color} />
+          ))}
+          {labels.length === 0 && (
+            <span className="text-muted-foreground">No labels</span>
+          )}
         </span>
-      )}
-    </div>
+      </SelectTrigger>
+      <SelectContent>
+        {(all ?? []).map((label) => {
+          const on = labels.some((l) => l.id === label.id);
+          // One label per group: the others in a used group can't be picked.
+          const blocked =
+            !on && label.group !== null && usedGroups.has(label.group);
+          return (
+            <SelectItem key={label.id} value={label.id} disabled={blocked}>
+              <LabelChip name={label.name} color={label.color} />
+              {label.group && (
+                <span className="text-xs text-muted-foreground">
+                  {label.group}
+                </span>
+              )}
+            </SelectItem>
+          );
+        })}
+        {all?.length === 0 && (
+          <span className="block px-2 py-1.5 text-sm text-muted-foreground">
+            No labels in this project
+          </span>
+        )}
+      </SelectContent>
+    </Select>
   );
 };
 
