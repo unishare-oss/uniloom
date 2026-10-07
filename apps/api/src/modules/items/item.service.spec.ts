@@ -99,16 +99,30 @@ describe('mayAssign', () => {
 
 describe('mayMove', () => {
   it.each(['OWNER', 'MANAGER'] as const)('lets %s move any ticket', (role) => {
-    expect(mayMove(role, 'me', null)).toBe(true);
-    expect(mayMove(role, 'me', 'mya')).toBe(true);
-    expect(mayMove(role, 'me', 'me')).toBe(true);
+    expect(mayMove(role, 'me', null, null)).toBe(true);
+    expect(mayMove(role, 'me', 'mya', null)).toBe(true);
+    expect(mayMove(role, 'me', 'me', null)).toBe(true);
   });
 
   it('lets a member move only a ticket assigned to them', () => {
-    expect(mayMove('MEMBER', 'me', 'me')).toBe(true);
-    expect(mayMove('MEMBER', 'me', 'mya')).toBe(false);
-    expect(mayMove('MEMBER', 'me', null)).toBe(false);
+    expect(mayMove('MEMBER', 'me', 'me', null)).toBe(true);
+    expect(mayMove('MEMBER', 'me', 'mya', null)).toBe(false);
+    expect(mayMove('MEMBER', 'me', null, null)).toBe(false);
   });
+});
+
+describe('review handoff', () => {
+  it('locks assigned members after review submission, including member no-ops', () => {
+    expect(mayMove('MEMBER', 'me', 'me', 'in_review')).toBe(false);
+    expect(mayMove('MEMBER', 'me', 'me', 'in_progress')).toBe(true);
+  });
+  it.each(['OWNER', 'MANAGER'] as const)(
+    'allows %s to review their own or another assignee',
+    (role) => {
+      expect(mayMove(role, 'me', 'me', 'in_review')).toBe(true);
+      expect(mayMove(role, 'me', 'other', 'in_review')).toBe(true);
+    },
+  );
 });
 
 describe('mayMoveToDone', () => {

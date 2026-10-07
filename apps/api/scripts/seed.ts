@@ -17,6 +17,7 @@ import {
   addChecklistEntry,
   createProjectItem,
   removeItem,
+  moveItem,
   updateChecklistEntry,
 } from '../src/modules/items/item.service.js';
 import {
@@ -32,6 +33,7 @@ const SEED_PROJECTS = {
   TC: 'Seed · No self-claim',
   TL: 'Seed · Lowered limits',
   TX: 'Seed · Not a member',
+  TI: 'Seed · Review inbox',
 };
 
 /** Fake people, so there are assignees, authors and an owner who isn't you. */
@@ -375,7 +377,7 @@ const seedManager = async (ownerId: string) => {
 /** Guided, someone else owns it and you are a member: no create, delete or restore. */
 const seedMember = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
-  const { item } = await seedProject('TM', 'GUIDED', mya.id, [
+  const { project, item } = await seedProject('TM', 'GUIDED', mya.id, [
     { userId: ownerId, role: 'MEMBER' },
     { userId: ko.id, role: 'MANAGER' },
   ]);
@@ -439,6 +441,57 @@ const seedMember = async (ownerId: string) => {
     assigneeId: ownerId,
   });
   await addEntries(full.id, mya.id, ['1', '2', '3', '4', '5', '6'], 0);
+  const states = await prisma.state.findMany({
+    where: { projectId: project.id },
+  });
+  const review = states.find((state) => state.key === 'in_review')!.id;
+  const progress = states.find((state) => state.key === 'in_progress')!.id;
+  const locked = await item({
+    kind: 'SLICE',
+    parentId: feature.id,
+    assigneeId: ownerId,
+    title:
+      'You submitted this: State is disabled; a direct move returns 403 review_locked',
+    state: 'In Progress',
+  });
+  await addEntries(
+    locked.id,
+    mya.id,
+    [
+      'Submit to review',
+      'Assignee move is refused',
+      'Owner or Manager must return it',
+    ],
+    3,
+  );
+  await moveItem(locked.id, ownerId, review);
+  const returned = await item({
+    kind: 'SLICE',
+    parentId: feature.id,
+    assigneeId: ownerId,
+    title: 'Manager returned this: move to In Review again to resubmit',
+    state: 'In Progress',
+  });
+  await addEntries(
+    returned.id,
+    mya.id,
+    [
+      'First submission retained',
+      'Manager returns the task',
+      'Assignee can resubmit',
+    ],
+    3,
+  );
+  await moveItem(returned.id, ownerId, review);
+  await moveItem(returned.id, ko.id, progress);
+  note(
+    locked.key,
+    'State disabled despite your assignment; project is hidden from your reviewer inbox',
+  );
+  note(
+    returned.key,
+    'State enabled after Manager return; resubmission records another event',
+  );
   note(
     'TM',
     'you are a MEMBER here: no New item, Add subtask, Delete or Restore',
@@ -529,6 +582,96 @@ const seedOutsider = async () => {
   );
 };
 
+/** Real submissions demonstrate the review handoff and independent recipient records. */
+const seedReviewInbox = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const { project, item } = await seedProject('TI', 'GUIDED', ownerId, [
+    { userId: ko.id, role: 'MANAGER' },
+    { userId: mya.id, role: 'MEMBER' },
+  ]);
+  const states = await prisma.state.findMany({
+    where: { projectId: project.id },
+  });
+  const review = states.find((state) => state.key === 'in_review')!.id;
+  const progress = states.find((state) => state.key === 'in_progress')!.id;
+  const done = states.find((state) => state.key === 'done')!.id;
+  const feature = await item({
+    kind: 'FEATURE',
+    title: 'Review handoff examples',
+  });
+  const submitted = await item({
+    kind: 'SLICE',
+    parentId: feature.id,
+    assigneeId: mya.id,
+    title: 'Member submitted: only Owner or Manager may now move this task',
+    state: 'In Progress',
+    description:
+      'Open /reviews, preview the checklist, then open this task. Return to In Progress to let the assignee revise it.',
+  });
+  await addEntries(
+    submitted.id,
+    ownerId,
+    [
+      'Submitting preserves the task move',
+      'Owner and Manager each have their own notification',
+      'Assignee cannot move while in review',
+    ],
+    3,
+  );
+  await moveItem(submitted.id, mya.id, review);
+  await moveItem(submitted.id, ownerId, progress);
+  await moveItem(submitted.id, mya.id, review);
+  const returned = await item({
+    kind: 'SLICE',
+    parentId: feature.id,
+    assigneeId: mya.id,
+    title:
+      'Returned for revision: Member can move again; previous submission stays in history',
+    state: 'In Progress',
+  });
+  await addEntries(
+    returned.id,
+    ownerId,
+    [
+      'Reviewer can return submitted work',
+      'Returning restores Member move permission',
+      'History remains after return',
+    ],
+    3,
+  );
+  await moveItem(returned.id, mya.id, review);
+  await moveItem(returned.id, ko.id, progress);
+  const completed = await item({
+    kind: 'SLICE',
+    parentId: feature.id,
+    assigneeId: mya.id,
+    title: 'Completed: appears in notification history, outside Needs review',
+    state: 'In Progress',
+  });
+  await addEntries(
+    completed.id,
+    ownerId,
+    [
+      'Submission recorded',
+      'Owner reviews',
+      'Completed work leaves review queue',
+    ],
+    3,
+  );
+  await moveItem(completed.id, mya.id, review);
+  await moveItem(completed.id, ownerId, done);
+  note(
+    submitted.key,
+    'two submissions grouped in /reviews; marking read affects only you, not Ko',
+  );
+  note(returned.key, 'history remains; Mya can move it again');
+  note(completed.key, 'history remains; absent from Needs review');
+  note(
+    'TI access',
+    'demote/remove Ko: his inbox hides this project; pending deliveries skip him',
+  );
+};
+
 const owner = await findOwner();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -544,5 +687,6 @@ await seedMember(owner.id);
 await seedNoSelfClaim(owner.id);
 await seedLoweredLimits(owner.id);
 await seedOutsider();
+await seedReviewInbox(owner.id);
 console.log(`Seeded for ${owner.name}. Try:\n  ${checks.join('\n  ')}`);
 await prisma.$disconnect();

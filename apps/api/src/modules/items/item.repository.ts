@@ -21,7 +21,7 @@ const itemView = {
 // Deleted items (deletedAt set) are kept in the table but never returned: every lookup
 // below filters them out, so nothing outside this file has to remember.
 
-export const findItem = (id: string) => {
+export const findItem = async (id: string) => {
   return prisma.item.findFirst({
     where: { id, deletedAt: null },
     include: itemView,
@@ -242,4 +242,12 @@ export const setEntryPosition = (
   position: number,
 ) => {
   return tx.checklistEntry.update({ where: { id }, data: { position } });
+};
+
+/** Re-read the source state and assignee after acquiring the move lock. */
+export const findItemForMove = (tx: Prisma.TransactionClient, id: string) => {
+  return tx.item.findFirst({
+    where: { id, deletedAt: null },
+    include: itemView,
+  });
 };

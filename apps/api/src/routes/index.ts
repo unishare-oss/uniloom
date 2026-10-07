@@ -1,3 +1,5 @@
+import { reviewRoutes } from '@/modules/reviews/review.routes.js';
+import { notificationRoutes } from '@/modules/notifications/notification.routes.js';
 import { Hono } from 'hono';
 import { auth } from '@/auth/auth.js';
 import { requireConsent, requireSession } from '@/auth/middleware.js';
@@ -23,3 +25,6 @@ apiRoutes.use(requireConsent);
 apiRoutes.route('/projects', projectRoutes);
 apiRoutes.route('/', itemRoutes);
 apiRoutes.route('/', memberRoutes);
+
+apiRoutes.route('/', reviewRoutes);
+apiRoutes.route('/', notificationRoutes);

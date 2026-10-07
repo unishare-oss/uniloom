@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "build": "bun build src/index.ts --target bun --outdir dist",
+    "build": "bun build src/index.ts src/notification-worker.ts --target bun --outdir dist",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
@@ -20,7 +20,9 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "api:spec": "bun scripts/openapi.ts"
+    "api:spec": "bun scripts/openapi.ts",
+    "notifications:worker": "bun src/notification-worker.ts",
+    "notifications:retry": "bun scripts/retry-review-event.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
