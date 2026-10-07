@@ -7,13 +7,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar } from "@/components/user/avatar";
 import { successMessage } from "@/lib/api/fetcher";
@@ -24,53 +17,17 @@ import {
   useListMembers,
   useRemoveMember,
 } from "@/lib/api/generated/members/members";
-import type { GetProject200Role } from "@/lib/api/generated/uniloomAPI.schemas";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import {
   getGetProjectQueryKey,
   getListProjectsQueryKey,
   useGetProject,
 } from "@/lib/api/generated/projects/projects";
-
-type Role = GetProject200Role;
-
-const roleLabels: Record<Role, string> = {
-  OWNER: "Owner",
-  MANAGER: "Manager",
-  MEMBER: "Member",
-};
-
-const RoleSelect = ({
-  value,
-  roles,
-  onChange,
-  disabled,
-  label,
-}: {
-  value: Role;
-  roles: Role[];
-  onChange: (role: Role) => void;
-  disabled?: boolean;
-  label: string;
-}) => (
-  <Select
-    value={value}
-    items={roleLabels}
-    onValueChange={(role) => onChange(role as Role)}
-    disabled={disabled}
-  >
-    <SelectTrigger aria-label={label} className="w-36">
-      <SelectValue />
-    </SelectTrigger>
-    <SelectContent>
-      {roles.map((role) => (
-        <SelectItem key={role} value={role}>
-          {roleLabels[role]}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-);
+import {
+  RoleSelect,
+  roleLabels,
+  type Role,
+} from "@/components/members/role-select";
 
 /**
  * Who is in the project and with which role. Owners add, change and remove; managers

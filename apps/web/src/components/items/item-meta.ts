@@ -10,7 +10,6 @@ import {
   SignalZero,
   type LucideIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export type ItemKind = "FEATURE" | "SLICE" | "TASK" | "SUBTASK";
 export type Priority = "URGENT" | "HIGH" | "MEDIUM" | "LOW" | "NONE";
@@ -23,39 +22,23 @@ export const KINDS_BY_MODE: Record<"GUIDED" | "STANDARD", ItemKind[]> = {
   STANDARD: ["TASK", "SUBTASK"],
 };
 
-const KIND: Record<ItemKind, { label: string; icon: LucideIcon; bg: string }> =
-  {
-    FEATURE: { label: "Feature", icon: Grid3x3, bg: "bg-feature" },
-    SLICE: { label: "Slice", icon: GitCommitHorizontal, bg: "bg-slice" },
-    TASK: { label: "Task", icon: CircleDot, bg: "bg-task" },
-    SUBTASK: {
-      label: "Subtask",
-      icon: CornerDownRight,
-      bg: "bg-muted-foreground",
-    },
-  };
+export const KIND: Record<
+  ItemKind,
+  { label: string; icon: LucideIcon; bg: string }
+> = {
+  FEATURE: { label: "Feature", icon: Grid3x3, bg: "bg-feature" },
+  SLICE: { label: "Slice", icon: GitCommitHorizontal, bg: "bg-slice" },
+  TASK: { label: "Task", icon: CircleDot, bg: "bg-task" },
+  SUBTASK: {
+    label: "Subtask",
+    icon: CornerDownRight,
+    bg: "bg-muted-foreground",
+  },
+};
 
 export const kindLabel = (kind: ItemKind) => KIND[kind].label;
 
-/** A white glyph on the kind's colour, e.g. a teal thread for a slice. */
-export const KindIcon = ({ kind }: { kind: ItemKind }) => {
-  const { label, icon: Icon, bg } = KIND[kind];
-  return (
-    <span
-      role="img"
-      aria-label={label}
-      title={label}
-      className={cn(
-        "inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] text-white",
-        bg,
-      )}
-    >
-      <Icon className="size-3" strokeWidth={2.5} />
-    </span>
-  );
-};
-
-const PRIORITY: Record<
+export const PRIORITY: Record<
   Priority,
   { label: string; icon: LucideIcon; className: string }
 > = {
@@ -72,42 +55,6 @@ const PRIORITY: Record<
 
 export const PRIORITIES = Object.keys(PRIORITY) as Priority[];
 export const priorityLabel = (priority: Priority) => PRIORITY[priority].label;
-
-/** Signal bars (High = 3 … Low = 1), or a red octagon for Urgent. */
-export const PriorityIcon = ({ priority }: { priority: Priority }) => {
-  const { label, icon: Icon, className } = PRIORITY[priority];
-  return (
-    <Icon
-      role="img"
-      aria-label={label}
-      className={cn("size-4 shrink-0", className)}
-    />
-  );
-};
-
-/** A state as an uppercase lozenge, coloured by its category. */
-export const StateLozenge = ({
-  name,
-  category,
-}: {
-  name: string;
-  category?: StateCategory;
-}) => {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-5 items-center rounded-[3px] px-1.5 text-[11px] font-bold tracking-wide whitespace-nowrap uppercase",
-        category === "STARTED" && "bg-accent text-accent-foreground",
-        category === "DONE" && "bg-done text-done-foreground",
-        category !== "STARTED" &&
-          category !== "DONE" &&
-          "bg-secondary text-secondary-foreground ring-1 ring-border ring-inset",
-      )}
-    >
-      {name}
-    </span>
-  );
-};
 
 // Guided states by their stable key; Standard states (no key) by category.
 const TOP_BY_KEY: Record<string, string> = {
@@ -143,7 +90,7 @@ export type LabelColor =
   "GRAY" | "RED" | "ORANGE" | "YELLOW" | "GREEN" | "BLUE" | "PURPLE" | "PINK";
 
 // Whole class names, so Tailwind sees them; the colours are `--label-*` in globals.css.
-const LABEL_COLOR: Record<
+export const LABEL_COLOR: Record<
   LabelColor,
   { name: string; className: string; dot: string }
 > = {
@@ -191,49 +138,3 @@ const LABEL_COLOR: Record<
 
 export const LABEL_COLORS = Object.keys(LABEL_COLOR) as LabelColor[];
 export const labelColorName = (color: LabelColor) => LABEL_COLOR[color].name;
-
-/** A label as a small rounded chip in its colour. */
-/** A label's colour as a small square, for menu rows where a full chip is too loud. */
-export const LabelDot = ({ color }: { color: LabelColor }) => {
-  return (
-    <span
-      aria-hidden
-      className={cn("size-2.5 shrink-0 rounded-[2px]", LABEL_COLOR[color].dot)}
-    />
-  );
-};
-
-/** A label as a quiet outlined tag: neutral border and text, only the square is coloured. */
-export const LabelTag = ({
-  name,
-  color,
-}: {
-  name: string;
-  color: LabelColor;
-}) => {
-  return (
-    <span className="inline-flex h-5 max-w-full items-center gap-1 rounded-[3px] border bg-background px-1.5 text-xs text-muted-foreground">
-      <LabelDot color={color} />
-      <span className="truncate">{name}</span>
-    </span>
-  );
-};
-
-export const LabelChip = ({
-  name,
-  color,
-}: {
-  name: string;
-  color: LabelColor;
-}) => {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-5 max-w-full items-center rounded-[3px] px-1.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset",
-        LABEL_COLOR[color].className,
-      )}
-    >
-      <span className="truncate">{name}</span>
-    </span>
-  );
-};
