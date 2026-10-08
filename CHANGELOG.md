@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/unishare-oss/uniloom/compare/v1.4.0...v1.5.0) (2026-10-08)
+
+
+### Features
+
+* **web:** board filters by label, assignee and item ([7a04675](https://github.com/unishare-oss/uniloom/commit/7a04675adfb863d5ab7540ee030899d8393d33bc))
+
 # [1.4.0](https://github.com/unishare-oss/uniloom/compare/v1.3.0...v1.4.0) (2026-10-07)
 
 
