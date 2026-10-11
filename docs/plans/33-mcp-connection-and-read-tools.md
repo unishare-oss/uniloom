@@ -30,7 +30,7 @@ Depends on, outside Uniloom:
 
 Left out:
 
-- Write tools and the activity log: plan 34.
+- Write tools: plan 34. The activity log: plan 36.
 - Design, ADR, comment and record tools: their own slices (7 and 10).
 - Scopes and read-only agents (ADR-0012, option 3).
 - Rate limiting `/mcp`.
