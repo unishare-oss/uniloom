@@ -1,6 +1,6 @@
 # 13: Project settings
 
-Status: In Review
+Status: Done
 
 ## Scope
 

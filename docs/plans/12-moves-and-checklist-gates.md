@@ -1,6 +1,6 @@
 # 12: Rules engine, part 1: moves and checklist gates
 
-Status: In Review
+Status: Done
 
 ## Scope
 
