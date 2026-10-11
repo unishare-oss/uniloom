@@ -18,14 +18,14 @@ import {
 } from '@/modules/projects/project.service.js';
 import { recordReviewSubmission } from '@/modules/notifications/notification.service.js';
 import * as itemRules from './item.rules.js';
-import { toEntry, toItem, toListRow } from './item.utils.js';
+import { toItem, toListRow } from './item.utils.js';
 import * as itemRepo from './item.repository.js';
 
 /**
  * The item and the user's role. The same 404 whether it doesn't exist or they aren't in
  * its project, so a guessable key (TG-12 over MCP) can't reveal that it exists.
  */
-const loadItem = async (id: string, userId: string) => {
+export const loadItem = async (id: string, userId: string) => {
   const item = await itemRepo.findItem(id);
   const member = item && (await memberRepo.findMember(item.projectId, userId));
   if (!item || !member) throw apiError(404, 'not_found', 'Item not found');
@@ -195,6 +195,41 @@ export const updateProjectItem = async (
 };
 
 /**
+ * After a move: when the item finished (Done or Canceled) and its parent is an open
+ * feature whose slices are all finished, moves the feature to Done too.
+ */
+const finishFeature = async (
+  tx: Prisma.TransactionClient,
+  item: NonNullable<Awaited<ReturnType<typeof itemRepo.findItemForMove>>>,
+) => {
+  const finished = ['DONE', 'CANCELED'].includes(item.state.category);
+  if (finished && item.parentId) {
+    // Locked, so two slices finishing at once each see the other as finished.
+    await itemRepo.lockItem(tx, item.parentId);
+    const parent = await itemRepo.findParent(tx, item.parentId);
+    const open =
+      parent?.state.category !== 'DONE' &&
+      parent?.state.category !== 'CANCELED';
+    if (
+      parent?.kind === 'FEATURE' &&
+      open &&
+      itemRules.featureDone(await itemRepo.findChildren(tx, item.parentId))
+    ) {
+      const done = await itemRepo.findFirstDoneState(tx, item.projectId);
+      // The feature's own checklist gates it too: with an unticked entry it stays open.
+      const featureError = itemRules.checklistError(
+        item.project,
+        parent.kind,
+        await itemRepo.findChecklist(tx, item.parentId),
+        done,
+      );
+      if (!featureError)
+        await itemRepo.updateItem(tx, item.parentId, { stateId: done.id });
+    }
+  }
+};
+
+/**
  * Moves an item to another state: who may move it, the Done role check, then the
  * checklist gate. A slice that finishes can finish its feature too.
  */
@@ -239,31 +274,7 @@ export const moveItem = async (id: string, userId: string, stateId: string) => {
         fromStateKey: item.state.key,
         toStateKey: target.key,
       });
-    const finished = ['DONE', 'CANCELED'].includes(target.category);
-    if (finished && item.parentId) {
-      // Locked, so two slices finishing at once each see the other as finished.
-      await itemRepo.lockItem(tx, item.parentId);
-      const parent = await itemRepo.findParent(tx, item.parentId);
-      const open =
-        parent?.state.category !== 'DONE' &&
-        parent?.state.category !== 'CANCELED';
-      if (
-        parent?.kind === 'FEATURE' &&
-        open &&
-        itemRules.featureDone(await itemRepo.findChildren(tx, item.parentId))
-      ) {
-        const done = await itemRepo.findFirstDoneState(tx, item.projectId);
-        // The feature's own checklist gates it too: with an unticked entry it stays open.
-        const featureError = itemRules.checklistError(
-          item.project,
-          parent.kind,
-          await itemRepo.findChecklist(tx, item.parentId),
-          done,
-        );
-        if (!featureError)
-          await itemRepo.updateItem(tx, item.parentId, { stateId: done.id });
-      }
-    }
+    await finishFeature(tx, updated);
     return { row: updated, role };
   });
   return toItem(result.row, result.role, userId);
@@ -301,154 +312,4 @@ export const restoreProjectItem = async (id: string, userId: string) => {
   if (item.parentId && !(await itemRepo.findItem(item.parentId)))
     throw apiError(409, 'parent_deleted', 'Restore its parent first');
   return toItem(await itemRepo.restoreItem(id), role, userId);
-};
-
-/** Records that the item waits on `blockerId`. */
-export const addBlocker = async (
-  id: string,
-  userId: string,
-  blockerId: string,
-) => {
-  const { item } = await loadItem(id, userId);
-  if (blockerId === id)
-    throw apiError(400, 'self_block', "An item can't wait on itself");
-  const blocker = await itemRepo.findItem(blockerId);
-  if (!blocker || blocker.projectId !== item.projectId)
-    throw apiError(
-      400,
-      'invalid_blocker',
-      'The blocker must be an item in this project',
-    );
-  // Locked, so two adds at once can't both pass (A→B and B→A together are a loop).
-  await prisma.$transaction(async (tx) => {
-    await itemRepo.lockProject(tx, item.projectId);
-    const links = await itemRepo.findLinks(tx, item.projectId);
-    if (
-      links.some(
-        (link) => link.blockedId === id && link.blockerId === blockerId,
-      )
-    )
-      throw apiError(409, 'already_blocked', 'It already waits on that item');
-    if (itemRules.wouldCreateCycle(links, id, blockerId))
-      throw apiError(
-        409,
-        'blocking_cycle',
-        'That would make the items wait on each other',
-      );
-    await itemRepo.insertLink(tx, id, blockerId);
-  });
-  return getItem(id, userId);
-};
-
-export const removeBlocker = async (
-  id: string,
-  userId: string,
-  blockerId: string,
-) => {
-  await loadItem(id, userId);
-  await itemRepo.deleteLink(id, blockerId);
-};
-
-/**
- * Sets the entries' positions to 0..n-1 in the order of `ids`. Positions are unique per
- * item and Postgres checks that row by row, so it first moves every entry to a negative
- * position, then to its place.
- */
-const writePositions = async (tx: Prisma.TransactionClient, ids: string[]) => {
-  for (const [i, id] of ids.entries())
-    await itemRepo.setEntryPosition(tx, id, -i - 1);
-  for (const [i, id] of ids.entries())
-    await itemRepo.setEntryPosition(tx, id, i);
-};
-
-/** Adds an entry at the end of the item's checklist. */
-export const addChecklistEntry = async (
-  itemId: string,
-  userId: string,
-  input: { text: string },
-) => {
-  const { item } = await loadItem(itemId, userId);
-  // Locked, so two adds at once can't take the same position or both pass the limit.
-  const entry = await prisma.$transaction(async (tx) => {
-    await itemRepo.lockItem(tx, itemId);
-    const entries = await itemRepo.findChecklist(tx, itemId);
-    const max = item.project.checklistMax;
-    if (max !== null && entries.length >= max)
-      throw apiError(
-        409,
-        'checklist_max_exceeded',
-        `A checklist holds at most ${max} entries: split this slice`,
-      );
-    return itemRepo.insertEntry(tx, itemId, input.text, entries.length);
-  });
-  return toEntry(entry);
-};
-
-/** Edits an entry's text, ticks or unticks it, sets its evidence. Unticking keeps it. */
-export const updateChecklistEntry = async (
-  itemId: string,
-  entryId: string,
-  userId: string,
-  input: { text?: string; done?: boolean; evidence?: string | null },
-) => {
-  await loadItem(itemId, userId);
-  // Locked, so a delete can't remove the entry between the check and the update.
-  const entry = await prisma.$transaction(async (tx) => {
-    await itemRepo.lockItem(tx, itemId);
-    if (!(await itemRepo.findEntry(tx, itemId, entryId)))
-      throw apiError(404, 'not_found', 'Checklist entry not found');
-    return itemRepo.updateEntry(tx, entryId, {
-      ...input,
-      // Empty evidence clears it.
-      evidence:
-        input.evidence === undefined ? undefined : input.evidence || null,
-    });
-  });
-  return toEntry(entry);
-};
-
-/** Deletes an entry and closes the gap, so positions stay 0..n-1. */
-export const removeChecklistEntry = async (
-  itemId: string,
-  entryId: string,
-  userId: string,
-) => {
-  await loadItem(itemId, userId);
-  await prisma.$transaction(async (tx) => {
-    await itemRepo.lockItem(tx, itemId);
-    if (!(await itemRepo.findEntry(tx, itemId, entryId)))
-      throw apiError(404, 'not_found', 'Checklist entry not found');
-    await itemRepo.deleteEntry(tx, entryId);
-    const rest = await itemRepo.findChecklist(tx, itemId);
-    await writePositions(
-      tx,
-      rest.map((entry) => entry.id),
-    );
-  });
-};
-
-/** Sets the order. `ids` must be exactly the item's entries, once each. */
-export const reorderChecklist = async (
-  itemId: string,
-  userId: string,
-  ids: string[],
-) => {
-  await loadItem(itemId, userId);
-  const entries = await prisma.$transaction(async (tx) => {
-    await itemRepo.lockItem(tx, itemId);
-    const current = await itemRepo.findChecklist(tx, itemId);
-    if (
-      ids.length !== current.length ||
-      new Set(ids).size !== ids.length ||
-      !current.every((entry) => ids.includes(entry.id))
-    )
-      throw apiError(
-        400,
-        'invalid_order',
-        "ids must list every entry of the item's checklist, once each",
-      );
-    await writePositions(tx, ids);
-    return itemRepo.findChecklist(tx, itemId);
-  });
-  return entries.map(toEntry);
 };

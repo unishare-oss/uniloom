@@ -180,38 +180,6 @@ export const findFirstState = (projectId: string) => {
 };
 
 /**
- * Locks the project row until the transaction ends, so concurrent blocked-by adds run one
- * at a time. Call it first, before reading the links you check.
- */
-export const lockProject = (
-  tx: Prisma.TransactionClient,
-  projectId: string,
-) => {
-  return tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
-};
-
-/** Every blocked-by link in the project. */
-export const findLinks = (tx: Prisma.TransactionClient, projectId: string) => {
-  return tx.itemBlock.findMany({
-    where: { blocked: { projectId } },
-    select: { blockedId: true, blockerId: true },
-  });
-};
-
-/** Records that `blockedId` waits on `blockerId`. */
-export const insertLink = (
-  tx: Prisma.TransactionClient,
-  blockedId: string,
-  blockerId: string,
-) => {
-  return tx.itemBlock.create({ data: { blockedId, blockerId } });
-};
-
-export const deleteLink = (blockedId: string, blockerId: string) => {
-  return prisma.itemBlock.deleteMany({ where: { blockedId, blockerId } });
-};
-
-/**
  * Locks the item row until the transaction ends, so concurrent checklist changes on it
  * run one at a time. Call it first, before reading the entries you change.
  */
@@ -225,44 +193,6 @@ export const findChecklist = (tx: Prisma.TransactionClient, itemId: string) => {
     where: { itemId },
     orderBy: { position: 'asc' },
   });
-};
-
-/** One entry of the item: an entry of another item is not found. */
-export const findEntry = (
-  tx: Prisma.TransactionClient,
-  itemId: string,
-  entryId: string,
-) => {
-  return tx.checklistEntry.findFirst({ where: { id: entryId, itemId } });
-};
-
-export const insertEntry = (
-  tx: Prisma.TransactionClient,
-  itemId: string,
-  text: string,
-  position: number,
-) => {
-  return tx.checklistEntry.create({ data: { itemId, text, position } });
-};
-
-export const updateEntry = (
-  tx: Prisma.TransactionClient,
-  id: string,
-  data: { text?: string; done?: boolean; evidence?: string | null },
-) => {
-  return tx.checklistEntry.update({ where: { id }, data });
-};
-
-export const deleteEntry = (tx: Prisma.TransactionClient, id: string) => {
-  return tx.checklistEntry.delete({ where: { id } });
-};
-
-export const setEntryPosition = (
-  tx: Prisma.TransactionClient,
-  id: string,
-  position: number,
-) => {
-  return tx.checklistEntry.update({ where: { id }, data: { position } });
 };
 
 /** Re-read the source state and assignee after acquiring the move lock. */

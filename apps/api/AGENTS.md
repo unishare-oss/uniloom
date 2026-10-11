@@ -49,6 +49,9 @@ Each feature is a folder `src/modules/<features>/` with files named after the si
 | `<feature>.rules.ts`      | Pure workflow rule checks (`items/item.rules.ts`), shared by REST and MCP      |
 | `*.spec.ts`               | Unit tests next to the code they test                                          |
 
+A module may split its service and repository by sub-feature (`items/checklist.service.ts`,
+`items/checklist.repository.ts`); all files stay in the module folder.
+
 Code used by three or more modules moves to `src/utils/` (functions, one file per topic)
 or `src/types/` (types); code used by one or two modules stays in its module. See
 [ADR-0009](../../docs/adr/0009-module-types-and-utils.md).
