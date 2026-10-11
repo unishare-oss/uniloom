@@ -160,6 +160,22 @@ export const startMockUniauth = async (client: {
         .setExpirationTime('2m')
         .sign(privateKey);
     },
+    /** Signs an MCP access token the way uniAuth does; `claims` and `expires` override it. */
+    signAgentToken(
+      sub: string,
+      audience: string,
+      claims: Record<string, unknown> = {},
+      expires = '15m',
+    ) {
+      return new SignJWT({ azp: 'claude-code-test', ...claims })
+        .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+        .setIssuer(issuer)
+        .setAudience(audience)
+        .setSubject(sub)
+        .setIssuedAt()
+        .setExpirationTime(expires)
+        .sign(privateKey);
+    },
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
 };

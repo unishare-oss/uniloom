@@ -5,6 +5,7 @@ import { HTTPException } from 'hono/http-exception';
 import { Prisma } from '@/generated/prisma/client.js';
 import { apiError } from '@/http.js';
 import { healthRoutes } from '@/modules/health/health.routes.js';
+import { mcpRoutes } from '@/modules/mcp/mcp.routes.js';
 import { specOptions } from '@/openapi.js';
 import { apiRoutes } from '@/routes/index.js';
 
@@ -23,6 +24,9 @@ app.get(
 );
 
 app.route('/api', apiRoutes);
+
+// The MCP server and its discovery documents: agents sign in through uniAuth, not a session.
+app.route('/', mcpRoutes);
 
 // Every answer keeps the { success: false, statusCode, code, message } shape.
 app.notFound(() => apiError(404, 'not_found', 'Not found').getResponse());

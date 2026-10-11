@@ -10,7 +10,19 @@ const nextConfig: NextConfig = {
   // The API, Better Auth included, behind the web origin: the session cookie stays on this host.
   async rewrites() {
     const apiUrl = process.env.API_URL ?? "http://localhost:3011";
-    return [{ source: "/api/:path*", destination: `${apiUrl}/api/:path*` }];
+    return [
+      { source: "/api/:path*", destination: `${apiUrl}/api/:path*` },
+      // The MCP server and how agents find uniAuth (plan 33): the resource is <web>/mcp.
+      { source: "/mcp", destination: `${apiUrl}/mcp` },
+      {
+        source: "/.well-known/oauth-protected-resource",
+        destination: `${apiUrl}/.well-known/oauth-protected-resource`,
+      },
+      {
+        source: "/.well-known/oauth-protected-resource/:path*",
+        destination: `${apiUrl}/.well-known/oauth-protected-resource/:path*`,
+      },
+    ];
   },
 };
 
