@@ -11,6 +11,7 @@ import {
   requireRole,
   ROLES,
 } from '@/modules/members/member.service.js';
+import * as memberRepo from '@/modules/members/member.repository.js';
 import {
   isProjectMember,
   requireMember,
@@ -20,12 +21,15 @@ import * as itemRules from './item.rules.js';
 import { toEntry, toItem, toListRow } from './item.utils.js';
 import * as itemRepo from './item.repository.js';
 
-/** The item and the user's role, or 404 when it doesn't exist or they aren't in its project. */
+/**
+ * The item and the user's role. The same 404 whether it doesn't exist or they aren't in
+ * its project, so a guessable key (TG-12 over MCP) can't reveal that it exists.
+ */
 const loadItem = async (id: string, userId: string) => {
   const item = await itemRepo.findItem(id);
-  if (!item) throw apiError(404, 'not_found', 'Item not found');
-  const { role } = await requireRole(item.projectId, userId, ROLES);
-  return { item, role };
+  const member = item && (await memberRepo.findMember(item.projectId, userId));
+  if (!item || !member) throw apiError(404, 'not_found', 'Item not found');
+  return { item, role: member.role };
 };
 
 /** Checks a new parent: same project, not the item itself, and allowed for its kind. */

@@ -13,6 +13,8 @@ export interface AuthEnv {
   uniauthIssuer: string;
   uniauthClientId: string;
   uniauthClientSecret: string;
+  /** Uniloom's /mcp URL on the web origin, e.g. http://127.0.0.1:3013/mcp. */
+  mcpResource: string;
 }
 
 /** Reads the auth settings. The API refuses to start without any of them. */
@@ -28,6 +30,7 @@ export const readAuthEnv = (env = process.env): AuthEnv => {
     uniauthIssuer: required('UNIAUTH_ISSUER').replace(/\/+$/, ''),
     uniauthClientId: required('UNIAUTH_CLIENT_ID'),
     uniauthClientSecret: required('UNIAUTH_CLIENT_SECRET'),
+    mcpResource: required('MCP_RESOURCE'),
   };
 };
 
@@ -36,6 +39,8 @@ const env = readAuthEnv();
 
 export const UNIAUTH_ISSUER = env.uniauthIssuer;
 export const UNIAUTH_CLIENT_ID = env.uniauthClientId;
+/** The audience agent tokens must carry (the MCP resource). */
+export const MCP_RESOURCE = env.mcpResource;
 
 /** Better Auth with uniAuth as the only way in. Uniloom keeps its own session. */
 export const auth = betterAuth({

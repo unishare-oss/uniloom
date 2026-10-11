@@ -32,6 +32,16 @@ UNIAUTH_CLIENT_SECRET="…"   # from the local client
 
 and `NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.dev"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013>, not `localhost:3013`: it must match `BETTER_AUTH_URL` and the client's registered redirect. Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
 
+### Connect an agent (MCP)
+
+Agents such as Claude Code connect to Uniloom's `/mcp` on the web origin and sign in through uniAuth (ADR-0012). Uniloom stores no tokens; it checks the access token uniAuth issues, and the agent gets exactly its person's project role. Set `MCP_RESOURCE="http://127.0.0.1:3013/mcp"` (the web origin plus `/mcp`) in `apps/api/.env`, then:
+
+```sh
+claude mcp add --transport http uniloom http://127.0.0.1:3013/mcp
+```
+
+Run `/mcp` in Claude Code to sign in. This needs uniAuth to accept Uniloom's `/mcp` as an MCP resource (a second token audience next to Unishare's); until it does, sign-in fails even though the e2e tests pass. The read tools are `list_projects`, `list_items`, `get_item`, `list_states`, `list_labels` and `get_criteria`; projects and items are addressed by key (`TG`, `TG-12`).
+
 ### Run everything in Docker
 
 ```sh

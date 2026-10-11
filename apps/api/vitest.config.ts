@@ -15,6 +15,7 @@ export default defineConfig({
       UNIAUTH_ISSUER: 'http://127.0.0.1:1/api/auth',
       UNIAUTH_CLIENT_ID: 'uniloom-test',
       UNIAUTH_CLIENT_SECRET: 'uniloom-test-secret',
+      MCP_RESOURCE: 'http://127.0.0.1:3013/mcp',
     },
   },
 });
