@@ -114,7 +114,10 @@ Notes:
 
 ## Changes
 
-Commits: none yet, not committed.
+Commits:
+
+- `68eb120` docs: plans 33-34 for the MCP server, ADR-0012 and TD-010
+- `789fc3c` feat(api): add MCP server with uniAuth sign-in and read tools
 
 Built as designed. Added `@modelcontextprotocol/sdk` 1.29.0 and `apps/api/src/modules/mcp/`
 (`mcp.auth.ts`, `mcp.repository.ts`, `mcp.instructions.ts`, `mcp.server.ts`,
