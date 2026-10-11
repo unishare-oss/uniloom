@@ -11,6 +11,7 @@ for (const [key, value] of Object.entries({
   UNIAUTH_ISSUER: 'http://127.0.0.1:1/api/auth',
   UNIAUTH_CLIENT_ID: 'spec',
   UNIAUTH_CLIENT_SECRET: 'spec',
+  MCP_RESOURCE: 'http://127.0.0.1:3013/mcp',
 }))
   process.env[key] ||= value;
 

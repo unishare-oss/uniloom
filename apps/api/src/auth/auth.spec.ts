@@ -6,6 +6,7 @@ const ENV = {
   UNIAUTH_ISSUER: 'http://localhost:3002/api/auth/',
   UNIAUTH_CLIENT_ID: 'uniloom',
   UNIAUTH_CLIENT_SECRET: 'secret',
+  MCP_RESOURCE: 'http://127.0.0.1:3013/mcp',
 };
 
 describe('readAuthEnv', () => {
@@ -16,6 +17,7 @@ describe('readAuthEnv', () => {
       uniauthIssuer: 'http://localhost:3002/api/auth',
       uniauthClientId: 'uniloom',
       uniauthClientSecret: 'secret',
+      mcpResource: 'http://127.0.0.1:3013/mcp',
     });
   });
 
