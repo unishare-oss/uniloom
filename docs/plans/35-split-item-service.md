@@ -83,7 +83,7 @@ Notes:
 
 ## Changes
 
-Commits: none yet, not committed.
+Commits: `0085d27` refactor(api): split the item service into checklist and blocker files
 
 What moved where:
 
