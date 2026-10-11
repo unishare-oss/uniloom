@@ -1,47 +1,149 @@
 # Uniloom
 
-Bun monorepo with a Next.js web app, a Hono API, Tailwind CSS, shadcn/ui, Prisma, and PostgreSQL. Uniloom is a self-hosted work tracker for building software with a coding agent; see [`MVP.md`](MVP.md) for the spec and build order.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Bun](https://img.shields.io/badge/Bun-1.4-000000?logo=bun)](https://bun.sh/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=nextdotjs)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)](https://react.dev/)
+[![Hono](https://img.shields.io/badge/Hono-4.13-E36002?logo=hono)](https://hono.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.10-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql)](https://www.postgresql.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?logo=tailwindcss)](https://tailwindcss.com/)
+[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-latest-000000?logo=shadcnui)](https://ui.shadcn.com/)
+[![Better Auth](https://img.shields.io/badge/Better%20Auth-1.7-black?logo=betterauth)](https://www.better-auth.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docs.docker.com/compose/)
 
-## Start locally
+A self-hosted work tracker for building software with a coding agent: plan work as small slices with done-when checklists, let the agent do the work, and keep the decisions (approving, accepting, finishing) with people.
 
-Requirements: Bun 1.4.2, the `ssh oracle` host, and Tailscale on the same tailnet as the Oracle VM (`oracle.tailcb9a25.ts.net`). PostgreSQL runs in Docker on the VM; the web and API apps run locally with Bun. No SSH tunnel is needed.
+See [`MVP.md`](MVP.md) for the spec and build order.
 
-```sh
+---
+
+## Features
+
+- **Projects in two modes** — Standard (your own states) or Guided (locked workflow states for agent-driven work)
+- **Items** — features, slices, tasks and subtasks with priority, assignee and blocked-by links
+- **Board** — drag items between states, search, and filter by label, assignee or parent item (filters live in the URL)
+- **Done-when checklists** — 3–6 items per slice; moves are refused until the checklist allows them
+- **Assign and claim** — members claim free tickets themselves, unless the project turns self-claim off
+- **Members and roles** — owner, manager and member, each with its own limits
+- **Project settings** — switches for the workflow rules and checklist limits
+- **Labels** — managers create labels, anyone in the project tags items with them
+- **Review inbox** — submissions for review, returns and resubmissions, with a notification worker and per-user history
+- **Sign-in** — single sign-on through [uniAuth](https://github.com/unishare-oss/uniAuth) (OpenID Connect)
+
+## Tech Stack
+
+| Layer        | Technology                                                       |
+| ------------ | ---------------------------------------------------------------- |
+| Frontend     | Next.js 16 (App Router), React 19, Tailwind CSS 4, shadcn/ui     |
+| Backend      | Hono 4 on Bun, Prisma 7, PostgreSQL 17                           |
+| Auth         | Better Auth as the OIDC client, uniAuth as the identity provider |
+| State        | TanStack Query 5                                                 |
+| API contract | Orval (OpenAPI codegen)                                          |
+| Monorepo     | Bun workspaces                                                   |
+| Deploy       | Docker images on GHCR, GitOps through `k8s-practice`             |
+
+## Getting Started
+
+### Prerequisites
+
+- Bun 1.4.2
+- Tailscale on the same tailnet as the Oracle VM (`oracle.tailcb9a25.ts.net`)
+- The `ssh oracle` host, to start and stop the database
+
+PostgreSQL runs in Docker on the VM; the web and API apps run locally with Bun. No SSH tunnel is needed.
+
+### 1. Install dependencies
+
+```bash
 bun install
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-bun run db:up
-bun run db:generate
-bun run db:migrate
-bun run dev
 ```
 
-Open <http://127.0.0.1:3013>. The API health endpoint is <http://localhost:3011/health>. `bun run db:up` copies `docker-compose.yml` to `~/uniloom` on the VM and starts PostgreSQL there, bound only to the VM's Tailscale IP on port `5434`: reachable from the tailnet, not from the internet. `DATABASE_URL` in `apps/api/.env.example` already points at it. Stop it with `bun run db:down`; the data stays in the `postgres_data` volume on the VM.
+This also installs the Git hooks (see [Checks](#checks)).
 
-### Sign-in (uniAuth)
+### 2. Configure environment
 
-People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md) (OpenID Connect). The API uses Better Auth as the OIDC client and keeps Uniloom's own session; every `/api` route needs a session and acceptance of Uniloom's terms unless it is public (health, `/api/auth/*`, the uniAuth receivers) or `GET /api/me` / `POST /api/users/me/consent`. The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. The e2e tests do not need uniAuth: they start a mock provider.
+```bash
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+```
 
-For development, uniAuth is available at <https://auth-dev.psstee.dev> on the Oracle VM, with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`. It must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification. Set in `apps/api/.env`:
+People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md). The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. For development, uniAuth runs at <https://auth-dev.psstee.dev> with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`:
 
-```sh
+```env
+# apps/api/.env
 UNIAUTH_ISSUER="https://auth-dev.psstee.dev/api/auth"
 UNIAUTH_CLIENT_ID="…"       # from the local client
 UNIAUTH_CLIENT_SECRET="…"   # from the local client
+
+# apps/web/.env
+NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.dev"
 ```
 
-and `NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.dev"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013>, not `localhost:3013`: it must match `BETTER_AUTH_URL` and the client's registered redirect. Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
+The issuer must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification.
+
+### 3. Start the database
+
+```bash
+bun run db:up
+```
+
+This copies `docker-compose.yml` to `~/uniloom` on the VM and starts PostgreSQL there, bound only to the VM's Tailscale IP on port `5434`: reachable from the tailnet, not from the internet. `DATABASE_URL` in `apps/api/.env.example` already points at it. Stop it with `bun run db:down`; the data stays in the `postgres_data` volume on the VM.
+
+### 4. Generate clients and migrate
+
+The Prisma client and the web API client are gitignored, so generate them after cloning and after pulling schema changes:
+
+```bash
+bun run db:generate
+bun run api:generate
+bun run db:migrate
+```
+
+Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a migration with `bun run db:migrate`.
+
+### 5. Start development servers
+
+```bash
+bun run dev
+```
+
+- Web: <http://127.0.0.1:3013> (open `127.0.0.1`, not `localhost`: it must match `BETTER_AUTH_URL` and the client's registered redirect)
+- API health: <http://localhost:3011/health>
+
+`bun run dev` starts the API, the web app and the notification worker.
+
+### 6. Seed test data
+
+After signing in once:
+
+```bash
+bun run db:seed
+```
+
+This adds test projects with a case for every rule built so far and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only the seed projects and leave other projects alone. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in.
+
+| Key | Project                                                |
+| --- | ------------------------------------------------------ |
+| TG  | Guided                                                 |
+| TS  | Standard                                               |
+| TR  | You as manager                                         |
+| TM  | You as member                                          |
+| TC  | Self-claim turned off                                  |
+| TL  | Lowered checklist limits                               |
+| TX  | A project you're not in                                |
+| TI  | Review inbox: submission, return/resubmission, history |
 
 ### Run everything in Docker
 
-```sh
+```bash
 bun run up     # builds the images, starts db → migrate → api → web, waits until healthy
 bun run down
 ```
 
 `migrate` applies Prisma migrations and exits before the API starts. The web app is at <http://127.0.0.1:3013> and the API at <http://localhost:3011>, so stop `bun run dev` first: they use the same ports. Rebuild after code changes with `bun run up` again.
 
-## Structure
+## Project Structure
 
 | Path                               | Purpose                                              |
 | ---------------------------------- | ---------------------------------------------------- |
@@ -50,42 +152,43 @@ bun run down
 | `skill`                            | Agent skill files, written after the MCP server      |
 | `docs`                             | Plans, ADRs and tech debt                            |
 | `docker-compose.yml`               | PostgreSQL (on Oracle), plus migrations, API and web |
-| `.github/workflows/`               | CI, image builds, release (see below)                |
+| `.github/workflows/`               | CI, image builds, release                            |
 | `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app            |
 
-Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a migration with `bun run db:migrate`.
+## Roadmap
 
-### Test data
+See [`MVP.md`](MVP.md) §14 for the full build order and [`docs/plans/`](docs/plans) for each slice's plan.
 
-After signing in once, `bun run db:seed` adds test projects with a case for every rule built so far (TG: Guided, TS: Standard, TR: you as manager, TM: you as member, TX: a project you're not in) and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only the named seed projects (TG, TS, TR, TM, TC, TL, TX, TI), preserving other projects. TI demonstrates review submissions, return/resubmission, and completed history. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in.
+| Slice | Description                                                   | Status      |
+| ----- | ------------------------------------------------------------- | ----------- |
+| 1     | Project setup: Bun workspace, Hono, Next.js, Prisma, CI       | ✅ Done     |
+| 2     | Data model: projects, items, states, labels, blocked-by       | ✅ Done     |
+| 3     | Rules engine: mode presets, switches, checklist limits, gates | In progress |
+| 4     | MCP server: tools, instructions, access tokens, activity log  | Next        |
+| 5     | Sign-in with uniAuth                                          | ✅ Done     |
+| 6     | Users and roles: members, owner / manager / member            | ✅ Done     |
+| 7     | Designs and ADRs                                              | Planned     |
+| 8     | Web: board and item lists, both modes                         | ✅ Done     |
+| 9     | Web: slice page with design review and Approve, ADR pages     | Planned     |
+| 10    | Record: commits, PRs, documents with Mermaid                  | Planned     |
+| 11    | Planned vs actual                                             | Planned     |
+| 12    | Agent setup files: skill and `AGENTS.md` block                | Planned     |
 
-### Review notifications
+## Review Notifications
 
-`bun run dev` starts the API, web app, and an independent notification worker.
-Use `bun run dev:worker` to start the worker alone. The Docker Compose
-`notification-worker` service runs the same entry point after migrations complete.
-A committed submission remains visible in Needs review while the worker is unavailable;
-per-user history appears after delivery. In Review hands move authority to project
-Owners and Managers. Open task and project links from `/reviews` to take action.
+The notification worker turns review events into notifications. `bun run dev:worker` starts it alone; the Docker Compose `notification-worker` service runs the same entry point after migrations complete. A committed submission stays visible in Needs review while the worker is down; per-user history appears after delivery. In Review hands move authority to project Owners and Managers. Open task and project links from `/reviews` to take action.
 
-The worker claims due events with PostgreSQL row locks, fans out to eligible
-snapshotted recipients, and commits notifications and processing status together.
-Failures retry from 5 seconds to a 5-minute cap; after 10 failures the event has
-`failedAt` set. Logs contain event ids and sanitized errors. To requeue a failed
-event after fixing its cause:
+The worker claims due events with PostgreSQL row locks, fans out to eligible snapshotted recipients, and commits notifications and processing status together. Failures retry from 5 seconds to a 5-minute cap; after 10 failures the event has `failedAt` set. Logs contain event ids and sanitized errors. To requeue a failed event after fixing its cause:
 
-```sh
+```bash
 bun run --cwd apps/api notifications:retry EVENT_UUID
 ```
 
-The command uses database credentials; it is not a public endpoint. Processed
-events and notifications remain for history. A retention policy and task-specific
-reviewers are future improvements. Stop workers before database-backed worker
-tests, which intentionally exercise due-event claims against the dev database.
+The command uses database credentials; it is not a public endpoint. Processed events and notifications remain for history. A retention policy and task-specific reviewers are future improvements. Stop workers before database-backed worker tests, which intentionally exercise due-event claims against the dev database.
 
 ## Checks
 
-```sh
+```bash
 bun run lint
 bun run typecheck
 bun run test
@@ -93,9 +196,9 @@ bun run --cwd apps/api test:e2e
 bun run build
 ```
 
-The Git pre-commit hook formats staged files and runs lint and typecheck; the commit-msg hook checks [Conventional Commits](https://www.conventionalcommits.org) with commitlint. `bun install` installs both hooks in a Git checkout.
+The Git pre-commit hook formats staged files and runs lint and typecheck; the commit-msg hook checks [Conventional Commits](https://www.conventionalcommits.org) with commitlint. The e2e tests don't need uniAuth: they start a mock provider.
 
-## Branches, CI and releases
+## Branches, CI and Releases
 
 Work goes into `dev` through pull requests; `dev` is merged into `main` to release. The pipeline follows Unishare's:
 
