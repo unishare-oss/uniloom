@@ -13,14 +13,16 @@ import type {
   Role,
 } from '../src/generated/prisma/enums.js';
 import {
-  addBlocker,
-  addChecklistEntry,
   createProjectItem,
   removeItem,
   moveItem,
-  updateChecklistEntry,
   updateProjectItem,
 } from '../src/modules/items/item.service.js';
+import { addBlocker } from '../src/modules/items/blocker.service.js';
+import {
+  addChecklistEntry,
+  updateChecklistEntry,
+} from '../src/modules/items/checklist.service.js';
 import {
   createProject,
   updateProject,
