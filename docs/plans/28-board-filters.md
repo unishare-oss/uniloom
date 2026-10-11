@@ -1,6 +1,6 @@
 # 28: Board filters
 
-Status: In Review
+Status: Done
 
 ## Scope
 
