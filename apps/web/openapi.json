@@ -5934,7 +5934,7 @@
         "tags": [
           "documents"
         ],
-        "summary": "Edit or archive a document (its author, owners and managers)",
+        "summary": "Edit or archive a document (owners and managers)",
         "parameters": [
           {
             "name": "id",
@@ -5976,7 +5976,7 @@
         },
         "responses": {
           "200": {
-            "description": "Edit or archive a document (its author, owners and managers)",
+            "description": "Edit or archive a document (owners and managers)",
             "content": {
               "application/json": {
                 "schema": {

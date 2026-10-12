@@ -60,7 +60,7 @@ documentRoutes.patch(
   describe({
     tag: 'documents',
     operationId: 'updateDocument',
-    summary: 'Edit or archive a document (its author, owners and managers)',
+    summary: 'Edit or archive a document (owners and managers)',
     pathParams: ['id'],
     body: updateDocumentSchema,
     data: documentSchema,

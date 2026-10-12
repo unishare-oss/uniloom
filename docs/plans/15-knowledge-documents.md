@@ -61,7 +61,7 @@ Left out: MCP tools, documents attached to items or features (§8), revisions an
 | `createDocument(projectId, userId, input)`                          | `documents/document.service.ts`                        | `requireRole(…, CREATORS)`, then insert with the caller as author.                                                                                                                                                | Done-when 2.                                                                 |
 | `listDocuments(projectId, userId, query)`                           | `documents/document.service.ts`                        | `requireRole(…, ROLES)`, then `findDocuments`.                                                                                                                                                                    | Done-when 2.                                                                 |
 | `getDocument(id, userId)`                                           | `documents/document.service.ts`                        | Load the document, 404 when missing; `requireRole(doc.projectId, …, ROLES)` gives non-members the same 404.                                                                                                       | Done-when 3.                                                                 |
-| `updateDocumentById(id, userId, input)`                             | `documents/document.service.ts`                        | Load; `const { role } = await requireRole(…, ROLES)`; `requireRole(…, CREATORS)` (403 `forbidden` for Members); `archived: true/false` sets or clears `archivedAt`.                                               | Done-when 3. The only new rule; it lives in the service.                     |
+| `updateDocumentById(id, userId, input)`                             | `documents/document.service.ts`                        | Load; `requireRole(…, CREATORS)` (404 for non-members, 403 `forbidden` for Members); `archived: true/false` sets or clears `archivedAt`.                                                                          | Done-when 3. The only new rule; it lives in the service.                     |
 | `toDocument`, `toDocumentSummary`                                   | `documents/document.utils.ts`                          | Row → API shape with `author: { id, name, image } \| null` and a `canEdit` flag the service computes.                                                                                                             | Done-when 3, 5. The web shows Edit from `canEdit` and never re-checks roles. |
 | routes + handlers                                                   | `documents/document.routes.ts`, `document.handlers.ts` | The four endpoints, mounted like the label routes; operationIds `listDocuments`, `createDocument`, `getDocument`, `updateDocument`.                                                                               | Done-when 2–3. Web hooks are generated from them.                            |
 | `KnowledgePage`, `DocumentList`, `DocumentRow`, `KindBadge`         | `web/components/documents/`                            | Library with kind tabs, search, archived toggle and the four list states.                                                                                                                                         | Done-when 4. One component per file.                                         |
@@ -80,9 +80,8 @@ sequenceDiagram
   W->>H: PATCH /api/documents/:id {body, archived?}
   H->>S: updateDocumentById(id, userId, input)
   S->>DB: findDocument(id)
-  S->>M: requireRole(projectId, userId, ROLES)
-  M-->>S: member.role (404 if not a member)
-  S->>S: role in CREATORS? else 403
+  S->>M: requireRole(projectId, userId, CREATORS)
+  M-->>S: ok (404 if not a member, 403 forbidden if a Member)
   S->>DB: updateDocument(id, input, archivedAt)
   S-->>W: document with canEdit
 ```

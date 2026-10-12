@@ -871,7 +871,7 @@ const seedDocuments = async (ownerId: string) => {
   );
   note(
     'TM docs',
-    "Knowledge: no New document button; PATCH on another member's document → 403 forbidden",
+    'Knowledge: no New document button; PATCH on any document, even your own → 403 forbidden',
   );
 };
 
