@@ -99,5 +99,14 @@ export const ActivitySentence = ({
       return <>unticked {quoted(row.detail.text)}</>;
     case "checklist.remove":
       return <>removed {quoted(row.detail.text)} from the checklist</>;
+    case "checklist.replace":
+      return (
+        <>
+          set the done-when list{" "}
+          <span className="text-muted-foreground">
+            ({row.detail.count} {row.detail.count === 1 ? "entry" : "entries"})
+          </span>
+        </>
+      );
   }
 };

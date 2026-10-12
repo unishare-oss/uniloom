@@ -148,7 +148,7 @@ describe('mcp (e2e)', () => {
   });
 
   describe('server', () => {
-    it('sends instructions and the six read tools', async () => {
+    it('sends instructions and the read and write tools', async () => {
       const w = await setup();
       const init = await rpc(w.token, 'initialize', {
         protocolVersion: '2025-06-18',
@@ -160,18 +160,23 @@ describe('mcp (e2e)', () => {
       };
       expect(result.instructions).toContain('3 to 6');
       expect(result.instructions).toContain('TG-12');
+      expect(result.instructions).toContain('people_only');
 
       const list = await rpc(w.token, 'tools/list');
       const names = (
         (await list.json()) as { result: { tools: { name: string }[] } }
       ).result.tools.map((t) => t.name);
       expect(names.sort()).toEqual([
+        'check_criterion',
+        'delete_item',
         'get_criteria',
         'get_item',
         'list_items',
         'list_labels',
         'list_projects',
         'list_states',
+        'save_item',
+        'set_criteria',
       ]);
     });
   });
@@ -181,9 +186,9 @@ describe('mcp (e2e)', () => {
       const w = await setup();
       const { isError, text } = await tool(w.token, 'list_projects');
       expect(isError).toBe(false);
-      expect(
-        JSON.parse(text).map((p: { keyPrefix: string }) => p.keyPrefix),
-      ).toContain(w.keyPrefix);
+      expect(JSON.parse(text).map((p: { key: string }) => p.key)).toContain(
+        w.keyPrefix,
+      );
     });
 
     it('lists slim items and filters by state and parent', async () => {

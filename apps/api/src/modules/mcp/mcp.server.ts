@@ -1,12 +1,19 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { INSTRUCTIONS } from './mcp.instructions.js';
-import { itemSchema, listItemsSchema, projectSchema } from './mcp.schema.js';
+import {
+  checkCriterionSchema,
+  itemSchema,
+  listItemsSchema,
+  projectSchema,
+  saveItemSchema,
+  setCriteriaSchema,
+} from './mcp.schema.js';
 import * as mcpService from './mcp.service.js';
 import type { Agent } from './mcp.types.js';
 import { reply, toToolError } from './mcp.utils.js';
 
 /**
- * A new server for one request (stateless): the read tools, each calling the service the
+ * A new server for one request (stateless): the read and write tools, each calling the service the
  * website uses as the person behind `agent`, so roles and rules are the same.
  */
 export const buildServer = (agent: Agent) => {
@@ -19,7 +26,7 @@ export const buildServer = (agent: Agent) => {
     'list_projects',
     {
       description:
-        'The projects you belong to, with key prefix, mode and rule switches.',
+        'The projects you belong to: key, name, mode, your role and the checklist limits (checklistMin, checklistMax; null means no limit).',
     },
     async () => {
       try {
@@ -34,7 +41,7 @@ export const buildServer = (agent: Agent) => {
     'list_items',
     {
       description:
-        "Slim rows of a project's items. Filter by state name, assignee id or parent item key; get_item has the detail.",
+        "Slim rows of a project's items. Filter by state name, assignee (me, none or a member email) or parent item key; get_item has the detail.",
       inputSchema: listItemsSchema,
     },
     async (input) => {
@@ -102,6 +109,72 @@ export const buildServer = (agent: Agent) => {
     async ({ key }) => {
       try {
         return reply(await mcpService.getCriteria(agent.userId, key));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'save_item',
+    {
+      description:
+        'Create an item (no key: needs project, kind and title) or update one (key). Set state to move it; Ready and Done are refused with people_only. assignee is me, none or a member email.',
+      inputSchema: saveItemSchema,
+    },
+    async (input) => {
+      try {
+        return reply(await mcpService.saveItem(agent, input));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'delete_item',
+    {
+      description:
+        'Delete an item (owners and managers only; one with children is refused). It can be restored from the trash on the website.',
+      inputSchema: itemSchema,
+    },
+    async ({ key }) => {
+      try {
+        return reply(await mcpService.deleteItem(agent, key));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'set_criteria',
+    {
+      description:
+        "Replace an item's whole done-when checklist with these entries, in order; every entry starts unticked. In a Guided project a slice holds 3 to 6 entries by default (list_projects shows the project's limits): if the work needs more, split it into more slices. Over the maximum answers checklist_max_exceeded and keeps the old list.",
+      inputSchema: setCriteriaSchema,
+    },
+    async ({ key, texts }) => {
+      try {
+        return reply(await mcpService.setCriteria(agent, key, texts));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'check_criterion',
+    {
+      description:
+        'Tick one done-when entry, by its number from get_criteria or its exact text, with optional evidence (a commit SHA, test name or link). Answers the updated checklist.',
+      inputSchema: checkCriterionSchema,
+    },
+    async ({ key, which, evidence }) => {
+      try {
+        return reply(
+          await mcpService.checkCriterion(agent, key, which, evidence),
+        );
       } catch (error) {
         return toToolError(error);
       }
