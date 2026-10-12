@@ -27,6 +27,7 @@ model User {
 
   reviewEvents ReviewEvent[]
   notifications Notification[]
+  activities Activity[]
 
   sessions      Session[]
   accounts      Account[]
@@ -123,6 +124,7 @@ model Project {
 
   reviewEvents ReviewEvent[]
   notifications Notification[]
+  activities Activity[]
 
   members Member[]
   states  State[]
@@ -220,6 +222,7 @@ model Item {
 
   reviewEvents ReviewEvent[]
   notifications Notification[]
+  activities Activity[]
 
   blockedBy ItemBlock[] @relation("BlockedItem")
   blocking  ItemBlock[] @relation("BlockerItem")
@@ -288,6 +291,28 @@ model ReviewEvent {
   @@index([processedAt, failedAt, nextAttemptAt, id])
   @@index([itemId, submittedAt, id])
   @@map("review_event")
+}
+
+/// One change to an item, made by a person or by their agent. Written in the same
+/// transaction as the change. `detail` is typed in items/item.schema.ts.
+model Activity {
+  id String @id @default(uuid(7)) @db.Uuid
+  userId String?
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// The OAuth client of the agent; null for a change made on the website.
+  clientId String?
+  /// The client's registered name, self-declared: shown, never used for access.
+  agentName String?
+  action String
+  projectId String @db.Uuid
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId String? @db.Uuid
+  item Item? @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  detail Json
+  createdAt DateTime @default(now())
+
+  @@index([itemId, createdAt])
+  @@map("activity")
 }
 
 /// Separate inbox/read state for each recipient of each actual submission.

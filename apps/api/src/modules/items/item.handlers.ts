@@ -19,6 +19,7 @@ import {
   restoreProjectItem,
   updateProjectItem,
 } from './item.service.js';
+import { listItemActivity } from './activity.service.js';
 import { addBlocker, removeBlocker } from './blocker.service.js';
 import {
   addChecklistEntry,
@@ -126,3 +127,6 @@ export const putChecklistOrder = async (c: Context) => {
     'Checklist reordered',
   );
 };
+
+export const getItemActivity = async (c: Context) =>
+  apiSuccess(c, await listItemActivity(idParam(c, 'id'), c.var.user.id));

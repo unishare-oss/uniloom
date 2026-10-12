@@ -19,6 +19,8 @@ import {
 import { recordReviewSubmission } from '@/modules/notifications/notification.service.js';
 import * as itemRules from './item.rules.js';
 import { toItem, toListRow } from './item.utils.js';
+import type { ActivityChange, ItemAgent, ItemRow } from './item.types.js';
+import { insertActivity } from './activity.repository.js';
 import * as itemRepo from './item.repository.js';
 
 /**
@@ -32,7 +34,14 @@ export const loadItem = async (id: string, userId: string) => {
   return { item, role: member.role };
 };
 
-/** Checks a new parent: same project, not the item itself, and allowed for its kind. */
+/** The item's key as people read it: TG-12. */
+const itemKey = (item: { project: { keyPrefix: string }; number: number }) =>
+  `${item.project.keyPrefix}-${item.number}`;
+
+/**
+ * Checks a new parent: same project, not the item itself, and allowed for its kind.
+ * Returns the parent, or null when there is none.
+ */
 const checkParent = async (
   projectId: string,
   mode: ProjectMode,
@@ -52,6 +61,7 @@ const checkParent = async (
     );
   const error = itemRules.kindError(mode, kind, parent?.kind ?? null);
   if (error) throw apiError(400, 'invalid_kind', error);
+  return parent;
 };
 
 /** The state, or 400 when it isn't one of the project's. */
@@ -110,10 +120,11 @@ export const createProjectItem = async (
     assigneeId?: string | null;
     stateId?: string;
   },
+  agent?: ItemAgent,
 ) => {
   const { role } = await requireRole(projectId, userId, CREATORS);
   const project = await requireMember(projectId, userId);
-  await checkParent(
+  const parent = await checkParent(
     projectId,
     project.mode,
     input.kind,
@@ -123,21 +134,77 @@ export const createProjectItem = async (
   if (input.assigneeId) await checkAssignee(projectId, input.assigneeId);
   const stateId =
     input.stateId ?? (await itemRepo.findFirstState(projectId)).id;
-  return toItem(
-    await itemRepo.createItem({
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await itemRepo.createItem(tx, {
       ...input,
       projectId,
       stateId,
       createdById: userId,
-    }),
-    role,
-    userId,
-  );
+    });
+    await insertActivity(tx, {
+      userId,
+      agent,
+      projectId,
+      itemId: created.id,
+      action: 'item.create',
+      detail: { parent: parent && itemKey(parent) },
+    });
+    return created;
+  });
+  return toItem(row, role, userId);
 };
 
 export const getItem = async (id: string, userId: string) => {
   const { item, role } = await loadItem(id, userId);
   return toItem(item, role, userId);
+};
+
+/**
+ * The fields an update really changes, as the history records them: names for people and
+ * parents, codes for enums, no values for the description (too long to keep).
+ */
+const listChanges = async (
+  item: ItemRow,
+  input: {
+    title?: string;
+    description?: string;
+    parentId?: string | null;
+    priority?: Priority;
+    assigneeId?: string | null;
+  },
+  newParent: ItemRow | null,
+) => {
+  const changes: ActivityChange[] = [];
+  if (input.title !== undefined && input.title !== item.title)
+    changes.push({ field: 'title', from: item.title, to: input.title });
+  if (input.description !== undefined && input.description !== item.description)
+    changes.push({ field: 'description' });
+  if (input.priority !== undefined && input.priority !== item.priority)
+    changes.push({
+      field: 'priority',
+      from: item.priority,
+      to: input.priority,
+    });
+  if (input.assigneeId !== undefined && input.assigneeId !== item.assigneeId) {
+    const ids = [item.assigneeId, input.assigneeId].filter((x) => x !== null);
+    const users = await itemRepo.findUserNames(ids);
+    const nameOf = (userId: string | null) =>
+      users.find((user) => user.id === userId)?.name ?? null;
+    changes.push({
+      field: 'assignee',
+      from: nameOf(item.assigneeId),
+      to: nameOf(input.assigneeId),
+    });
+  }
+  if (input.parentId !== undefined && input.parentId !== item.parentId) {
+    const oldParent = item.parentId && (await itemRepo.findItem(item.parentId));
+    changes.push({
+      field: 'parent',
+      from: oldParent ? itemKey(oldParent) : null,
+      to: newParent ? itemKey(newParent) : null,
+    });
+  }
+  return changes;
 };
 
 export const updateProjectItem = async (
@@ -151,16 +218,19 @@ export const updateProjectItem = async (
     assigneeId?: string | null;
     labelIds?: string[];
   },
+  agent?: ItemAgent,
 ) => {
   const { item, role } = await loadItem(id, userId);
-  if (input.parentId !== undefined)
-    await checkParent(
-      item.projectId,
-      item.project.mode,
-      item.kind,
-      input.parentId,
-      id,
-    );
+  const newParent =
+    input.parentId !== undefined
+      ? await checkParent(
+          item.projectId,
+          item.project.mode,
+          item.kind,
+          input.parentId,
+          id,
+        )
+      : null;
   if (input.assigneeId !== undefined && input.assigneeId !== item.assigneeId) {
     if (
       !itemRules.mayAssign(
@@ -183,13 +253,24 @@ export const updateProjectItem = async (
   const { labelIds: sentIds, ...fields } = input;
   const labelIds = sentIds && [...new Set(sentIds)];
   if (labelIds) await checkLabels(item.projectId, labelIds);
+  const changes = await listChanges(item, fields, newParent);
   const row = await prisma.$transaction(async (tx) => {
     if (labelIds) {
       // Locked, so two edits can't mix their label sets.
       await itemRepo.lockItem(tx, id);
       await itemRepo.setLabels(tx, id, labelIds);
     }
-    return itemRepo.updateItem(tx, id, fields);
+    const updated = await itemRepo.updateItem(tx, id, fields);
+    if (changes.length > 0)
+      await insertActivity(tx, {
+        userId,
+        agent,
+        projectId: item.projectId,
+        itemId: id,
+        action: 'item.update',
+        detail: { changes },
+      });
+    return updated;
   });
   return toItem(row, role, userId);
 };
@@ -233,7 +314,12 @@ const finishFeature = async (
  * Moves an item to another state: who may move it, the Done role check, then the
  * checklist gate. A slice that finishes can finish its feature too.
  */
-export const moveItem = async (id: string, userId: string, stateId: string) => {
+export const moveItem = async (
+  id: string,
+  userId: string,
+  stateId: string,
+  agent?: ItemAgent,
+) => {
   const { item: initial } = await loadItem(id, userId);
   const target = await checkState(initial.projectId, stateId);
   const result = await prisma.$transaction(async (tx) => {
@@ -264,6 +350,14 @@ export const moveItem = async (id: string, userId: string, stateId: string) => {
     );
     if (error) throw apiError(409, 'criteria_incomplete', error);
     const updated = await itemRepo.updateItem(tx, id, { stateId });
+    await insertActivity(tx, {
+      userId,
+      agent,
+      projectId: item.projectId,
+      itemId: id,
+      action: 'item.move',
+      detail: { from: item.state.name, to: target.name },
+    });
     if (target.key === 'in_review')
       await recordReviewSubmission(tx, {
         projectId: item.projectId,
@@ -281,12 +375,26 @@ export const moveItem = async (id: string, userId: string, stateId: string) => {
 };
 
 /** Deletes an item. One with children can't be deleted: move or delete them first. */
-export const removeItem = async (id: string, userId: string) => {
+export const removeItem = async (
+  id: string,
+  userId: string,
+  agent?: ItemAgent,
+) => {
   const { item } = await loadItem(id, userId);
   await requireRole(item.projectId, userId, CREATORS);
   if ((await itemRepo.countChildren(id)) > 0)
     throw apiError(409, 'has_children', 'Delete or move its child items first');
-  await itemRepo.deleteItem(id);
+  await prisma.$transaction(async (tx) => {
+    await itemRepo.deleteItem(tx, id);
+    await insertActivity(tx, {
+      userId,
+      agent,
+      projectId: item.projectId,
+      itemId: id,
+      action: 'item.delete',
+      detail: {},
+    });
+  });
 };
 
 /** The project's trash, so a person can find what to restore. */
@@ -305,11 +413,27 @@ export const listProjectDeletedItems = async (
  * Brings a deleted item back with its key and fields (not its old blocked-by links). A
  * deleted parent must be restored first, so nothing points at a hidden item.
  */
-export const restoreProjectItem = async (id: string, userId: string) => {
+export const restoreProjectItem = async (
+  id: string,
+  userId: string,
+  agent?: ItemAgent,
+) => {
   const item = await itemRepo.findDeletedItem(id);
   if (!item) throw apiError(404, 'not_found', 'Deleted item not found');
   const { role } = await requireRole(item.projectId, userId, CREATORS);
   if (item.parentId && !(await itemRepo.findItem(item.parentId)))
     throw apiError(409, 'parent_deleted', 'Restore its parent first');
-  return toItem(await itemRepo.restoreItem(id), role, userId);
+  const row = await prisma.$transaction(async (tx) => {
+    const restored = await itemRepo.restoreItem(tx, id);
+    await insertActivity(tx, {
+      userId,
+      agent,
+      projectId: item.projectId,
+      itemId: id,
+      action: 'item.restore',
+      detail: {},
+    });
+    return restored;
+  });
+  return toItem(row, role, userId);
 };

@@ -121,7 +121,7 @@ After signing in once:
 bun run db:seed
 ```
 
-This adds test projects with a case for every rule built so far and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only the seed projects and leave other projects alone. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in.
+This adds test projects with a case for every rule built so far and prints what to try. It goes through the API's services, so the data follows the same rules. Reruns replace only the seed projects and leave other projects alone. Set `SEED_OWNER_EMAIL` to choose the account; the default is the first person who signed in. List several, comma-separated (`SEED_OWNER_EMAIL=test@email.com,psst@gmail.com`), and the others get the first account's role in every seed project.
 
 | Key | Project                                                |
 | --- | ------------------------------------------------------ |

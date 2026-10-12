@@ -46,7 +46,21 @@ describe('agent token', () => {
     expect(await verify(await sign())).toEqual({
       sub: 'u_1',
       clientId: 'claude',
+      clientName: null,
     });
+  });
+
+  it('reads the client name when the token has one', async () => {
+    expect(await verify(await sign({ client_name: 'Claude Code' }))).toEqual({
+      sub: 'u_1',
+      clientId: 'claude',
+      clientName: 'Claude Code',
+    });
+  });
+
+  it('ignores a client name that is not a string', async () => {
+    const verified = await verify(await sign({ client_name: 42 }));
+    expect(verified?.clientName).toBeNull();
   });
 
   it('refuses another audience', async () => {

@@ -6,6 +6,7 @@ import {
   deleteChecklistEntry,
   deleteItemById,
   getDeletedItems,
+  getItemActivity,
   getItemById,
   getProjectItems,
   patchChecklistEntry,
@@ -19,6 +20,7 @@ import {
 } from './item.handlers.js';
 import {
   addBlockerSchema,
+  activitySchema,
   addChecklistEntrySchema,
   checklistEntrySchema,
   createItemSchema,
@@ -198,4 +200,15 @@ itemRoutes.delete(
     data: z.null(),
   }),
   deleteChecklistEntry,
+);
+itemRoutes.get(
+  '/items/:id/activity',
+  describe({
+    tag: 'items',
+    operationId: 'listItemActivity',
+    summary: "The item's latest 50 changes, newest first",
+    pathParams: ['id'],
+    data: z.array(activitySchema),
+  }),
+  getItemActivity,
 );
