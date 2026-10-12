@@ -44,6 +44,8 @@ export const Trash = ({ projectId }: { projectId: string }) => {
   });
   const category = (stateId: string) =>
     project?.states.find((s) => s.id === stateId)?.category;
+  const stateKey = (stateId: string) =>
+    project?.states.find((s) => s.id === stateId)?.key;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8">
@@ -95,6 +97,7 @@ export const Trash = ({ projectId }: { projectId: string }) => {
                     <StateLozenge
                       name={item.state.name}
                       category={category(item.state.id)}
+                      stateKey={stateKey(item.state.id)}
                     />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">

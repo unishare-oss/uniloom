@@ -1,54 +1,64 @@
 import { Bot } from "lucide-react";
 import { ActivitySentence } from "@/components/items/activity-sentence";
+import type { StateCategory } from "@/components/items/item-meta";
 import { Avatar } from "@/components/user/avatar";
 import type { ListItemActivity200Item } from "@/lib/api/generated/uniloomAPI.schemas";
 import { formatDate, timeAgo } from "@/lib/time";
 
-/** One line of the history: avatar (a robot badge for an agent), sentence, time. */
-export const ActivityRow = ({ row }: { row: ListItemActivity200Item }) => {
+/** One entry of the timeline: avatar (a robot badge for an agent), sentence, time. */
+export const ActivityRow = ({
+  row,
+  itemKey,
+  states,
+}: {
+  row: ListItemActivity200Item;
+  itemKey: string;
+  states: { name: string; key: string | null; category: StateCategory }[];
+}) => {
   const person = row.by.name ?? "Someone";
   return (
-    <div className="flex flex-col gap-1 border-b px-3.5 py-2.5 last:border-b-0">
-      <div className="flex items-center gap-2.5">
-        <span className="relative shrink-0">
-          <Avatar name={person} image={row.by.image} size={20} />
-          {row.agent && (
-            <span
-              title="Made by an agent"
-              className="absolute -right-1 -bottom-1 inline-flex size-3.5 items-center justify-center rounded-full border bg-card text-muted-foreground"
-            >
-              <Bot className="size-2.5" />
+    <div className="relative grid grid-cols-[28px_1fr] items-start gap-x-3 py-2 sm:grid-cols-[28px_1fr_auto]">
+      <span className="relative">
+        <Avatar
+          name={person}
+          image={row.by.image}
+          size={28}
+          className="ring-4 ring-background"
+        />
+        {row.agent && (
+          <span
+            title="Made by an agent"
+            className="absolute -right-1.5 -bottom-1.5 inline-flex size-4 items-center justify-center rounded-full border bg-card text-primary"
+          >
+            <Bot className="size-2.5" />
+          </span>
+        )}
+      </span>
+      <div className="min-w-0 pt-1 text-sm leading-6">
+        <span className="font-semibold">{person}</span>
+        {row.agent &&
+          (row.agent.name ? (
+            <span className="mx-1 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 align-[1px] text-xs leading-5 font-medium text-primary">
+              <Bot className="size-3" />
+              {row.agent.name}
             </span>
-          )}
-        </span>
-        <p className="min-w-0 flex-1 text-sm">
-          <span className="font-semibold">{person}</span>
-          {row.agent &&
-            (row.agent.name ? (
-              <>
-                {" · "}
-                <span className="rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium">
-                  {row.agent.name}
-                </span>
-              </>
-            ) : (
-              "'s agent"
-            ))}{" "}
-          <ActivitySentence row={row} />
-        </p>
-        <time
-          dateTime={row.at}
-          title={formatDate(row.at)}
-          className="shrink-0 text-xs text-muted-foreground"
-        >
-          {timeAgo(row.at)}
-        </time>
+          ) : (
+            "'s agent"
+          ))}{" "}
+        <ActivitySentence row={row} itemKey={itemKey} states={states} />
+        {row.action === "checklist.tick" && row.detail.evidence && (
+          <p className="mt-1.5 border-l-2 pl-2.5 text-sm break-words text-muted-foreground">
+            Evidence: {row.detail.evidence}
+          </p>
+        )}
       </div>
-      {row.action === "checklist.tick" && row.detail.evidence && (
-        <p className="pl-[30px] text-xs break-words text-muted-foreground">
-          Evidence: {row.detail.evidence}
-        </p>
-      )}
+      <time
+        dateTime={row.at}
+        title={formatDate(row.at)}
+        className="col-start-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:col-start-3 sm:pt-1.5 sm:text-sm"
+      >
+        {timeAgo(row.at)}
+      </time>
     </div>
   );
 };
