@@ -1,3 +1,13 @@
+# [1.6.0](https://github.com/unishare-oss/uniloom/compare/v1.5.1...v1.6.0) (2026-10-12)
+
+
+### Features
+
+* **api:** add MCP server with uniAuth sign-in and read tools ([4122cce](https://github.com/unishare-oss/uniloom/commit/4122cce02548ae022eb2abe0494b6cd5e9e4bf02))
+* item activity on the item page ([b03ece1](https://github.com/unishare-oss/uniloom/commit/b03ece1dcb3ca80850774501107c871a3f5feccb))
+* **web:** activity timeline and board colours for states ([958b068](https://github.com/unishare-oss/uniloom/commit/958b06838290858e68ae08ca1b786b9faf337618))
+* **web:** colour dots in the label colour picker ([10dc3ad](https://github.com/unishare-oss/uniloom/commit/10dc3ad1e5da35ada51ec4ec538884d085a84084))
+
 ## [1.5.1](https://github.com/unishare-oss/uniloom/compare/v1.5.0...v1.5.1) (2026-10-12)
 
 
