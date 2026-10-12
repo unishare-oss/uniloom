@@ -223,6 +223,8 @@ export const ItemDetail = ({
   const states = project.states;
   const category = (stateId: string) =>
     states.find((s) => s.id === stateId)?.category;
+  const stateKey = (stateId: string) =>
+    states.find((s) => s.id === stateId)?.key;
   const parents = [
     { value: NO_PARENT, label: "No parent" },
     ...items
@@ -289,7 +291,7 @@ export const ItemDetail = ({
             onError={onError}
           />
 
-          <ItemActivity itemId={item.id} />
+          <ItemActivity itemId={item.id} itemKey={item.key} states={states} />
 
           {children.length > 0 && (
             <details open className="group">
@@ -319,6 +321,7 @@ export const ItemDetail = ({
                     <StateLozenge
                       name={child.state.name}
                       category={category(child.state.id)}
+                      stateKey={stateKey(child.state.id)}
                     />
                   </Link>
                 ))}
@@ -358,6 +361,7 @@ export const ItemDetail = ({
                       <StateLozenge
                         name={blocker.state.name}
                         category={category(blocker.state.id)}
+                        stateKey={stateKey(blocker.state.id)}
                       />
                     )}
                     <Button
@@ -435,6 +439,7 @@ export const ItemDetail = ({
                   <StateLozenge
                     name={item.state.name}
                     category={item.state.category}
+                    stateKey={item.state.key}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -447,7 +452,11 @@ export const ItemDetail = ({
                     )
                     .map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.name}
+                        <StateLozenge
+                          name={s.name}
+                          category={s.category}
+                          stateKey={s.key}
+                        />
                       </SelectItem>
                     ))}
                 </SelectContent>

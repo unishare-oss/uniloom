@@ -193,6 +193,7 @@ export const NotificationGroup = ({
             <StateLozenge
               name={item.state.name}
               category={item.state.category}
+              stateKey={item.state.key}
             />
           </span>
         )}
