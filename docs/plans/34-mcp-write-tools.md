@@ -92,7 +92,7 @@ Notes:
 
 ## Changes
 
-Commits: none yet, not committed.
+Commits: `23aad71` feat(api): add MCP write tools
 
 After the review (parent, user-approved): `save_item` runs create or update and then the
 move as separate transactions, so a refused move left the first part saved with only the
