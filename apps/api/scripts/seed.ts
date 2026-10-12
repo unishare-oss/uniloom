@@ -1,8 +1,10 @@
 // Fills the dev database with test projects that show every rule built so far, so each
 // case can be tried in the browser. Run `bun run db:seed` after signing in once.
 //
-// SEED_OWNER_EMAIL picks your account (default: the first user who signed in). Reruns
-// replace the seed projects (keys TG, TS, TR, TM, TC, TL, TX) and never touch any other project.
+// SEED_OWNER_EMAIL picks your account (default: the first user who signed in). It may list
+// several, comma-separated: the first is "you" in the items, and the others get the same
+// role in every seed project. Reruns replace the seed projects (keys TG, TS, TR, TM, TC,
+// TL, TX, TI) and never touch any other project.
 //
 // A plan that adds a rule adds its cases here: a function per project, item titles that
 // say what to try and what should happen.
@@ -45,19 +47,52 @@ const SEED_USERS = [
   { id: 'seed-ko', name: 'Ko (seed)', email: 'seed-ko@example.com' },
 ];
 
-const findOwner = async () => {
-  const email = process.env.SEED_OWNER_EMAIL;
-  const user = email
-    ? await prisma.user.findUnique({ where: { email } })
-    : await prisma.user.findFirst({
-        where: { id: { notIn: SEED_USERS.map((u) => u.id) } },
-        orderBy: { createdAt: 'asc' },
-      });
-  if (!user)
-    throw new Error(
-      'No user to own the seed projects: sign in to Uniloom once first (or check SEED_OWNER_EMAIL)',
-    );
-  return user;
+/** The accounts in SEED_OWNER_EMAIL, in order, or the first user who signed in. */
+const findOwners = async () => {
+  const emails = (process.env.SEED_OWNER_EMAIL ?? '')
+    .split(',')
+    .map((email) => email.trim())
+    .filter(Boolean);
+  if (emails.length === 0) {
+    const first = await prisma.user.findFirst({
+      where: { id: { notIn: SEED_USERS.map((u) => u.id) } },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!first)
+      throw new Error(
+        'No user to own the seed projects: sign in to Uniloom once first',
+      );
+    return [first];
+  }
+  const users = [];
+  for (const email of emails) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user)
+      throw new Error(
+        `No user with email ${email}: they must sign in to Uniloom once first`,
+      );
+    users.push(user);
+  }
+  return users;
+};
+
+/** The other owners get your role in every seed project you are in. */
+const addOtherOwners = async (ownerId: string, otherIds: string[]) => {
+  const yours = await prisma.member.findMany({
+    where: {
+      userId: ownerId,
+      project: { keyPrefix: { in: Object.keys(SEED_PROJECTS) } },
+    },
+  });
+  await prisma.member.createMany({
+    data: otherIds.flatMap((userId) =>
+      yours.map((member) => ({
+        projectId: member.projectId,
+        userId,
+        role: member.role,
+      })),
+    ),
+  });
 };
 
 /** Deletes earlier seed projects; refuses if a seed key belongs to a real project. */
@@ -196,6 +231,51 @@ const seedGuided = async (ownerId: string) => {
   note(
     board.key,
     'drag its slices between columns; Mermaid renders in the description',
+  );
+
+  // Activity: changes by you, by Mya and by Mya's agent, in order.
+  const agent = { clientId: 'seed-client', clientName: 'Claude Code' };
+  const history = await item({
+    kind: 'FEATURE',
+    title:
+      'Activity: open me to see who changed what, and which changes an agent made',
+  });
+  const states = await prisma.state.findMany({
+    where: { projectId: project.id },
+  });
+  const progress = states.find((state) => state.name === 'In Progress')!;
+  const review = states.find((state) => state.name === 'In Review')!;
+  const entry = await addChecklistEntry(history.id, ownerId, {
+    text: 'It works',
+  });
+  await updateProjectItem(history.id, ownerId, {
+    priority: 'HIGH',
+    description: 'A first description.',
+    assigneeId: mya.id,
+  });
+  await moveItem(history.id, ownerId, progress.id);
+  await updateChecklistEntry(history.id, entry.id, mya.id, {
+    done: true,
+    evidence: 'commit 1a2b3c4',
+  });
+  await updateChecklistEntry(
+    history.id,
+    entry.id,
+    mya.id,
+    { done: false },
+    agent,
+  );
+  await updateChecklistEntry(
+    history.id,
+    entry.id,
+    mya.id,
+    { done: true, evidence: 'bun run test: 12 passed' },
+    agent,
+  );
+  await moveItem(history.id, ownerId, review.id);
+  note(
+    history.key,
+    "Activity: rows by you, Mya and Mya's agent (Claude Code chip, robot badge); the tick shows its evidence",
   );
 
   // Parents.
@@ -713,7 +793,7 @@ const seedReviewInbox = async (ownerId: string) => {
   );
 };
 
-const owner = await findOwner();
+const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
     where: { id: user.id },
@@ -729,5 +809,11 @@ await seedNoSelfClaim(owner.id);
 await seedLoweredLimits(owner.id);
 await seedOutsider();
 await seedReviewInbox(owner.id);
-console.log(`Seeded for ${owner.name}. Try:\n  ${checks.join('\n  ')}`);
+await addOtherOwners(
+  owner.id,
+  others.map((user) => user.id),
+);
+console.log(
+  `Seeded for ${[owner, ...others].map((user) => user.name).join(' and ')}. Try:\n  ${checks.join('\n  ')}`,
+);
 await prisma.$disconnect();

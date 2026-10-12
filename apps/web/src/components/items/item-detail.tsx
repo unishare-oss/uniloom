@@ -41,6 +41,7 @@ import { successMessage } from "@/lib/api/fetcher";
 import {
   getGetItemQueryKey,
   getListDeletedItemsQueryKey,
+  getListItemActivityQueryKey,
   getListItemsQueryKey,
   useAddBlocker,
   useDeleteItem,
@@ -63,6 +64,7 @@ import { LabelPicker } from "@/components/items/label-picker";
 import { AssigneeField } from "@/components/items/assignee-field";
 import { Description } from "@/components/items/description";
 import { Checklist } from "@/components/items/checklist";
+import { ItemActivity } from "@/components/items/item-activity";
 
 const NO_PARENT = "none";
 
@@ -96,6 +98,9 @@ export const ItemDetail = ({
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(itemId) }),
+      queryClient.invalidateQueries({
+        queryKey: getListItemActivityQueryKey(itemId),
+      }),
       queryClient.invalidateQueries({
         queryKey: getListItemsQueryKey(projectId),
       }),
@@ -283,6 +288,8 @@ export const ItemDetail = ({
             refresh={refresh}
             onError={onError}
           />
+
+          <ItemActivity itemId={item.id} />
 
           {children.length > 0 && (
             <details open className="group">

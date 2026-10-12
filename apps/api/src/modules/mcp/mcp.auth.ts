@@ -8,7 +8,8 @@ import type { Agent } from './mcp.types.js';
 /**
  * Returns a function that checks an agent's access token: signed by uniAuth, issued by
  * `issuer`, for `audience` (Uniloom's /mcp) and not expired. It resolves to the uniAuth
- * user id and the OAuth client id, or null.
+ * user id, the OAuth client id and its registered name (both null when the token has
+ * none), or null.
  */
 export const createAgentVerifier = (
   issuer: string,
@@ -23,6 +24,8 @@ export const createAgentVerifier = (
       return {
         sub: payload.sub,
         clientId: typeof client === 'string' ? client : null,
+        clientName:
+          typeof payload.client_name === 'string' ? payload.client_name : null,
       };
     } catch {
       return null;
@@ -72,7 +75,11 @@ export const requireAgent: MiddlewareHandler = async (c, next) => {
       'consent_required',
       "Accept Uniloom's Terms and Privacy Policy first",
     );
-  const agent: Agent = { userId: user.id, clientId: verified.clientId };
+  const agent: Agent = {
+    userId: user.id,
+    clientId: verified.clientId,
+    clientName: verified.clientName,
+  };
   c.set('agent', agent);
   await next();
 };

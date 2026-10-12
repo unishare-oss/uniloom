@@ -2,6 +2,8 @@ import { prisma } from '@/db/prisma.js';
 import { apiError } from '@/http.js';
 import type { Prisma } from '@/generated/prisma/client.js';
 import { toEntry } from './item.utils.js';
+import type { ItemAgent } from './item.types.js';
+import { insertActivity } from './activity.repository.js';
 import * as checklistRepo from './checklist.repository.js';
 import * as itemRepo from './item.repository.js';
 import { loadItem } from './item.service.js';
@@ -23,6 +25,7 @@ export const addChecklistEntry = async (
   itemId: string,
   userId: string,
   input: { text: string },
+  agent?: ItemAgent,
 ) => {
   const { item } = await loadItem(itemId, userId);
   // Locked, so two adds at once can't take the same position or both pass the limit.
@@ -36,7 +39,21 @@ export const addChecklistEntry = async (
         'checklist_max_exceeded',
         `A checklist holds at most ${max} entries: split this slice`,
       );
-    return checklistRepo.insertEntry(tx, itemId, input.text, entries.length);
+    const created = await checklistRepo.insertEntry(
+      tx,
+      itemId,
+      input.text,
+      entries.length,
+    );
+    await insertActivity(tx, {
+      userId,
+      agent,
+      projectId: item.projectId,
+      itemId,
+      action: 'checklist.add',
+      detail: { text: created.text },
+    });
+    return created;
   });
   return toEntry(entry);
 };
@@ -47,19 +64,40 @@ export const updateChecklistEntry = async (
   entryId: string,
   userId: string,
   input: { text?: string; done?: boolean; evidence?: string | null },
+  agent?: ItemAgent,
 ) => {
-  await loadItem(itemId, userId);
+  const { item } = await loadItem(itemId, userId);
   // Locked, so a delete can't remove the entry between the check and the update.
   const entry = await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, itemId);
-    if (!(await checklistRepo.findEntry(tx, itemId, entryId)))
-      throw apiError(404, 'not_found', 'Checklist entry not found');
-    return checklistRepo.updateEntry(tx, entryId, {
+    const before = await checklistRepo.findEntry(tx, itemId, entryId);
+    if (!before) throw apiError(404, 'not_found', 'Checklist entry not found');
+    const updated = await checklistRepo.updateEntry(tx, entryId, {
       ...input,
       // Empty evidence clears it.
       evidence:
         input.evidence === undefined ? undefined : input.evidence || null,
     });
+    const where = { userId, agent, projectId: item.projectId, itemId };
+    if (updated.text !== before.text)
+      await insertActivity(tx, {
+        ...where,
+        action: 'checklist.edit',
+        detail: { from: before.text, to: updated.text },
+      });
+    if (updated.done && !before.done)
+      await insertActivity(tx, {
+        ...where,
+        action: 'checklist.tick',
+        detail: { text: updated.text, evidence: updated.evidence },
+      });
+    if (!updated.done && before.done)
+      await insertActivity(tx, {
+        ...where,
+        action: 'checklist.untick',
+        detail: { text: updated.text },
+      });
+    return updated;
   });
   return toEntry(entry);
 };
@@ -69,13 +107,22 @@ export const removeChecklistEntry = async (
   itemId: string,
   entryId: string,
   userId: string,
+  agent?: ItemAgent,
 ) => {
-  await loadItem(itemId, userId);
+  const { item } = await loadItem(itemId, userId);
   await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, itemId);
-    if (!(await checklistRepo.findEntry(tx, itemId, entryId)))
-      throw apiError(404, 'not_found', 'Checklist entry not found');
+    const entry = await checklistRepo.findEntry(tx, itemId, entryId);
+    if (!entry) throw apiError(404, 'not_found', 'Checklist entry not found');
     await checklistRepo.deleteEntry(tx, entryId);
+    await insertActivity(tx, {
+      userId,
+      agent,
+      projectId: item.projectId,
+      itemId,
+      action: 'checklist.remove',
+      detail: { text: entry.text },
+    });
     const rest = await itemRepo.findChecklist(tx, itemId);
     await writePositions(
       tx,
