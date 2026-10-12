@@ -1,6 +1,6 @@
 # 27: Labels
 
-Status: In Review
+Status: Done
 
 ## Scope
 

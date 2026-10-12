@@ -1,6 +1,6 @@
 # 11: Done-when checklist
 
-Status: In Review
+Status: Done
 
 ## Scope
 

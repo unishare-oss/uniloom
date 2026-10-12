@@ -1,6 +1,6 @@
 # 10: Assign and claim tickets
 
-Status: In Review
+Status: Done
 
 ## Scope
 

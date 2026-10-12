@@ -1,6 +1,6 @@
 # 14: Review inbox and notification history
 
-Status: In Review
+Status: Done
 
 ## Scope
 
