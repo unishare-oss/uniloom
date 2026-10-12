@@ -102,7 +102,7 @@ Notes:
 
 ## Changes
 
-Commits: filled in below after the commit.
+Commits: `04fe8e8` feat: knowledge documents library; `a2ca6ab` docs: plan 15, ADR-0013, TD-012
 
 What changed:
 
