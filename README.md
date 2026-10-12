@@ -22,15 +22,15 @@ Open <http://127.0.0.1:3013>. The API health endpoint is <http://localhost:3011/
 
 People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md) (OpenID Connect). The API uses Better Auth as the OIDC client and keeps Uniloom's own session; every `/api` route needs a session and acceptance of Uniloom's terms unless it is public (health, `/api/auth/*`, the uniAuth receivers) or `GET /api/me` / `POST /api/users/me/consent`. The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. The e2e tests do not need uniAuth: they start a mock provider.
 
-For development, uniAuth is available at <https://auth-dev.psstee.dev> on the Oracle VM, with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`. It must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification. Set in `apps/api/.env`:
+For development, uniAuth is available at <https://auth-dev.psstee.me> on the Oracle VM, with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`. It must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification. Set in `apps/api/.env`:
 
 ```sh
-UNIAUTH_ISSUER="https://auth-dev.psstee.dev/api/auth"
+UNIAUTH_ISSUER="https://auth-dev.psstee.me/api/auth"
 UNIAUTH_CLIENT_ID="…"       # from the local client
 UNIAUTH_CLIENT_SECRET="…"   # from the local client
 ```
 
-and `NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.dev"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013>, not `localhost:3013`: it must match `BETTER_AUTH_URL` and the client's registered redirect. Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
+and `NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.me"` in `apps/web/.env`. Open the app at <http://127.0.0.1:3013>, not `localhost:3013`: it must match `BETTER_AUTH_URL` and the client's registered redirect. Local clients get no back-channel logout or deletion notices; the receivers are covered by the e2e tests.
 
 ### Run everything in Docker
 

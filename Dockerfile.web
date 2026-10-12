@@ -8,7 +8,7 @@ COPY . .
 ARG API_URL=http://uniloom-api.uniloom.svc.cluster.local:3011
 ENV API_URL=$API_URL
 # uniAuth's origin, baked into the browser bundle at build time.
-ARG NEXT_PUBLIC_UNIAUTH_URL=https://auth.psstee.dev
+ARG NEXT_PUBLIC_UNIAUTH_URL=https://auth.psstee.me
 ENV NEXT_PUBLIC_UNIAUTH_URL=$NEXT_PUBLIC_UNIAUTH_URL
 RUN bun run --cwd apps/web build
 

@@ -5,6 +5,11 @@ on:
     branches: [main, dev]
   workflow_dispatch:
     inputs:
+      target_env:
+        description: Build environment (auto follows main/dev)
+        type: choice
+        options: [auto, prod, dev]
+        default: auto
       force_api:
         description: Force build API
         type: boolean
@@ -44,11 +49,12 @@ jobs:
         id: target
         env:
           REF_NAME: ${{ github.ref_name }}
+          TARGET_ENV: ${{ inputs.target_env }}
           PROD_VALUES_FILE: ${{ vars.GITOPS_VALUES_FILE }}
           DEV_VALUES_FILE: ${{ vars.GITOPS_VALUES_FILE_DEV }}
         run: |
           set -euo pipefail
-          if [ "$REF_NAME" = "main" ]; then
+          if [ "$TARGET_ENV" = "prod" ] || { [ "$TARGET_ENV" != "dev" ] && [ "$REF_NAME" = "main" ]; }; then
             ENV=prod
             VALUES_FILE="$PROD_VALUES_FILE"
             TAG_SUFFIX=""
@@ -157,7 +163,7 @@ jobs:
             ghcr.io/${{ env.OWNER }}/uniloom-web:sha-${{ github.sha }}${{ needs.changes.outputs.tag_suffix }}
           build-args: |
             API_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_API_URL || vars.API_URL || 'http://uniloom-api.uniloom.svc.cluster.local:3011' }}
-            NEXT_PUBLIC_UNIAUTH_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_UNIAUTH_URL || vars.UNIAUTH_URL || 'https://auth.psstee.dev' }}
+            NEXT_PUBLIC_UNIAUTH_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_UNIAUTH_URL || vars.UNIAUTH_URL || 'https://auth.psstee.me' }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
@@ -167,6 +173,7 @@ jobs:
     # Skipped until the values file for this environment is set as a repository
     # variable (GITOPS_VALUES_FILE for main, GITOPS_VALUES_FILE_DEV for dev).
     if: >-
+      (github.ref_name == 'main' || github.ref_name == 'dev') &&
       always() &&
       needs.changes.outputs.values_file != '' &&
       (needs.build-api.result == 'success' || needs.build-web.result == 'success')
