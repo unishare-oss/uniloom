@@ -37,3 +37,8 @@ export const setEntryPosition = (
 ) => {
   return tx.checklistEntry.update({ where: { id }, data: { position } });
 };
+
+/** Removes every entry of the item. */
+export const deleteEntries = (tx: Prisma.TransactionClient, itemId: string) => {
+  return tx.checklistEntry.deleteMany({ where: { itemId } });
+};

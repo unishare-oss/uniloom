@@ -156,3 +156,36 @@ export const reorderChecklist = async (
   });
   return entries.map(toEntry);
 };
+
+/** Replaces the whole checklist with `texts`, in order. Entries start unticked. */
+export const replaceChecklist = async (
+  itemId: string,
+  userId: string,
+  texts: string[],
+  agent?: ItemAgent,
+) => {
+  const { item } = await loadItem(itemId, userId);
+  const entries = await prisma.$transaction(async (tx) => {
+    await itemRepo.lockItem(tx, itemId);
+    const max = item.project.checklistMax;
+    if (max !== null && texts.length > max)
+      throw apiError(
+        409,
+        'checklist_max_exceeded',
+        `A checklist holds at most ${max} entries: split this slice`,
+      );
+    await checklistRepo.deleteEntries(tx, itemId);
+    for (const [i, text] of texts.entries())
+      await checklistRepo.insertEntry(tx, itemId, text, i);
+    await insertActivity(tx, {
+      userId,
+      agent,
+      projectId: item.projectId,
+      itemId,
+      action: 'checklist.replace',
+      detail: { count: texts.length },
+    });
+    return itemRepo.findChecklist(tx, itemId);
+  });
+  return entries.map(toEntry);
+};
