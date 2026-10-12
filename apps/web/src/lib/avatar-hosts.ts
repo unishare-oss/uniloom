@@ -5,7 +5,7 @@
 export const AVATAR_HOSTS = [
   {
     protocol: "https",
-    hostname: "auth.psstee.dev",
+    hostname: "auth.psstee.me",
     port: "",
     pathname: "/api/avatars/**",
   },

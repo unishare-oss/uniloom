@@ -68,16 +68,16 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md). The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. For development, uniAuth runs at <https://auth-dev.psstee.dev> with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`:
+People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md). The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. For development, uniAuth runs at <https://auth-dev.psstee.me> with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`:
 
 ```env
 # apps/api/.env
-UNIAUTH_ISSUER="https://auth-dev.psstee.dev/api/auth"
+UNIAUTH_ISSUER="https://auth-dev.psstee.me/api/auth"
 UNIAUTH_CLIENT_ID="…"       # from the local client
 UNIAUTH_CLIENT_SECRET="…"   # from the local client
 
 # apps/web/.env
-NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.dev"
+NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.me"
 ```
 
 The issuer must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification.

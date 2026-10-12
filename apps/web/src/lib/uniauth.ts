@@ -1,6 +1,6 @@
 import { authClient } from "./auth-client";
 
-/** uniAuth's origin, e.g. https://auth.psstee.dev (baked in at build time). */
+/** uniAuth's origin, e.g. https://auth.psstee.me (baked in at build time). */
 export const uniauthURL =
   process.env.NEXT_PUBLIC_UNIAUTH_URL ?? "http://localhost:3002";
 
