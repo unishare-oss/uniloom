@@ -16,11 +16,12 @@ edits, moves and deletes items and keeps their done-when checklists.
   plan 33).
 - **`list_projects` slims down** (user decision) to key, name, mode and the caller's role.
 - **Builds on plan 35:** checklist functions live in `items/checklist.service.ts` by then.
+- **Builds on plan 36** (user decision: activity first): the services already take an
+  optional `agent` and record activity; this plan passes it from every write tool.
 
 Left out:
 
-- **Activity log**: moved to plan 36 (user decision), together with an Activity section on
-  the item page, so the records arrive when people can see them.
+- **The activity table and page**: plan 36, built before this plan.
 - Design, ADR, comment and record tools: slices 7 and 10.
 - Blocked-by links, labels on items and restore through MCP: wait until an agent needs them.
 
@@ -29,11 +30,14 @@ Left out:
 - [ ] `save_item` without `key` creates an item (`project`, `kind`, `title`,
       `description?`, `parent?` key, `priority?`, `assignee?`) through `createProjectItem`,
       and with `key` updates it through `updateProjectItem`; text fields follow the limits
-      in `items/item.schema.ts`, and rule errors come back with their code.
+      in `items/item.schema.ts`, and rule errors come back with their code; `delete_item` deletes
+      through `removeItem`.
 - [ ] `save_item` with `state` (a state name) moves the item through `moveItem`; a target
       with key `ready` or category `DONE` is refused for every agent with `people_only`,
       before the service runs.
-- [ ] `delete_item` deletes through `removeItem`.
+- [ ] Every write tool passes `{ clientId, clientName }` from `Agent` to the services, so
+      its activity rows (plan 36) name the agent; `set_criteria` records one
+      `checklist.replace` row.
 - [ ] `set_criteria` replaces an item's checklist in one transaction (the project's maximum
       still applies, `checklist_max_exceeded`), and `check_criterion` ticks one entry by
       its number from `get_criteria` or its exact text, with optional evidence.
