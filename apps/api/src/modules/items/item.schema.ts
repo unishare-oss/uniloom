@@ -103,3 +103,75 @@ export const itemRowSchema = z.object({
 export const deletedItemRowSchema = itemRowSchema.extend({
   deletedAt: z.iso.datetime(),
 });
+
+/** Who changed it and when: shared by every activity row. */
+const activityRow = {
+  id: z.uuid(),
+  /** Null when the person's account is gone. */
+  by: z.object({ name: z.string().nullable(), image: z.string().nullable() }),
+  /** Set when the person's agent made the change; `name` is the client's own claim. */
+  agent: z.object({ name: z.string().nullable() }).nullable(),
+  at: z.iso.datetime(),
+};
+
+const activityChange = z.object({
+  field: z.enum(['title', 'description', 'priority', 'assignee', 'parent']),
+  /** Left out for long text (description). Names for people and states, codes for enums. */
+  from: z.string().nullish(),
+  to: z.string().nullish(),
+});
+
+/** One row of an item's history. `detail` depends on `action`. */
+export const activitySchema = z.discriminatedUnion('action', [
+  z.object({
+    ...activityRow,
+    action: z.literal('item.create'),
+    /** The parent's key, or null. */
+    detail: z.object({ parent: z.string().nullable() }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('item.update'),
+    detail: z.object({ changes: z.array(activityChange) }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('item.move'),
+    detail: z.object({ from: z.string(), to: z.string() }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('item.delete'),
+    detail: z.object({}),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('item.restore'),
+    detail: z.object({}),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('checklist.add'),
+    detail: z.object({ text: z.string() }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('checklist.edit'),
+    detail: z.object({ from: z.string(), to: z.string() }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('checklist.tick'),
+    detail: z.object({ text: z.string(), evidence: z.string().nullable() }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('checklist.untick'),
+    detail: z.object({ text: z.string() }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('checklist.remove'),
+    detail: z.object({ text: z.string() }),
+  }),
+]);

@@ -10,21 +10,23 @@ import {
   updateItemSchema,
 } from './item.schema.js';
 import {
-  addBlocker,
-  addChecklistEntry,
   createProjectItem,
   getItem,
   listProjectItems,
   moveItem,
-  removeBlocker,
   listProjectDeletedItems,
-  removeChecklistEntry,
   removeItem,
-  reorderChecklist,
   restoreProjectItem,
-  updateChecklistEntry,
   updateProjectItem,
 } from './item.service.js';
+import { listItemActivity } from './activity.service.js';
+import { addBlocker, removeBlocker } from './blocker.service.js';
+import {
+  addChecklistEntry,
+  removeChecklistEntry,
+  reorderChecklist,
+  updateChecklistEntry,
+} from './checklist.service.js';
 
 export const getProjectItems = async (c: Context) =>
   apiSuccess(c, await listProjectItems(idParam(c, 'projectId'), c.var.user.id));
@@ -125,3 +127,6 @@ export const putChecklistOrder = async (c: Context) => {
     'Checklist reordered',
   );
 };
+
+export const getItemActivity = async (c: Context) =>
+  apiSuccess(c, await listItemActivity(idParam(c, 'id'), c.var.user.id));

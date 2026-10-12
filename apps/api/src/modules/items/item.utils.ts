@@ -1,6 +1,7 @@
 import type { Role } from '@/generated/prisma/enums.js';
 import { mayMove } from './item.rules.js';
-import type { EntryRow, ItemRow } from './item.types.js';
+import type { findActivity } from './activity.repository.js';
+import type { Activity, EntryRow, ItemRow } from './item.types.js';
 
 /** One checklist entry, as the API returns it. */
 export const toEntry = (row: EntryRow) => {
@@ -53,4 +54,19 @@ export const toListRow = (row: ItemRow, role: Role, userId: string) => {
     parentId: row.parentId,
     labels: toLabels(row),
   };
+};
+
+/** The row of an item's history, as the API returns it. */
+export const toActivity = (
+  row: Awaited<ReturnType<typeof findActivity>>[number],
+) => {
+  return {
+    id: row.id,
+    action: row.action,
+    detail: row.detail,
+    by: { name: row.user?.name ?? null, image: row.user?.image ?? null },
+    // An agent row has a client id even when the client sent no name.
+    agent: row.clientId || row.agentName ? { name: row.agentName } : null,
+    at: row.createdAt.toISOString(),
+  } as Activity;
 };

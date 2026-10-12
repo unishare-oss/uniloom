@@ -25,6 +25,7 @@
     "notifications:retry": "bun scripts/retry-review-event.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@scalar/hono-api-reference": "^0.12.9",

@@ -79,6 +79,7 @@ describe('Uniloom API (e2e)', () => {
         'getProject',
         'getReviews',
         'listDeletedItems',
+        'listItemActivity',
         'listItems',
         'listLabels',
         'listMembers',

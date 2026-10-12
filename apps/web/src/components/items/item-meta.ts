@@ -86,6 +86,36 @@ export const stateTopClass = (state: {
   );
 };
 
+// The same colours as a tinted lozenge: soft background, coloured text.
+const TINT_BY_KEY: Record<string, string> = {
+  triage: "bg-state-waiting/15 text-state-waiting",
+  backlog: "bg-state-waiting/15 text-state-waiting",
+  aligning: "bg-state-aligning/15 text-state-aligning",
+  ready: "bg-state-ready/15 text-state-ready",
+  in_progress: "bg-state-active/15 text-state-active",
+  blocked: "bg-state-blocked/15 text-state-blocked",
+  in_review: "bg-state-review/15 text-state-review",
+  done: "bg-state-done/15 text-state-done",
+  canceled: "bg-state-canceled/15 text-muted-foreground",
+};
+const TINT_BY_CATEGORY: Record<StateCategory, string> = {
+  BACKLOG: "bg-state-waiting/15 text-state-waiting",
+  UNSTARTED: "bg-state-todo/15 text-state-todo",
+  STARTED: "bg-state-active/15 text-state-active",
+  DONE: "bg-state-done/15 text-state-done",
+  CANCELED: "bg-state-canceled/15 text-muted-foreground",
+};
+
+/** A state's colour as a tinted lozenge, matching its board column (activity moves). */
+export const stateTintClass = (state: {
+  key: string | null;
+  category: StateCategory;
+}) => {
+  return (
+    (state.key && TINT_BY_KEY[state.key]) || TINT_BY_CATEGORY[state.category]
+  );
+};
+
 export type LabelColor =
   "GRAY" | "RED" | "ORANGE" | "YELLOW" | "GREEN" | "BLUE" | "PURPLE" | "PINK";
 

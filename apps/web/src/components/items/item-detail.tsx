@@ -41,6 +41,7 @@ import { successMessage } from "@/lib/api/fetcher";
 import {
   getGetItemQueryKey,
   getListDeletedItemsQueryKey,
+  getListItemActivityQueryKey,
   getListItemsQueryKey,
   useAddBlocker,
   useDeleteItem,
@@ -63,6 +64,7 @@ import { LabelPicker } from "@/components/items/label-picker";
 import { AssigneeField } from "@/components/items/assignee-field";
 import { Description } from "@/components/items/description";
 import { Checklist } from "@/components/items/checklist";
+import { ItemActivity } from "@/components/items/item-activity";
 
 const NO_PARENT = "none";
 
@@ -96,6 +98,9 @@ export const ItemDetail = ({
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(itemId) }),
+      queryClient.invalidateQueries({
+        queryKey: getListItemActivityQueryKey(itemId),
+      }),
       queryClient.invalidateQueries({
         queryKey: getListItemsQueryKey(projectId),
       }),
@@ -218,6 +223,8 @@ export const ItemDetail = ({
   const states = project.states;
   const category = (stateId: string) =>
     states.find((s) => s.id === stateId)?.category;
+  const stateKey = (stateId: string) =>
+    states.find((s) => s.id === stateId)?.key;
   const parents = [
     { value: NO_PARENT, label: "No parent" },
     ...items
@@ -284,6 +291,8 @@ export const ItemDetail = ({
             onError={onError}
           />
 
+          <ItemActivity itemId={item.id} itemKey={item.key} states={states} />
+
           {children.length > 0 && (
             <details open className="group">
               <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
@@ -312,6 +321,7 @@ export const ItemDetail = ({
                     <StateLozenge
                       name={child.state.name}
                       category={category(child.state.id)}
+                      stateKey={stateKey(child.state.id)}
                     />
                   </Link>
                 ))}
@@ -351,6 +361,7 @@ export const ItemDetail = ({
                       <StateLozenge
                         name={blocker.state.name}
                         category={category(blocker.state.id)}
+                        stateKey={stateKey(blocker.state.id)}
                       />
                     )}
                     <Button
@@ -428,6 +439,7 @@ export const ItemDetail = ({
                   <StateLozenge
                     name={item.state.name}
                     category={item.state.category}
+                    stateKey={item.state.key}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -440,7 +452,11 @@ export const ItemDetail = ({
                     )
                     .map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.name}
+                        <StateLozenge
+                          name={s.name}
+                          category={s.category}
+                          stateKey={s.key}
+                        />
                       </SelectItem>
                     ))}
                 </SelectContent>

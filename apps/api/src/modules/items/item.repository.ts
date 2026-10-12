@@ -49,8 +49,8 @@ export const listDeletedItems = (projectId: string) => {
   });
 };
 
-export const restoreItem = (id: string) => {
-  return prisma.item.update({
+export const restoreItem = (tx: Prisma.TransactionClient, id: string) => {
+  return tx.item.update({
     where: { id },
     data: { deletedAt: null },
     include: itemView,
@@ -65,29 +65,30 @@ export const listItems = (projectId: string) => {
   });
 };
 
-/** Takes the project's next number and creates the item, in one transaction. */
-export const createItem = (data: {
-  projectId: string;
-  kind: ItemKind;
-  title: string;
-  description?: string;
-  stateId: string;
-  priority?: Priority;
-  assigneeId?: string | null;
-  parentId?: string | null;
-  createdById: string;
-}) => {
-  return prisma.$transaction(async (tx) => {
-    // The update locks the project row, so concurrent creates get distinct numbers.
-    const { nextItemNumber } = await tx.project.update({
-      where: { id: data.projectId },
-      data: { nextItemNumber: { increment: 1 } },
-      select: { nextItemNumber: true },
-    });
-    return tx.item.create({
-      data: { ...data, number: nextItemNumber - 1 },
-      include: itemView,
-    });
+/** Takes the project's next number and creates the item. Call it in a transaction. */
+export const createItem = async (
+  tx: Prisma.TransactionClient,
+  data: {
+    projectId: string;
+    kind: ItemKind;
+    title: string;
+    description?: string;
+    stateId: string;
+    priority?: Priority;
+    assigneeId?: string | null;
+    parentId?: string | null;
+    createdById: string;
+  },
+) => {
+  // The update locks the project row, so concurrent creates get distinct numbers.
+  const { nextItemNumber } = await tx.project.update({
+    where: { id: data.projectId },
+    data: { nextItemNumber: { increment: 1 } },
+    select: { nextItemNumber: true },
+  });
+  return tx.item.create({
+    data: { ...data, number: nextItemNumber - 1 },
+    include: itemView,
   });
 };
 
@@ -104,6 +105,14 @@ export const updateItem = (
   },
 ) => {
   return tx.item.update({ where: { id }, data, include: itemView });
+};
+
+/** The names of the users with these ids, for the history of an assignee change. */
+export const findUserNames = (ids: string[]) => {
+  return prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true },
+  });
 };
 
 /** The labels with these ids, whatever project they belong to. */
@@ -154,13 +163,11 @@ export const findFirstDoneState = (
 };
 
 /** Soft delete: marks the item deleted and removes its blocked-by links, together. */
-export const deleteItem = (id: string) => {
-  return prisma.$transaction([
-    prisma.itemBlock.deleteMany({
-      where: { OR: [{ blockedId: id }, { blockerId: id }] },
-    }),
-    prisma.item.update({ where: { id }, data: { deletedAt: new Date() } }),
-  ]);
+export const deleteItem = async (tx: Prisma.TransactionClient, id: string) => {
+  await tx.itemBlock.deleteMany({
+    where: { OR: [{ blockedId: id }, { blockerId: id }] },
+  });
+  await tx.item.update({ where: { id }, data: { deletedAt: new Date() } });
 };
 
 export const countChildren = (id: string) => {
@@ -180,38 +187,6 @@ export const findFirstState = (projectId: string) => {
 };
 
 /**
- * Locks the project row until the transaction ends, so concurrent blocked-by adds run one
- * at a time. Call it first, before reading the links you check.
- */
-export const lockProject = (
-  tx: Prisma.TransactionClient,
-  projectId: string,
-) => {
-  return tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
-};
-
-/** Every blocked-by link in the project. */
-export const findLinks = (tx: Prisma.TransactionClient, projectId: string) => {
-  return tx.itemBlock.findMany({
-    where: { blocked: { projectId } },
-    select: { blockedId: true, blockerId: true },
-  });
-};
-
-/** Records that `blockedId` waits on `blockerId`. */
-export const insertLink = (
-  tx: Prisma.TransactionClient,
-  blockedId: string,
-  blockerId: string,
-) => {
-  return tx.itemBlock.create({ data: { blockedId, blockerId } });
-};
-
-export const deleteLink = (blockedId: string, blockerId: string) => {
-  return prisma.itemBlock.deleteMany({ where: { blockedId, blockerId } });
-};
-
-/**
  * Locks the item row until the transaction ends, so concurrent checklist changes on it
  * run one at a time. Call it first, before reading the entries you change.
  */
@@ -225,44 +200,6 @@ export const findChecklist = (tx: Prisma.TransactionClient, itemId: string) => {
     where: { itemId },
     orderBy: { position: 'asc' },
   });
-};
-
-/** One entry of the item: an entry of another item is not found. */
-export const findEntry = (
-  tx: Prisma.TransactionClient,
-  itemId: string,
-  entryId: string,
-) => {
-  return tx.checklistEntry.findFirst({ where: { id: entryId, itemId } });
-};
-
-export const insertEntry = (
-  tx: Prisma.TransactionClient,
-  itemId: string,
-  text: string,
-  position: number,
-) => {
-  return tx.checklistEntry.create({ data: { itemId, text, position } });
-};
-
-export const updateEntry = (
-  tx: Prisma.TransactionClient,
-  id: string,
-  data: { text?: string; done?: boolean; evidence?: string | null },
-) => {
-  return tx.checklistEntry.update({ where: { id }, data });
-};
-
-export const deleteEntry = (tx: Prisma.TransactionClient, id: string) => {
-  return tx.checklistEntry.delete({ where: { id } });
-};
-
-export const setEntryPosition = (
-  tx: Prisma.TransactionClient,
-  id: string,
-  position: number,
-) => {
-  return tx.checklistEntry.update({ where: { id }, data: { position } });
 };
 
 /** Re-read the source state and assignee after acquiring the move lock. */
