@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/unishare-oss/uniloom/compare/v1.6.0...v1.7.0) (2026-10-12)
+
+
+### Features
+
+* **api:** add MCP write tools ([23aad71](https://github.com/unishare-oss/uniloom/commit/23aad71d5b688dfaaa6261ee53dfa0c32bc19edf))
+
 # [1.6.0](https://github.com/unishare-oss/uniloom/compare/v1.5.1...v1.6.0) (2026-10-12)
 
 
