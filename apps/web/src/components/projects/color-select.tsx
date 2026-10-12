@@ -5,6 +5,7 @@ import {
   labelColorName,
   type LabelColor,
 } from "@/components/items/item-meta";
+import { LabelDot } from "@/components/items/label-dot";
 import {
   Select,
   SelectContent,
@@ -32,12 +33,22 @@ export const ColorSelect = ({
       items={colorOptions}
     >
       <SelectTrigger aria-label="Colour" className="w-32">
-        <SelectValue />
+        <SelectValue>
+          {(color: LabelColor) => (
+            <span className="flex items-center gap-2">
+              <LabelDot color={color} />
+              {labelColorName(color)}
+            </span>
+          )}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {colorOptions.map((option) => (
           <SelectItem key={option.value} value={option.value}>
-            {option.label}
+            <span className="flex items-center gap-2">
+              <LabelDot color={option.value} />
+              {option.label}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>
