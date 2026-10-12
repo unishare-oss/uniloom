@@ -34,7 +34,7 @@ export const DocumentEditor = ({
       {ready && !allowed && (
         <p role="alert" className="text-muted-foreground">
           {documentId
-            ? "Only the author, an owner or a manager can edit this document. "
+            ? "Only owners and managers can edit this document. "
             : "Only owners and managers can write documents. "}
           <Link
             href={`/p/${projectId}/docs${documentId ? `/${documentId}` : ""}`}

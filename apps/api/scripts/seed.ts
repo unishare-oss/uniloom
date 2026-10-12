@@ -860,8 +860,8 @@ const seedDocuments = async (ownerId: string) => {
       projectId: memberProject.id,
       authorId: ownerId,
       kind: 'PROPOSAL',
-      title: 'Yours as a Member: you wrote it, so Edit and Archive show',
-      purpose: 'An author who is only a Member can still edit their own.',
+      title: 'Yours, but you are a Member now: Edit and Archive are hidden',
+      purpose: 'Only your current role counts, not who wrote it.',
       body: body('Yours'),
     },
   });

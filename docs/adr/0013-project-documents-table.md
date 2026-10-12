@@ -29,5 +29,5 @@ instead of adding another.
 - Documents never appear on the board and have no workflow.
 - The kinds `BRIEF`, `PROPOSAL`, `SPEC` and `REFERENCE` may be renamed or merged when §8
   arrives (tech debt 012).
-- Permissions reuse the project roles: Owners and Managers create; the author, an Owner or
-  a Manager edits.
+- Permissions reuse the project roles: Owners and Managers create and edit, by their current
+  role; who wrote a document gives no extra rights.

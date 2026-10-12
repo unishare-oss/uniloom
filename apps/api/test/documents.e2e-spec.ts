@@ -193,7 +193,7 @@ describe('documents (e2e)', () => {
     expect(denied.body.code).toBe('forbidden');
   });
 
-  it('lets an author who is now only a member keep editing their own document', async () => {
+  it('refuses an author who is now only a member: the current role counts', async () => {
     const w = await setup();
     const made = await w.create(w.manager, { kind: 'SPEC', title: 'Mine' });
     const members = (await read(
@@ -208,10 +208,10 @@ describe('documents (e2e)', () => {
     );
     expect(demote.status).toBe(200);
     const edited = await w.edit(w.manager, made.body.id, { body: 'new' });
-    expect(edited.status).toBe(200);
-    expect(edited.body.body).toBe('new');
+    expect(edited.status).toBe(403);
+    expect(edited.body.code).toBe('forbidden');
     const seen = (await w.list(w.manager)).body[0];
-    expect(seen.canEdit).toBe(true);
+    expect(seen.canEdit).toBe(false);
   });
 
   it('archives and restores, and the list hides archived ones unless asked', async () => {

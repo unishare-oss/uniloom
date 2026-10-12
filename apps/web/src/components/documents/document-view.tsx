@@ -155,8 +155,8 @@ export const DocumentView = ({
               </div>
               <p className="border-t pt-3 text-muted-foreground">
                 {document.canEdit
-                  ? "You can edit this: you wrote it, or you are an owner or manager."
-                  : "You can read this. Only its author, an owner or a manager can edit it."}
+                  ? "You can edit this because you are an owner or manager."
+                  : "You can read this. Only owners and managers can edit it."}
               </p>
             </aside>
           </div>

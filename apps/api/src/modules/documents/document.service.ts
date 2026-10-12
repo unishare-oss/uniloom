@@ -42,25 +42,18 @@ export const listDocuments = async (
     q: query.q,
     archived: query.archived === 'true',
   });
-  return documents.map((document) =>
-    toDocumentSummary(
-      document,
-      CREATORS.includes(role) || document.authorId === userId,
-    ),
-  );
+  const canEdit = CREATORS.includes(role);
+  return documents.map((document) => toDocumentSummary(document, canEdit));
 };
 
 /** Any member; a non-member gets the same 404 as a missing document. */
 export const getDocument = async (id: string, userId: string) => {
   const document = await loadDocument(id);
   const { role } = await requireRole(document.projectId, userId, ROLES);
-  return toDocument(
-    document,
-    CREATORS.includes(role) || document.authorId === userId,
-  );
+  return toDocument(document, CREATORS.includes(role));
 };
 
-/** The author, an Owner or a Manager; `archived` sets or clears `archivedAt`. */
+/** Owners and managers, by their current role (not who wrote it); `archived` sets or clears `archivedAt`. */
 export const updateDocumentById = async (
   id: string,
   userId: string,
@@ -72,9 +65,7 @@ export const updateDocumentById = async (
   },
 ) => {
   const document = await loadDocument(id);
-  const { role } = await requireRole(document.projectId, userId, ROLES);
-  if (!CREATORS.includes(role) && document.authorId !== userId)
-    throw apiError(403, 'forbidden', 'Only the author or a manager can edit');
+  await requireRole(document.projectId, userId, CREATORS);
   const { archived, ...fields } = input;
   const updated = await documentRepo.updateDocument(id, {
     ...fields,

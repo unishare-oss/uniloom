@@ -20,8 +20,9 @@ Decisions:
   How they merge with §8's `change` / `feature` / `overview` types is left to the §8 slice
   (tech debt 012).
 - **Permissions** reuse `requireRole` with `CREATORS` / `ROLES` (`members/member.service.ts`):
-  Owners and Managers create; every member reads; the author, an Owner or a Manager edits
-  or archives. An author later demoted to Member can still edit their own documents.
+  Owners and Managers create; every member reads; Owners and Managers edit
+  or archive, by their current role only (user decision): an author demoted to Member can
+  no longer edit.
 - **Archive, never delete**: `archivedAt` set or cleared. The project's deletion removes
   its documents.
 - **Templates live in the web app** (`document-templates.ts`): starting text, not a rule.
@@ -38,8 +39,8 @@ Left out: MCP tools, documents attached to items or features (§8), revisions an
       summaries without bodies, newest edit first, filtered by `kind`, title search `q`
       and `archived=true` to include archived ones, at most 200.
 - [x] `GET /api/documents/:id` returns one document to project members (404 otherwise);
-      `PATCH /api/documents/:id` edits title, purpose, body and `archived` for the author,
-      an Owner or a Manager (403 `forbidden` for other members).
+      `PATCH /api/documents/:id` edits title, purpose, body and `archived` for Owners
+      and Managers (403 `forbidden` for other members).
 - [x] The web Knowledge page (`/p/:projectId/docs`, linked in the sidebar) lists documents
       with kind tabs, title search and a "Show archived" toggle, and shows loading, empty,
       no-match and error states.
@@ -60,7 +61,7 @@ Left out: MCP tools, documents attached to items or features (§8), revisions an
 | `createDocument(projectId, userId, input)`                          | `documents/document.service.ts`                        | `requireRole(…, CREATORS)`, then insert with the caller as author.                                                                                                                                                | Done-when 2.                                                                 |
 | `listDocuments(projectId, userId, query)`                           | `documents/document.service.ts`                        | `requireRole(…, ROLES)`, then `findDocuments`.                                                                                                                                                                    | Done-when 2.                                                                 |
 | `getDocument(id, userId)`                                           | `documents/document.service.ts`                        | Load the document, 404 when missing; `requireRole(doc.projectId, …, ROLES)` gives non-members the same 404.                                                                                                       | Done-when 3.                                                                 |
-| `updateDocumentById(id, userId, input)`                             | `documents/document.service.ts`                        | Load; `const { role } = await requireRole(…, ROLES)`; allow when `CREATORS.includes(role)` or the caller is the author, else 403 `forbidden`; `archived: true/false` sets or clears `archivedAt`.                 | Done-when 3. The only new rule; it lives in the service.                     |
+| `updateDocumentById(id, userId, input)`                             | `documents/document.service.ts`                        | Load; `const { role } = await requireRole(…, ROLES)`; `requireRole(…, CREATORS)` (403 `forbidden` for Members); `archived: true/false` sets or clears `archivedAt`.                                               | Done-when 3. The only new rule; it lives in the service.                     |
 | `toDocument`, `toDocumentSummary`                                   | `documents/document.utils.ts`                          | Row → API shape with `author: { id, name, image } \| null` and a `canEdit` flag the service computes.                                                                                                             | Done-when 3, 5. The web shows Edit from `canEdit` and never re-checks roles. |
 | routes + handlers                                                   | `documents/document.routes.ts`, `document.handlers.ts` | The four endpoints, mounted like the label routes; operationIds `listDocuments`, `createDocument`, `getDocument`, `updateDocument`.                                                                               | Done-when 2–3. Web hooks are generated from them.                            |
 | `KnowledgePage`, `DocumentList`, `DocumentRow`, `KindBadge`         | `web/components/documents/`                            | Library with kind tabs, search, archived toggle and the four list states.                                                                                                                                         | Done-when 4. One component per file.                                         |
@@ -81,7 +82,7 @@ sequenceDiagram
   S->>DB: findDocument(id)
   S->>M: requireRole(projectId, userId, ROLES)
   M-->>S: member.role (404 if not a member)
-  S->>S: role in CREATORS or author? else 403
+  S->>S: role in CREATORS? else 403
   S->>DB: updateDocument(id, input, archivedAt)
   S-->>W: document with canEdit
 ```
@@ -92,7 +93,7 @@ flowchart LR
   B --> C["Template filled, edit with preview"]
   C --> D["Save"] --> E["Document page"]
   A --> E
-  E -->|author / Owner / Manager| F["Edit or Archive"]
+  E -->|Owner / Manager| F["Edit or Archive"]
 ```
 
 Notes:
@@ -136,3 +137,5 @@ Planned vs actual:
 - Kind colours reuse existing theme tokens (`feature`, `slice`, `label-orange`, `label-blue`).
 - A document cannot change kind after creation (not in the update schema).
 - Otherwise as planned.
+
+After review (user decision): edit and archive check only the current role (`requireRole(…, CREATORS)`); the author rule was removed, so an author demoted to Member gets 403.
