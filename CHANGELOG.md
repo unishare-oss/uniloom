@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/unishare-oss/uniloom/compare/v1.5.0...v1.5.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **web:** migrate public domain to psstee.me ([910b1c3](https://github.com/unishare-oss/uniloom/commit/910b1c3ce6487de2974265681bda58afb5855b2c))
+
 # [1.5.0](https://github.com/unishare-oss/uniloom/compare/v1.4.0...v1.5.0) (2026-10-08)
 
 
