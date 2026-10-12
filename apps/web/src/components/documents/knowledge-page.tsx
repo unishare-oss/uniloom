@@ -47,7 +47,20 @@ export const KnowledgePage = ({ projectId }: { projectId: string }) => {
       ? (data?.length ?? 0)
       : (data?.filter((d) => d.kind === k).length ?? 0);
   const shown = data?.filter((d) => kind === "ALL" || d.kind === kind) ?? [];
-  const canCreate = project?.canCreateItems === true;
+  // Only when the visible list is empty: are there archived documents behind it?
+  const hiddenCheck = useListDocuments(
+    projectId,
+    { archived: "true" },
+    {
+      query: {
+        select: (r) => r.data,
+        enabled: !archived && q === "" && data?.length === 0,
+        retry: false,
+      },
+    },
+  );
+  const hasHidden = !archived && (hiddenCheck.data?.length ?? 0) > 0;
+  const canCreate = project?.canCreateDocuments === true;
   const filtering = q !== "" || kind !== "ALL";
 
   return (
@@ -112,7 +125,15 @@ export const KnowledgePage = ({ projectId }: { projectId: string }) => {
           ))}
         </div>
       )}
-      {data && shown.length === 0 && !filtering && (
+      {data && shown.length === 0 && !filtering && hasHidden && (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center">
+          <p className="font-semibold">Archived documents are hidden</p>
+          <p className="text-muted-foreground">
+            Every document here is archived. Turn on Show archived to see them.
+          </p>
+        </div>
+      )}
+      {data && shown.length === 0 && !filtering && !hasHidden && (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
           <p className="font-semibold">No documents yet</p>
           <p className="text-muted-foreground">

@@ -21,7 +21,7 @@ export const DocumentEditor = ({
   const { data: document, error } = useGetDocument(documentId ?? "", {
     query: { select: (r) => r.data, enabled: !!documentId, retry: false },
   });
-  const allowed = documentId ? document?.canEdit : project?.canCreateItems;
+  const allowed = documentId ? document?.canEdit : project?.canCreateDocuments;
   const ready = documentId ? !!document : !!project;
 
   return (

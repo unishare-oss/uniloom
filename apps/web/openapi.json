@@ -540,6 +540,9 @@
                     "canCreateLabels": {
                       "type": "boolean"
                     },
+                    "canCreateDocuments": {
+                      "type": "boolean"
+                    },
                     "canClaim": {
                       "type": "boolean"
                     },
@@ -581,6 +584,7 @@
                     "canAssignOthers",
                     "canEditSettings",
                     "canCreateLabels",
+                    "canCreateDocuments",
                     "canClaim",
                     "canMoveToDone",
                     "assignableRoles"

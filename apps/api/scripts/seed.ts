@@ -816,7 +816,7 @@ const seedDocuments = async (ownerId: string) => {
   await createDocument(guided.id, ownerId, {
     kind: 'PROPOSAL',
     title:
-      'Proposal: New document → pick Spec → the template swaps in until you type',
+      'Proposal: New document → pick another kind → the template swaps in until you type',
     purpose: 'A proposal to try the library filters on.',
     body: body('Proposal'),
   });

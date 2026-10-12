@@ -176,6 +176,23 @@ describe('documents (e2e)', () => {
     ).toBe(404);
   });
 
+  it('refuses a blank title or a purpose over 300 on edit, and a member archiving', async () => {
+    const w = await setup();
+    const made = await w.create(w.owner, { kind: 'BRIEF', title: 'T' });
+    expect((await w.edit(w.owner, made.body.id, { title: ' ' })).status).toBe(
+      400,
+    );
+    expect(
+      (await w.edit(w.owner, made.body.id, { purpose: 'x'.repeat(301) }))
+        .status,
+    ).toBe(400);
+    const denied = await w.edit(w.otherMember, made.body.id, {
+      archived: true,
+    });
+    expect(denied.status).toBe(403);
+    expect(denied.body.code).toBe('forbidden');
+  });
+
   it('lets an author who is now only a member keep editing their own document', async () => {
     const w = await setup();
     const made = await w.create(w.manager, { kind: 'SPEC', title: 'Mine' });

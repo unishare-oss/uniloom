@@ -99,6 +99,7 @@ Notes:
 
 - ADR-0013 (Proposed) records the one-table choice and that §8 extends it.
 - Tech debt 012: mapping these kinds onto §8's document types.
+- Tech debt 013: the list stops at 200 rows, so tab counts are incomplete beyond that.
 
 ## Changes
 
@@ -126,8 +127,12 @@ Planned vs actual:
 - Library kind tabs and their counts filter the loaded list in the browser (one request with
   `q` and `archived`), so the counts cover every kind; the API `kind` filter exists and is
   tested but the web does not send it.
-- "New document" and the new-document page read `canCreateItems` from the project, which
-  is the same Owner/Manager flag as `canCreateLabels`; no `canCreateDocuments` field was added.
+- `canCreateDocuments` (Owner/Manager, `CREATORS`) was added to the project response after
+  review; "New document" and the new-document page read it.
+- TD-013 records that the tab counts cover only the 200 listed rows.
+- After review: the empty state says archived documents are hidden when only archived ones
+  exist; e2e gained a PATCH 400 and a Member archive 403 case; a seed title no longer
+  contains "spec" except the Spec one.
 - Kind colours reuse existing theme tokens (`feature`, `slice`, `label-orange`, `label-blue`).
 - A document cannot change kind after creation (not in the update schema).
 - Otherwise as planned.
