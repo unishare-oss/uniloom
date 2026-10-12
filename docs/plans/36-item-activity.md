@@ -50,7 +50,7 @@ Left out:
       the evidence on a tick).
 - [x] `requireAgent` reads the optional `client_name` claim into `Agent.clientName`; every
       item and checklist write function takes an optional last `agent: { clientId,
-  clientName }`, stored as `clientId` / `agentName`; without it (the website) both are
+clientName }`, stored as `clientId` / `agentName`; without it (the website) both are
       null.
 - [x] `GET /api/items/:id/activity` returns the item's latest 50 rows, newest first, with
       the person's name and image and, for an agent row, the agent's name (or null); a
