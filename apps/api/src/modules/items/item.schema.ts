@@ -174,4 +174,10 @@ export const activitySchema = z.discriminatedUnion('action', [
     action: z.literal('checklist.remove'),
     detail: z.object({ text: z.string() }),
   }),
+  z.object({
+    ...activityRow,
+    action: z.literal('checklist.replace'),
+    /** How many entries the new list has. */
+    detail: z.object({ count: z.number().int() }),
+  }),
 ]);

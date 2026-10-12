@@ -278,6 +278,45 @@ const seedGuided = async (ownerId: string) => {
     "Activity: rows by you, Mya and Mya's agent (Claude Code chip, robot badge); the tick shows its evidence",
   );
 
+  // MCP write tools: things to try from an agent connected as you.
+  const toDone = await item({
+    kind: 'SLICE',
+    title:
+      'Agent: save_item with state Done → people_only (agents never move to Ready or Done)',
+    parentId: board.id,
+    state: 'In Review',
+  });
+  await addEntries(
+    toDone.id,
+    ownerId,
+    ['Ticked already', 'Also ticked', 'Third'],
+    3,
+  );
+  const toReview = await item({
+    kind: 'SLICE',
+    title:
+      'Agent: check_criterion for each entry, then save_item with state In Review → works',
+    parentId: board.id,
+    state: 'In Progress',
+  });
+  await addEntries(
+    toReview.id,
+    ownerId,
+    ['First entry', 'Second entry', 'Third entry'],
+    0,
+  );
+  const tooMany = await item({
+    kind: 'SLICE',
+    title:
+      'Agent: set_criteria with 7 texts → checklist_max_exceeded and the list stays; with 4 → works',
+    parentId: board.id,
+    state: 'In Progress',
+  });
+  await addEntries(tooMany.id, ownerId, ['Old one', 'Old two', 'Old three'], 0);
+  note(toDone.key, 'agent: move to Done → people_only');
+  note(toReview.key, 'agent: tick all three, move to In Review → works');
+  note(tooMany.key, 'agent: set_criteria with 7 → checklist_max_exceeded');
+
   // Parents.
   const parent = await item({
     kind: 'FEATURE',

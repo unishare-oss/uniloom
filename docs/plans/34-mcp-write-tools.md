@@ -1,6 +1,6 @@
 # 34: MCP write tools
 
-Status: Aligning
+Status: In Review
 
 ## Scope
 
@@ -14,7 +14,8 @@ edits, moves and deletes items and keeps their done-when checklists.
 - **People are named, not ids** (user decision): `assignee` is `me`, `none` or a project
   member's email, in `save_item` and in `list_items`' filter (which takes a user id in
   plan 33).
-- **`list_projects` slims down** (user decision) to key, name, mode and the caller's role.
+- **`list_projects` slims down** (user decision) to key, name, mode, the caller's role and
+  the checklist limits (`checklistMin`, `checklistMax`), which the instructions point agents to.
 - **Builds on plan 35:** checklist functions live in `items/checklist.service.ts` by then.
 - **Builds on plan 36** (user decision: activity first): the services already take an
   optional `agent` and record activity; this plan passes it from every write tool.
@@ -27,24 +28,25 @@ Left out:
 
 ## Done when
 
-- [ ] `save_item` without `key` creates an item (`project`, `kind`, `title`,
+- [x] `save_item` without `key` creates an item (`project`, `kind`, `title`,
       `description?`, `parent?` key, `priority?`, `assignee?`) through `createProjectItem`,
       and with `key` updates it through `updateProjectItem`; text fields follow the limits
       in `items/item.schema.ts`, and rule errors come back with their code; `delete_item` deletes
       through `removeItem`.
-- [ ] `save_item` with `state` (a state name) moves the item through `moveItem`; a target
+- [x] `save_item` with `state` (a state name) moves the item through `moveItem`; a target
       with key `ready` or category `DONE` is refused for every agent with `people_only`,
       before the service runs.
-- [ ] Every write tool passes `{ clientId, clientName }` from `Agent` to the services, so
+- [x] Every write tool passes `{ clientId, clientName }` from `Agent` to the services, so
       its activity rows (plan 36) name the agent; `set_criteria` records one
       `checklist.replace` row.
-- [ ] `set_criteria` replaces an item's checklist in one transaction (the project's maximum
-      still applies, `checklist_max_exceeded`), and `check_criterion` ticks one entry by
+- [x] `set_criteria` replaces an item's checklist in one transaction (the project's maximum
+      still applies, `checklist_max_exceeded`; its tool description states the limits and
+      to split a bigger slice), and `check_criterion` ticks one entry by
       its number from `get_criteria` or its exact text, with optional evidence.
-- [ ] `assignee` takes `me`, `none` or a member's email in `save_item` and the
+- [x] `assignee` takes `me`, `none` or a member's email in `save_item` and the
       `list_items` filter (an unknown email answers `invalid_assignee`), and
-      `list_projects` returns key, name, mode and role.
-- [ ] The seed has TG items whose titles say what to try from an agent and what should
+      `list_projects` returns key, name, mode, role and the checklist limits.
+- [x] The seed has TG items whose titles say what to try from an agent and what should
       happen: move to Done → `people_only`; tick every criterion, then move to In Review →
       works; set 7 criteria → `checklist_max_exceeded`.
 
@@ -61,8 +63,8 @@ Left out:
 | `isPeopleOnlyTarget(state)`                     | `mcp/mcp.rules.ts`           | True for key `ready` or category `DONE`.                                                                                                                         | Done-when 2. The one MCP-only rule, pure, in one place.                    |
 | `replaceChecklist(itemId, userId, texts)`       | `items/checklist.service.ts` | `loadItem`, then in one transaction: lock the item, check the max, delete the entries, insert `texts` in order.                                                  | Done-when 4. One call, and a failure leaves the old list.                  |
 | tool input schemas                              | `mcp/mcp.schema.ts`          | `saveItemSchema`, `deleteItemSchema`, `setCriteriaSchema`, `checkCriterionSchema`; text fields reuse the rules in `items/item.schema.ts`.                        | Done-when 1, 4. Same limits as the website.                                |
-| tool registrations                              | `mcp/mcp.server.ts`          | The four write tools next to the read tools, with `reply` / `toToolError`; `list_projects` maps rows to key, name, mode, role.                                   | Done-when 1–5.                                                             |
-| `INSTRUCTIONS`                                  | `mcp/mcp.instructions.ts`    | Adds the write tools, `people_only`, and the assignee format.                                                                                                    | Done-when 2, 5.                                                            |
+| tool registrations                              | `mcp/mcp.server.ts`          | The four write tools next to the read tools, with `reply` / `toToolError`; `list_projects` maps rows to key, name, mode, role, `checklistMin`, `checklistMax`.   | Done-when 1–5.                                                             |
+| `INSTRUCTIONS`                                  | `mcp/mcp.instructions.ts`    | Adds the write tools, `people_only`, and the assignee format; the 3–6 line still points to `list_projects` for the limits.                                       | Done-when 2, 5.                                                            |
 | seed cases                                      | `api/scripts/seed.ts`        | TG items with agent instructions in their titles.                                                                                                                | Done-when 6.                                                               |
 
 ```mermaid
@@ -90,4 +92,30 @@ Notes:
 
 ## Changes
 
-Filled in at the end.
+Commits: `23aad71` feat(api): add MCP write tools
+
+After the review (parent, user-approved): `save_item` runs create or update and then the
+move as separate transactions, so a refused move left the first part saved with only the
+error shown, and a retried create could duplicate the item. The error now says what was
+saved ("TG-24 was created, but it was not moved to In Review: …"), with an e2e test.
+TD-012 records that `createProjectItem` accepts a gated `stateId` without the checklist
+gate (REST only; MCP creates first, then moves).
+
+What changed, planned vs actual (as planned unless noted):
+
+- `mcp/mcp.service.ts`: `saveItem`, `deleteItem`, `setCriteria`, `checkCriterion`, `findAssigneeId`, `findState` (the plan's `findStateId`), and a slimmer `listProjects` (key, name, mode, role, `checklistMin`, `checklistMax`; role comes from `projectService.getProject` per project). `list_items`' assignee filter uses `findAssigneeId`.
+- `mcp/mcp.rules.ts` (+ spec): `isPeopleOnlyTarget`. `saveItem` checks the state and the rule before any service call, so a refused move saves nothing, on update and on create.
+- `mcp/mcp.schema.ts`, `mcp.server.ts`, `mcp.instructions.ts`: four write tools, input limits reuse `items/item.schema.ts`, `set_criteria`'s description states the limits and to split.
+- `items/checklist.service.ts` + `checklist.repository.ts`: `replaceChecklist` (one transaction, lock, max check, delete, insert, one `checklist.replace` row `{ count }`). `item.schema.ts` activity union gets `checklist.replace`; web `activity-sentence.tsx` renders it; `openapi.json` regenerated.
+- Seed: three TG items (TG-12 to TG-14) with agent instructions in their titles.
+- Tests: `test/mcp-write.e2e-spec.ts` (new), `test/mcp.e2e-spec.ts` updated for the new tool list and `list_projects` shape.
+- Deviations: `people_only` answers 403; a missing `project`/`kind`/`title` on create answers 400 `invalid_input`; `check_criterion` also accepts a digit-only string as a number (review fix); `delete_item` answers `{ deleted: key }`.
+
+Checks: lint, typecheck, test (94), build pass; full api e2e 162/162 passed (reviews.e2e-spec did not flake this run).
+
+Review (code-reviewer): verdict ready after fixes, no critical findings.
+
+- Plan not updated: fixed (this section, ticks, status).
+- `check_criterion` rejected `"2"` as text: fixed, with a test.
+- `set_criteria` has no review-lock or role check, so it can reset ticks in In Review/Done: not fixed on purpose. It matches the website's add/update/remove entry functions (same services rules); tightening belongs to all checklist functions together.
+- `save_item` cannot clear a parent: not asked for by the plan; left out.
