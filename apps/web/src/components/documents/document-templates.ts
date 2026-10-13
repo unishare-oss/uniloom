@@ -47,4 +47,31 @@ Why now?
 
 ## Links
 `,
+  TECH_DEBT: `## What
+
+What is the shortcut or problem?
+
+## Why it matters
+
+What goes wrong if we leave it?
+
+## Suggested fix
+`,
+  ADR: `## Context
+
+What forces led to this decision?
+
+## Options
+
+1. Option A
+2. Option B
+
+## Decision
+
+What we chose, and why.
+
+## Consequences
+
+What gets easier, and what gets harder.
+`,
 };

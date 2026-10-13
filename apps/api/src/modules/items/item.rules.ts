@@ -1,4 +1,5 @@
 import type {
+  DocumentKind,
   ItemKind,
   ProjectMode,
   Role,
@@ -98,6 +99,47 @@ export const editError = (
   return project.selfClaimAllowed
     ? 'Members can only edit tickets assigned to them: claim it first'
     : 'Members can only edit tickets assigned to them: ask an owner or manager to assign it';
+};
+
+/**
+ * Why a project can't have ticket documents, links, ADRs or tech debt, or null when it
+ * can: they exist in Guided projects (coding work) only.
+ */
+export const guidedOnlyError = (project: { mode: ProjectMode }) => {
+  return project.mode === 'GUIDED'
+    ? null
+    : 'Ticket documents are for Guided projects: this project is Standard';
+};
+
+/**
+ * The kinds a Knowledge document can have in a project: ADRs and tech debt exist in
+ * Guided projects only (the web reads this and never repeats the rule).
+ */
+export const documentKindsFor = (project: {
+  mode: ProjectMode;
+}): DocumentKind[] => {
+  const common: DocumentKind[] = ['BRIEF', 'PROPOSAL', 'SPEC', 'REFERENCE'];
+  return guidedOnlyError(project) ? common : [...common, 'ADR', 'TECH_DEBT'];
+};
+
+/**
+ * The kinds the Knowledge page can create: tech debt is raised from a ticket instead
+ * (the web reads this and never repeats the rule).
+ */
+export const creatableDocumentKindsFor = (project: {
+  mode: ProjectMode;
+}): DocumentKind[] => {
+  return documentKindsFor(project).filter((kind) => kind !== 'TECH_DEBT');
+};
+
+/**
+ * The kinds of document a ticket can start (spec, ADR, tech debt): none in a Standard
+ * project, which has no ticket documents at all.
+ */
+export const ticketDocumentKindsFor = (project: {
+  mode: ProjectMode;
+}): DocumentKind[] => {
+  return guidedOnlyError(project) ? [] : ['SPEC', 'ADR', 'TECH_DEBT'];
 };
 
 /**

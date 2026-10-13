@@ -2,6 +2,8 @@ import type { Context } from 'hono';
 import { idParam, apiSuccess, parseBody } from '@/http.js';
 import {
   addBlockerSchema,
+  createTicketDocumentSchema,
+  linkDocumentSchema,
   addChecklistEntrySchema,
   createItemSchema,
   moveItemSchema,
@@ -21,6 +23,11 @@ import {
 } from './item.service.js';
 import { listItemActivity } from './activity.service.js';
 import { addBlocker, removeBlocker } from './blocker.service.js';
+import {
+  createTicketDocument,
+  linkDocument,
+  unlinkDocument,
+} from './item-document.service.js';
 import {
   addChecklistEntry,
   removeChecklistEntry,
@@ -85,6 +92,36 @@ export const postBlocker = async (c: Context) => {
 export const deleteBlocker = async (c: Context) => {
   await removeBlocker(idParam(c, 'id'), c.var.user.id, idParam(c, 'blockerId'));
   return apiSuccess(c, null, 'Blocker removed');
+};
+
+export const postTicketDocument = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const input = await parseBody(c, createTicketDocumentSchema);
+  return apiSuccess(
+    c,
+    await createTicketDocument(id, c.var.user.id, input),
+    'Document created',
+    201,
+  );
+};
+
+export const postDocumentLink = async (c: Context) => {
+  const id = idParam(c, 'id');
+  const { documentId } = await parseBody(c, linkDocumentSchema);
+  return apiSuccess(
+    c,
+    await linkDocument(id, c.var.user.id, documentId),
+    'Document linked',
+  );
+};
+
+export const deleteDocumentLink = async (c: Context) => {
+  await unlinkDocument(
+    idParam(c, 'id'),
+    c.var.user.id,
+    idParam(c, 'documentId'),
+  );
+  return apiSuccess(c, null, 'Document unlinked');
 };
 
 export const postChecklistEntry = async (c: Context) => {

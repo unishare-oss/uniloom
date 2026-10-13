@@ -1,6 +1,6 @@
 # 35: Split the item service
 
-Status: In Review
+Status: Done
 
 ## Scope
 
