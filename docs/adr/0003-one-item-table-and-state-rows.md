@@ -29,7 +29,7 @@ only" but also listed three Standard levels.
   Better Auth's tables keep their own string ids. Human keys like `UG-12` come from
   `workspace.nextItemNumber`, incremented in the item's transaction.
 - Tables are added one feature at a time, each with its own migration
-  (`docs/plans/02-workspaces.md` lists the order).
+  (`docs/archived/02-workspaces.md` lists the order).
 
 ## Consequences
 

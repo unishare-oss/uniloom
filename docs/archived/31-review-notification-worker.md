@@ -1,6 +1,6 @@
 # 31: Review notification processing
 
-Status: In Review
+Status: Done
 
 ## Scope
 
@@ -17,7 +17,7 @@ proposed additions, not silently accepted product decisions.
 
 [Plan 30](30-review-boundary-and-events.md) creates review events.
 [ADR-0011](../adr/0011-review-events-and-notifications.md) is Accepted.
-The worker can be exercised without the web inbox; [plan 14](14-review-inbox.md)
+The worker can be exercised without the web inbox; [plan 14](../archived/14-review-inbox.md)
 adds user-facing reads. Build order: **30 → 31 → 14**.
 
 ## Done when

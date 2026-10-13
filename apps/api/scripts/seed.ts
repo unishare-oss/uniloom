@@ -25,7 +25,14 @@ import {
   addChecklistEntry,
   updateChecklistEntry,
 } from '../src/modules/items/checklist.service.js';
-import { createDocument } from '../src/modules/documents/document.service.js';
+import {
+  createDocument,
+  setDocumentStatus,
+} from '../src/modules/documents/document.service.js';
+import {
+  createTicketDocument,
+  linkDocument,
+} from '../src/modules/items/item-document.service.js';
 import {
   createProject,
   updateProject,
@@ -945,6 +952,280 @@ const seedDocuments = async (ownerId: string) => {
   );
 };
 
+/** Ticket documents and links (plan 39): Guided features, slices, a Standard project, a member. */
+const seedTicketDocuments = async (ownerId: string) => {
+  const [mya] = SEED_USERS;
+  const guided = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TG' },
+  });
+  const standard = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TS' },
+  });
+  const memberProject = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TM' },
+  });
+
+  const feature = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Feature with its own spec and a linked tech stack. Open it → Related shows both; New spec, Link a document and the remove buttons work',
+  });
+  await createTicketDocument(feature.id, ownerId, {
+    kind: 'SPEC',
+    title:
+      'Spec: signup flow. Open it → it shows its ticket, not Linked tickets',
+    purpose: 'A feature spec: stored on the ticket, hidden from Knowledge.',
+    body: '## Signup flow\n\n```mermaid\nflowchart LR\n  Form --> Verify --> Welcome\n```\n',
+  });
+  const stack = await createDocument(guided.id, ownerId, {
+    kind: 'REFERENCE',
+    title:
+      'Tech stack: linked to the feature above. Open it → Linked tickets lists the feature',
+    purpose: 'A Knowledge reference linked to tickets.',
+    body: '## Tech stack\n\n- Bun\n- Hono\n- Next.js\n',
+  });
+  await linkDocument(feature.id, ownerId, stack.id);
+  const retired = await createDocument(guided.id, ownerId, {
+    kind: 'REFERENCE',
+    title:
+      'Archived and linked: shows as archived in Related, and the picker will not offer it',
+    purpose: 'Existing links stay when a document is archived.',
+  });
+  await linkDocument(feature.id, ownerId, retired.id);
+  await prisma.document.update({
+    where: { id: retired.id },
+    data: { archivedAt: new Date() },
+  });
+  const slice = await createProjectItem(guided.id, ownerId, {
+    kind: 'SLICE',
+    title:
+      'Slice of that feature. Open it → Related shows the spec and tech stack under "From" the feature, read only; linking its own document works',
+    parentId: feature.id,
+  });
+  await createProjectItem(guided.id, ownerId, {
+    kind: 'SLICE',
+    title: 'Slice of that feature. Open it → the same inherited documents',
+    parentId: feature.id,
+  });
+  const lonely = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Feature with nothing yet. Open it → Related is empty with New spec and Link a document; Knowledge hides its spec until "Show ticket documents" is on',
+  });
+
+  const task = await createProjectItem(standard.id, ownerId, {
+    kind: 'TASK',
+    title:
+      'Standard project task. Open it → no Related section; POST /api/items/:id/documents/new → 409 guided_only',
+  });
+
+  const own = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      'Write a spec on your own ticket as a member: allowed → New spec saves it; linking a Knowledge document works too',
+    assigneeId: ownerId,
+  });
+  const theirs = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      "Write a spec on someone else's ticket: refused → New spec and Link are hidden; a direct POST → 403 forbidden",
+    assigneeId: mya.id,
+  });
+  await createTicketDocument(theirs.id, mya.id, {
+    kind: 'SPEC',
+    title:
+      "Mya's spec on her ticket: you can read it, but Edit is hidden and a direct PATCH → 403",
+    body: '## Read only for you\n',
+  });
+  const mcpBrief = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      'Create a brief over MCP as a member: refused → save_document with project TM, kind BRIEF answers forbidden',
+    assigneeId: ownerId,
+  });
+  const mcpSpec = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      'Write a spec on your own ticket over MCP as a member: allowed → save_document with this ticket and kind SPEC; the same on a ticket assigned to Mya answers forbidden',
+    assigneeId: ownerId,
+  });
+  note(mcpBrief.key, 'agent as member: save_document BRIEF → forbidden');
+  note(
+    mcpSpec.key,
+    'agent as member: save_document SPEC on this ticket → works',
+  );
+  note(feature.key, 'Related: spec, tech stack, archived link; New spec, Link');
+  note(slice.key, 'Related: inherited documents "From" the feature, read only');
+  note(
+    lonely.key,
+    'New spec here, then Knowledge: hidden until Show ticket documents',
+  );
+  note(task.key, 'no Related section; the endpoints answer 409 guided_only');
+  note(own.key, 'as a member: New spec and Link a document allowed');
+  note(theirs.key, 'as a member: New spec and Link hidden; direct POST → 403');
+};
+
+const seedAdrs = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const guided = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TG' },
+  });
+  const memberProject = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TM' },
+  });
+
+  // In TG you own the project and Ko is a Member: Ko raised this one from her ticket.
+  const kos = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Ko raised an ADR from this ticket. Open it → Related lists it Proposed; open the ADR → Accept and Reject work (you are the owner); Ko cannot edit it',
+    assigneeId: ko.id,
+  });
+  const raised = await createTicketDocument(kos.id, ko.id, {
+    kind: 'ADR',
+    title: 'Use Postgres for storage',
+    purpose: 'Raised by a member from their ticket.',
+    body: '## Context\n\n## Options\n\n## Decision\n\n## Consequences\n',
+  });
+  // In TM you are a Member and Mya owns it.
+  const mine = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      'Raise an ADR from your own ticket as a member: allowed → New ADR saves it Proposed in Knowledge, linked here; you cannot accept it, an owner or manager can',
+    assigneeId: ownerId,
+  });
+  const notMine = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      "Raise an ADR from someone else's ticket as a member: refused → New ADR is hidden; a direct POST /api/items/:id/documents/new → 403 forbidden",
+    assigneeId: mya.id,
+  });
+
+  await createDocument(guided.id, ownerId, {
+    kind: 'ADR',
+    title:
+      'Proposed ADR. Open it as owner → Accept and Reject show; as a member they do not',
+    body: '## Context\n\n## Options\n\n## Decision\n\n## Consequences\n',
+  });
+  const rejected = await createDocument(guided.id, ownerId, {
+    kind: 'ADR',
+    title:
+      'Rejected ADR. Open it → status Rejected, no buttons; archiving it → 409 adr_not_archivable',
+    body: '## Decision\n\nWe will not do this.\n',
+  });
+  await setDocumentStatus(rejected.id, ownerId, { status: 'REJECTED' });
+  const old = await createDocument(guided.id, ownerId, {
+    kind: 'ADR',
+    title:
+      'Superseded ADR. Open it → "Superseded by ADR" with a link to the newer one',
+    body: '## Decision\n\nThe first choice.\n',
+  });
+  await setDocumentStatus(old.id, ownerId, { status: 'ACCEPTED' });
+  const newer = await createDocument(guided.id, ownerId, {
+    kind: 'ADR',
+    title:
+      'Accepted ADR that replaced the one above. Open it → Accepted; editing its body keeps it Accepted',
+    body: '## Decision\n\nThe better choice.\n',
+  });
+  await setDocumentStatus(newer.id, ownerId, { status: 'ACCEPTED' });
+  await setDocumentStatus(old.id, ownerId, {
+    status: 'SUPERSEDED',
+    supersededById: newer.id,
+  });
+  note(
+    kos.key,
+    `Ko's ADR-${raised.number} is Proposed and linked: accept it as owner`,
+  );
+  note(mine.key, 'as a member: New ADR allowed, then cannot accept it');
+  note(notMine.key, 'as a member: New ADR hidden; direct POST → 403');
+  note('Knowledge → ADRs', 'Proposed, Rejected, Superseded and Accepted ADRs');
+};
+
+const seedTechDebt = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const guided = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TG' },
+  });
+  const memberProject = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TM' },
+  });
+  const done = await prisma.state.findFirstOrThrow({
+    where: { projectId: guided.id, key: 'done' },
+  });
+
+  // In TG you own the project and Ko is a Member: Ko found this debt on her ticket.
+  const kos = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      "Ko raised tech debt from this ticket. Open it → Related lists TD Open; open the debt → Fixed and Won't fix show (you are the owner); Ko cannot edit it",
+    assigneeId: ko.id,
+  });
+  const open = await createTicketDocument(kos.id, ko.id, {
+    kind: 'TECH_DEBT',
+    title: "Open tech debt raised by a member: close it as Won't fix",
+    purpose: 'Raised by a member from their ticket.',
+    body: 'The import loop reads every row twice.\n',
+  });
+
+  // Fixed: the debt was found on one ticket and fixed by a Done one.
+  const found = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Tech debt was found on this ticket. Open it → Related lists the debt as Fixed',
+  });
+  const fixer = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Done ticket that fixed a debt. Open it → Related lists the debt, linked when it was marked Fixed',
+    stateId: done.id,
+  });
+  const fixed = await createTicketDocument(found.id, ownerId, {
+    kind: 'TECH_DEBT',
+    title: 'Fixed tech debt. Open it → Fixed by names the Done ticket',
+    body: 'A copy-pasted validation.\n',
+  });
+  await setDocumentStatus(fixed.id, ownerId, {
+    status: 'FIXED',
+    fixedByItemId: fixer.id,
+  });
+
+  // Refused: the only other ticket is not Done.
+  const notDone = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Not Done yet. Name this ticket as the fix of the debt "Mark this Fixed with a ticket that isn\'t Done" → 409 fix_not_done',
+  });
+  const refused = await createTicketDocument(found.id, ownerId, {
+    kind: 'TECH_DEBT',
+    title:
+      "Mark this Fixed with a ticket that isn't Done: refused (pick the Not Done ticket → 409 fix_not_done)",
+  });
+
+  // In TM you are a Member and Mya owns it.
+  const mine = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      'Raise tech debt from your own ticket as a member: allowed → Raise tech debt saves it Open, linked here; you cannot close it, an owner or manager can',
+    assigneeId: ownerId,
+  });
+  const notMine = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      "Raise tech debt from someone else's ticket as a member: refused → Raise tech debt is hidden; a direct POST /api/items/:id/documents/new → 403 forbidden",
+    assigneeId: mya.id,
+  });
+  note(kos.key, `Ko's TD-${open.number} is Open and linked: close it as owner`);
+  note(found.key, `TD-${fixed.number} is Fixed; TD-${refused.number} is Open`);
+  note(fixer.key, `Done: it fixed TD-${fixed.number}`);
+  note(
+    notDone.key,
+    `Not Done: naming it as the fix of TD-${refused.number} → 409`,
+  );
+  note(mine.key, 'as a member: Raise tech debt allowed, then cannot close it');
+  note(notMine.key, 'as a member: Raise tech debt hidden; direct POST → 403');
+  note('Knowledge → Tech debt', 'Open, Fixed and refused-to-fix debts');
+};
+
 const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -962,6 +1243,9 @@ await seedLoweredLimits(owner.id);
 await seedOutsider();
 await seedReviewInbox(owner.id);
 await seedDocuments(owner.id);
+await seedTicketDocuments(owner.id);
+await seedAdrs(owner.id);
+await seedTechDebt(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

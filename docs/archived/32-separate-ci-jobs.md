@@ -1,6 +1,6 @@
 # 32: Separate CI jobs
 
-Status: In Review
+Status: Done
 
 ## Scope
 

@@ -112,6 +112,8 @@ People sign in with **uniAuth**. Access to a project is by invitation.
 
 **A feature is Done automatically** when all its slices are Done or Canceled.
 
+**Tech debt is a record, not an item** (Guided only): raised from the ticket where it was found, numbered `TD-3` per project, Open until an owner or manager marks it Fixed by a Done ticket or Won't fix (plan 41, ADR-0014).
+
 ---
 
 ## 5. Guided workflow
@@ -215,7 +217,7 @@ ADRs record **choices that outlive one slice**, such as "Postgres over SQLite" o
 - Designs reference ADRs instead of repeating the reasoning.
 - Agents **read** them (`list_adrs`, `get_adr`), so new work follows past decisions instead of re-arguing them.
 - **Never deleted, only superseded**, so the history stays readable.
-- Available in both modes.
+- Guided projects only: Guided is for coding work, Standard for other tasks (ADR-0014).
 
 ---
 
@@ -225,6 +227,7 @@ ADRs record **choices that outlive one slice**, such as "Postgres over SQLite" o
 - **Branch and PR URL** on each item.
 - **Documents:** engineering write-ups attached to an item, a feature or a project.
   - Types: `change`, `feature`, `reference`, `overview`. ADRs are their own type (§7).
+  - Tech debt is its own type too: `TD-n`, linked to the ticket it was raised on and to the ticket that fixed it (Guided only).
   - Markdown with **Mermaid rendered** on the website.
 - **Finishing a slice** (Guided): link the commit, set the branch and PR, write the change document ("what changed and how", with a diagram for backend flows), move to In Review.
 

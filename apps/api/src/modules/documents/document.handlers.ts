@@ -3,12 +3,14 @@ import { apiError, apiSuccess, idParam, parseBody } from '@/http.js';
 import {
   createDocumentSchema,
   listDocumentsQuerySchema,
+  setDocumentStatusSchema,
   updateDocumentSchema,
 } from './document.schema.js';
 import {
   createDocument,
   getDocument,
   listDocuments,
+  setDocumentStatus,
   updateDocumentById,
 } from './document.service.js';
 
@@ -41,5 +43,14 @@ export const patchDocument = async (c: Context) => {
     c,
     await updateDocumentById(idParam(c, 'id'), c.var.user.id, input),
     'Document updated',
+  );
+};
+
+export const postDocumentStatus = async (c: Context) => {
+  const input = await parseBody(c, setDocumentStatusSchema);
+  return apiSuccess(
+    c,
+    await setDocumentStatus(idParam(c, 'id'), c.var.user.id, input),
+    'Status changed',
   );
 };

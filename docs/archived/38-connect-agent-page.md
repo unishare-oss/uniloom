@@ -1,6 +1,6 @@
 # 38: Connect an agent page
 
-Status: In Review
+Status: Done
 
 ## Scope
 

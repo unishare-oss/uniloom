@@ -25,15 +25,15 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  reviewEvents ReviewEvent[]
+  reviewEvents  ReviewEvent[]
   notifications Notification[]
-  activities Activity[]
+  activities    Activity[]
 
   sessions      Session[]
   accounts      Account[]
   memberships   Member[]
-  assignedItems Item[]    @relation("ItemAssignee")
-  createdItems  Item[]    @relation("ItemCreatedBy")
+  assignedItems Item[]     @relation("ItemAssignee")
+  createdItems  Item[]     @relation("ItemCreatedBy")
   documents     Document[] @relation("DocumentAuthor")
 
   @@map("user")
@@ -102,10 +102,10 @@ enum Role {
 /// States are locked when `mode` is GUIDED, since its rules rely on them.
 /// The migration adds a CHECK that checklist limits are at least 1 and min <= max.
 model Project {
-  id                String        @id @default(uuid(7)) @db.Uuid
+  id                String      @id @default(uuid(7)) @db.Uuid
   name              String
   /// Items are numbered `<keyPrefix>-<number>`, e.g. UG-12.
-  keyPrefix         String        @unique
+  keyPrefix         String      @unique
   mode              ProjectMode
   checklistRequired Boolean
   /// Fewest done-when items per checklist; null = no limit. Guided preset: 3 (recommended).
@@ -117,32 +117,32 @@ model Project {
   approverNotAuthor Boolean
   plannedVsActual   Boolean
   /// When off, a member can't claim a free ticket; they can still unclaim their own.
-  selfClaimAllowed  Boolean       @default(true)
+  selfClaimAllowed  Boolean     @default(true)
   /// Next item number. Increment it in the same transaction that creates the item.
-  nextItemNumber    Int           @default(1)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  nextItemNumber    Int         @default(1)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  reviewEvents ReviewEvent[]
+  reviewEvents  ReviewEvent[]
   notifications Notification[]
-  activities Activity[]
+  activities    Activity[]
 
-  members Member[]
-  states  State[]
-  items   Item[]
-  labels  Label[]
+  members   Member[]
+  states    State[]
+  items     Item[]
+  labels    Label[]
   documents Document[]
 
   @@map("project")
 }
 
 model Member {
-  projectId String    @db.Uuid
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role        Role
-  createdAt   DateTime  @default(now())
+  projectId String   @db.Uuid
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role
+  createdAt DateTime @default(now())
 
   @@id([projectId, userId])
   @@index([userId])
@@ -150,7 +150,7 @@ model Member {
 }
 
 // ---------------------------------------------------------------------------
-// Items: workflow states, work items and blocked-by links (docs/plans/04-items.md)
+// Items: workflow states, work items and blocked-by links (docs/archived/04-items.md)
 
 enum StateCategory {
   BACKLOG
@@ -164,13 +164,13 @@ enum StateCategory {
 /// states carry a stable `key` (triage, backlog, aligning, ready, in_progress, blocked,
 /// in_review, done, canceled) that the rules use.
 model State {
-  id          String        @id @default(uuid(7)) @db.Uuid
+  id        String        @id @default(uuid(7)) @db.Uuid
   projectId String        @db.Uuid
-  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name        String
-  key         String?
-  category    StateCategory
-  position    Int
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  key       String?
+  category  StateCategory
+  position  Int
 
   items Item[]
 
@@ -198,8 +198,8 @@ enum Priority {
 /// A piece of work, shown as `<keyPrefix>-<number>` (UG-12).
 model Item {
   id          String    @id @default(uuid(7)) @db.Uuid
-  projectId String    @db.Uuid
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String    @db.Uuid
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   number      Int
   kind        ItemKind
   title       String
@@ -222,14 +222,23 @@ model Item {
   /// Set when the item is deleted: it disappears from the API, but the row is kept.
   deletedAt   DateTime?
 
-  reviewEvents ReviewEvent[]
+  reviewEvents  ReviewEvent[]
   notifications Notification[]
-  activities Activity[]
+  activities    Activity[]
 
-  blockedBy ItemBlock[] @relation("BlockedItem")
-  blocking  ItemBlock[] @relation("BlockerItem")
+  blockedBy ItemBlock[]      @relation("BlockedItem")
+  blocking  ItemBlock[]      @relation("BlockerItem")
   checklist ChecklistEntry[]
   labels    ItemLabel[]
+
+  /// Documents that belong to this ticket (e.g. a feature's spec).
+  homeDocuments    Document[]     @relation("DocumentHome")
+  /// Documents created from this ticket.
+  createdDocuments Document[]     @relation("DocumentCreatedFrom")
+  /// Knowledge documents linked to this ticket.
+  documentLinks    ItemDocument[]
+  /// Tech debt documents this ticket fixed.
+  fixedDocuments   Document[]     @relation("DocumentFixedBy")
 
   @@unique([projectId, number])
   @@index([projectId, stateId, deletedAt])
@@ -270,24 +279,24 @@ model ChecklistEntry {
 
 /// Durable review submission; the body stays historical while delivery metadata changes.
 model ReviewEvent {
-  id String @id @default(uuid(7)) @db.Uuid
-  projectId String @db.Uuid
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  itemId String @db.Uuid
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  actorId String?
-  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  fromStateId String @db.Uuid
-  toStateId String @db.Uuid
-  fromStateKey String?
-  toStateKey String
-  submittedAt DateTime @default(now())
-  recipientIds String[]
-  attempts Int @default(0)
-  nextAttemptAt DateTime @default(now())
-  processedAt DateTime?
-  failedAt DateTime?
-  lastError String?
+  id            String         @id @default(uuid(7)) @db.Uuid
+  projectId     String         @db.Uuid
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId        String         @db.Uuid
+  item          Item           @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  actorId       String?
+  actor         User?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  fromStateId   String         @db.Uuid
+  toStateId     String         @db.Uuid
+  fromStateKey  String?
+  toStateKey    String
+  submittedAt   DateTime       @default(now())
+  recipientIds  String[]
+  attempts      Int            @default(0)
+  nextAttemptAt DateTime       @default(now())
+  processedAt   DateTime?
+  failedAt      DateTime?
+  lastError     String?
   notifications Notification[]
 
   @@index([processedAt, failedAt, nextAttemptAt, id])
@@ -298,19 +307,19 @@ model ReviewEvent {
 /// One change to an item, made by a person or by their agent. Written in the same
 /// transaction as the change. `detail` is typed in items/item.schema.ts.
 model Activity {
-  id String @id @default(uuid(7)) @db.Uuid
-  userId String?
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   /// The OAuth client of the agent; null for a change made on the website.
-  clientId String?
+  clientId  String?
   /// The client's registered name, self-declared: shown, never used for access.
   agentName String?
-  action String
-  projectId String @db.Uuid
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  itemId String? @db.Uuid
-  item Item? @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  detail Json
+  action    String
+  projectId String   @db.Uuid
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId    String?  @db.Uuid
+  item      Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  detail    Json
   createdAt DateTime @default(now())
 
   @@index([itemId, createdAt])
@@ -319,17 +328,17 @@ model Activity {
 
 /// Separate inbox/read state for each recipient of each actual submission.
 model Notification {
-  id String @id @default(uuid(7)) @db.Uuid
-  eventId String @db.Uuid
-  event ReviewEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id          String      @id @default(uuid(7)) @db.Uuid
+  eventId     String      @db.Uuid
+  event       ReviewEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   recipientId String
-  recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  projectId String @db.Uuid
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  itemId String @db.Uuid
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  readAt DateTime?
+  recipient   User        @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  projectId   String      @db.Uuid
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId      String      @db.Uuid
+  item        Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  readAt      DateTime?
 
   @@unique([eventId, recipientId])
   @@index([recipientId, createdAt, id])
@@ -338,7 +347,7 @@ model Notification {
 }
 
 // ---------------------------------------------------------------------------
-// Labels (docs/plans/27-labels.md)
+// Labels (docs/archived/27-labels.md)
 
 enum LabelColor {
   GRAY
@@ -385,24 +394,71 @@ enum DocumentKind {
   PROPOSAL
   SPEC
   REFERENCE
+  ADR
+  TECH_DEBT
+}
+
+/// ADR: PROPOSED, ACCEPTED, REJECTED, SUPERSEDED. Tech debt (plan 41): OPEN, FIXED, WONT_FIX.
+/// Which moves a kind allows is a rule in the documents module, not a constraint. See ADR-0014.
+enum DocumentStatus {
+  PROPOSED
+  ACCEPTED
+  REJECTED
+  SUPERSEDED
+  OPEN
+  FIXED
+  WONT_FIX
 }
 
 /// A project's knowledge document: Markdown with a kind and a purpose, no workflow.
 /// Archived documents keep their rows (`archivedAt`). See ADR-0013.
 model Document {
-  id         String       @id @default(uuid(7)) @db.Uuid
-  projectId  String       @db.Uuid
-  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  kind       DocumentKind
-  title      String
-  purpose    String       @default("")
-  body       String       @default("")
-  authorId   String?
-  author     User?        @relation("DocumentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-  archivedAt DateTime?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  id                String          @id @default(uuid(7)) @db.Uuid
+  projectId         String          @db.Uuid
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind              DocumentKind
+  title             String
+  purpose           String          @default("")
+  body              String          @default("")
+  authorId          String?
+  author            User?           @relation("DocumentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  archivedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  /// Set: belongs to that ticket (e.g. a feature's spec), not listed in Knowledge.
+  /// Null: a project document in Knowledge. See ADR-0014.
+  homeItemId        String?         @db.Uuid
+  homeItem          Item?           @relation("DocumentHome", fields: [homeItemId], references: [id], onDelete: Cascade)
+  /// The ticket it was created from, set once: "from TG-21".
+  createdFromItemId String?         @db.Uuid
+  createdFromItem   Item?           @relation("DocumentCreatedFrom", fields: [createdFromItemId], references: [id], onDelete: SetNull)
+  links             ItemDocument[]
+  /// ADR-7: per project and kind. Null for kinds without a number.
+  number            Int?
+  status            DocumentStatus?
+  /// ADR only: the newer ADR that replaced this one.
+  supersededById    String?         @db.Uuid
+  supersededBy      Document?       @relation("DocumentSuperseded", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersedes        Document[]      @relation("DocumentSuperseded")
+  /// Tech debt only: the Done ticket that fixed it.
+  fixedByItemId     String?         @db.Uuid
+  fixedByItem       Item?           @relation("DocumentFixedBy", fields: [fixedByItemId], references: [id], onDelete: SetNull)
 
+  @@unique([projectId, kind, number])
   @@index([projectId, updatedAt])
+  @@index([homeItemId])
   @@map("document")
+}
+
+/// Knowledge documents linked to tickets, many to many. Ids only, no content.
+model ItemDocument {
+  itemId     String   @db.Uuid
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  documentId String   @db.Uuid
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([itemId, documentId])
+  @@index([documentId])
+  @@map("item_document")
 }

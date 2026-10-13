@@ -1,6 +1,6 @@
 # 29: Review inbox UI preview
 
-Status: In Review
+Status: Done
 
 ## Scope
 

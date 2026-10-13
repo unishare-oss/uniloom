@@ -84,7 +84,7 @@ describe('mcp (e2e)', () => {
       owner.profile.sub,
       MCP_RESOURCE,
     );
-    return { keyPrefix, feature, slice, token, owner };
+    return { projectId: id, keyPrefix, feature, slice, token, owner };
   };
 
   describe('discovery and auth', () => {
@@ -170,11 +170,14 @@ describe('mcp (e2e)', () => {
         'check_criterion',
         'delete_item',
         'get_criteria',
+        'get_document',
         'get_item',
+        'list_documents',
         'list_items',
         'list_labels',
         'list_projects',
         'list_states',
+        'save_document',
         'save_item',
         'set_criteria',
       ]);
@@ -226,12 +229,32 @@ describe('mcp (e2e)', () => {
 
     it('gets an item by key, case-insensitively', async () => {
       const w = await setup();
+      const doc = (await read(
+        await api.send(
+          'POST',
+          `/api/projects/${w.projectId}/documents`,
+          w.owner.cookie,
+          { kind: 'REFERENCE', title: 'Stack' },
+        ),
+      )) as { id: string };
+      await api.send(
+        'POST',
+        `/api/items/${w.slice.id}/documents`,
+        w.owner.cookie,
+        { documentId: doc.id },
+      );
       const { text } = await tool(w.token, 'get_item', {
         key: w.slice.key.toLowerCase(),
       });
       const item = JSON.parse(text);
       expect(item.key).toBe(w.slice.key);
       expect(item.checklist).toHaveLength(1);
+      expect(item.related).toHaveLength(1);
+      expect(item.related[0]).toMatchObject({
+        id: doc.id,
+        title: 'Stack',
+        home: 'project',
+      });
     });
 
     it('lists states and labels', async () => {

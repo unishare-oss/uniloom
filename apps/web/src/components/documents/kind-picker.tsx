@@ -1,15 +1,16 @@
 import {
   DOCUMENT_KIND,
-  DOCUMENT_KINDS,
   type DocumentKind,
 } from "@/components/documents/document-meta";
 import { cn } from "@/lib/utils";
 
-/** Four cards, one per kind, each with a one-line hint. */
+/** One card per kind the project allows, each with a one-line hint. */
 export const KindPicker = ({
+  kinds,
   value,
   onChange,
 }: {
+  kinds: DocumentKind[];
   value: DocumentKind;
   onChange: (kind: DocumentKind) => void;
 }) => {
@@ -17,9 +18,12 @@ export const KindPicker = ({
     <div
       role="radiogroup"
       aria-label="Kind"
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      className={cn(
+        "grid gap-3 sm:grid-cols-2",
+        kinds.length === 5 ? "lg:grid-cols-5" : "lg:grid-cols-4",
+      )}
     >
-      {DOCUMENT_KINDS.map((kind) => {
+      {kinds.map((kind) => {
         const { label, hint, icon: Icon, text, bg } = DOCUMENT_KIND[kind];
         return (
           <button

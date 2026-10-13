@@ -1,6 +1,7 @@
 import {
   checklistError,
   featureDone,
+  guidedOnlyError,
   kindError,
   labelGroupError,
   mayAssign,
@@ -297,5 +298,15 @@ describe('labelGroupError', () => {
       { name: 'd', group: 'size' },
     ]);
     expect(error).toContain('"type"');
+  });
+});
+
+describe('guidedOnlyError', () => {
+  it('allows a Guided project', () => {
+    expect(guidedOnlyError({ mode: 'GUIDED' })).toBeNull();
+  });
+
+  it('refuses a Standard project with a message', () => {
+    expect(guidedOnlyError({ mode: 'STANDARD' })).toEqual(expect.any(String));
   });
 });
