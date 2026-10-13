@@ -1,6 +1,6 @@
 # 34: MCP write tools
 
-Status: In Review
+Status: Done
 
 ## Scope
 

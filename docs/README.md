@@ -7,13 +7,15 @@ Uniloom's own work is tracked here in Markdown, not in a tracker.
 | `plans/`     | One plan per slice: scope, done-when checklist, design | `NN-short-name.md`    |
 | `adr/`       | Architecture decisions that outlive one slice          | `NNNN-short-title.md` |
 | `tech-debt/` | Known shortcuts and problems to fix later              | `NNN-short-title.md`  |
+| `archived/`  | Plans you've set to Done, moved out of `plans/`        | `NN-short-name.md`    |
 
 Numbers only go up. Never reuse or delete one: mark it done, superseded or won't fix.
 
 ## Plans
 
 Each slice in `MVP.md` §14 gets a plan before code is written. Status is one of
-`Aligning`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, `Canceled`.
+`Aligning`, `Ready`, `In Progress`, `Blocked`, `In Review`, `Done`, `Canceled`. A plan set
+to `Done` moves to `archived/` with its number, and links to it point there.
 
 ```markdown
 # NN: Slice title

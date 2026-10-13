@@ -150,7 +150,7 @@ model Member {
 }
 
 // ---------------------------------------------------------------------------
-// Items: workflow states, work items and blocked-by links (docs/plans/04-items.md)
+// Items: workflow states, work items and blocked-by links (docs/archived/04-items.md)
 
 enum StateCategory {
   BACKLOG
@@ -338,7 +338,7 @@ model Notification {
 }
 
 // ---------------------------------------------------------------------------
-// Labels (docs/plans/27-labels.md)
+// Labels (docs/archived/27-labels.md)
 
 enum LabelColor {
   GRAY

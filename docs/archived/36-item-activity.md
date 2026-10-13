@@ -1,6 +1,6 @@
 # 36: Item activity
 
-Status: In Review
+Status: Done
 
 ## Scope
 

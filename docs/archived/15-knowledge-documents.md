@@ -1,6 +1,6 @@
 # 15: Typed knowledge documents
 
-Status: In Review
+Status: Done
 
 ## Scope
 

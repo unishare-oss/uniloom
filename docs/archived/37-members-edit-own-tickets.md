@@ -1,6 +1,6 @@
 # 37: Members edit only their own tickets
 
-Status: In Review
+Status: Done
 
 ## Scope
 

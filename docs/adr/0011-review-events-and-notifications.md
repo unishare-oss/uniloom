@@ -68,7 +68,7 @@ actions operate on explicitly displayed ids, as chosen during the UI refinement.
 - No email/push implementation, batching window, move rate limiter, or self-notification
   preference is accepted by this ADR.
 
-Related plans: [30](../plans/30-review-boundary-and-events.md),
-[31](../plans/31-review-notification-worker.md), and
-[14](../plans/14-review-inbox.md). Transaction ownership follows
+Related plans: [30](../archived/30-review-boundary-and-events.md),
+[31](../archived/31-review-notification-worker.md), and
+[14](../archived/14-review-inbox.md). Transaction ownership follows
 [ADR-0008](0008-services-run-transactions.md).
