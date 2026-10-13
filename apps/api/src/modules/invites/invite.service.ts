@@ -30,7 +30,7 @@ const deadLinkError = (state: Exclude<LinkState, 'live'>) => {
 
 /**
  * Owner or manager. Makes the project's link, and the one before it stops working in
- * the same transaction: a project has one live link (ADR-0014).
+ * the same transaction: a project has one live link (ADR-0015).
  */
 export const createInvite = async (
   projectId: string,
@@ -110,7 +110,7 @@ export const previewInvite = async (token: string, userId: string) => {
 /**
  * Inside the join transaction, for a link that needs approval. A waiting request in the
  * project is kept as is. Someone who already asked through this link asks again without
- * a new slot (ADR-0014: one slot per person per link). Anyone else takes a slot first.
+ * a new slot (ADR-0015: one slot per person per link). Anyone else takes a slot first.
  * False when the link no longer lets them ask.
  */
 const askToJoin = async (

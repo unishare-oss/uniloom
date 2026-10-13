@@ -6,7 +6,11 @@ import {
   requireRole,
   ROLES,
 } from '@/modules/members/member.service.js';
-import { mayMoveToDone } from '@/modules/items/item.rules.js';
+import {
+  creatableDocumentKindsFor,
+  documentKindsFor,
+  mayMoveToDone,
+} from '@/modules/items/item.rules.js';
 import * as projectRepo from './project.repository.js';
 import { limitsError } from './project.rules.js';
 
@@ -57,6 +61,8 @@ export const getProject = async (projectId: string, userId: string) => {
     canEditSettings: role === 'OWNER',
     canCreateLabels: CREATORS.includes(role),
     canCreateDocuments: CREATORS.includes(role),
+    documentKinds: documentKindsFor(project),
+    creatableDocumentKinds: creatableDocumentKindsFor(project),
     canClaim: CREATORS.includes(role) || project.selfClaimAllowed,
     canMoveToDone: mayMoveToDone(role),
     assignableRoles: assignableRoles(role),

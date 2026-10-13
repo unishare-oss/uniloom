@@ -11,6 +11,8 @@ Writing: save_item creates (no key) or updates (key) an item and moves it when y
 
 People are named, never by id: assignee is "me", "none" or the email of a project member.
 
+Documents: a document is named by its id (list_documents, then get_document or save_document with id), never by a key. list_documents shows Knowledge documents; a ticket's own are in get_item's related. save_document creates (no id) or edits title, purpose and body (id); the kind never changes. Only Owners and Managers write Knowledge documents. With ticket, whoever may edit that ticket writes there: a SPEC or REFERENCE becomes the ticket's own, an ADR or TECH_DEBT is kept in Knowledge and linked to it. Tickets, ADRs and tech debt are Guided only (guided_only in a Standard project). Statuses and archiving are for people on the website.
+
 You cannot approve a design or accept an ADR, and you cannot move an item to Ready or Done (people_only): people do that on the website. If you cannot finish without a person, say so and why.
 
 Checklist items are numbered from 1 (get_criteria). Tick each one the moment it is met.

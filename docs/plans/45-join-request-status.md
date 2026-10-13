@@ -1,12 +1,12 @@
-# 41: The requester's view of a join request
+# 45: The requester's view of a join request
 
 Status: In Review
 
 ## Scope
 
-After asking to join a project ([plan 40](40-join-approval.md)), a person can see that
+After asking to join a project ([plan 44](44-join-approval.md)), a person can see that
 they are waiting, cancel, and find out when they were declined. No email is sent
-([ADR-0014](../adr/0014-project-invite-links.md)), so the app has to show it.
+([ADR-0015](../adr/0015-project-invite-links.md)), so the app has to show it.
 
 - **API:** list my waiting requests; cancel one of mine.
 - **Web:** a "Waiting for approval" section on the home page, and the full set of states
@@ -115,7 +115,7 @@ Planned vs actual:
 
 Tests written first and seen failing: eight cases under "the requester" in
 `test/join-requests.e2e-spec.ts`. Expectations changed, both because this plan changes the
-preview: the declined preview in the same file now expects `DECLINED` (plan 40 returned
+preview: the declined preview in the same file now expects `DECLINED` (plan 44 returned
 null), and the preview tests gained `requestId`. `test/app.e2e-spec.ts` gained two
 operations.
 
@@ -123,4 +123,4 @@ Checked in the browser: "Waiting for approval" under the projects with two rows;
 asked first, removed the row and moved focus to the next row's button; the declined link
 showed "Ask again", which put the request back to waiting.
 
-Tech debt noted: [TD-016](../tech-debt/016-invite-rows-kept.md).
+Tech debt noted: [TD-019](../tech-debt/019-invite-rows-kept.md).

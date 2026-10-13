@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** How long a link works, in seconds. There is no "never" (ADR-0014). */
+/** How long a link works, in seconds. There is no "never" (ADR-0015). */
 export const EXPIRY_SECONDS = {
   '1h': 3600,
   '24h': 24 * 3600,

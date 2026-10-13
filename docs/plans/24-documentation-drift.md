@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component | Proposed location | What | Why |
-| --- | --- | --- | --- |
-| `findDriftCandidates` | `modules/integrations/source.service.ts` | Compare registered references using already acquired source metadata. | Identify likely staleness without claiming semantic certainty. |
-| `assessDriftCandidate` | `modules/documents/document.service.ts` | Record the human disposition of a candidate. | Keep findings separate from accepted requirements. |
-| `DriftPage` | `components/documents/drift-page.tsx` | Display source changes and affected specification revisions. | Make documentation maintenance actionable. |
+| Function / component   | Proposed location                        | What                                                                  | Why                                                            |
+| ---------------------- | ---------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `findDriftCandidates`  | `modules/integrations/source.service.ts` | Compare registered references using already acquired source metadata. | Identify likely staleness without claiming semantic certainty. |
+| `assessDriftCandidate` | `modules/documents/document.service.ts`  | Record the human disposition of a candidate.                          | Keep findings separate from accepted requirements.             |
+| `DriftPage`            | `components/documents/drift-page.tsx`    | Display source changes and affected specification revisions.          | Make documentation maintenance actionable.                     |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

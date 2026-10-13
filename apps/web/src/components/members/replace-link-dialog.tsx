@@ -21,7 +21,7 @@ import {
 
 /**
  * Picks the options for a new link and warns that the current one stops working. A link
- * is never edited: any change is a new link (ADR-0014).
+ * is never edited: any change is a new link (ADR-0015).
  */
 export const ReplaceLinkDialog = ({
   currentWorks,

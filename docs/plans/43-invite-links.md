@@ -1,4 +1,4 @@
-# 39: Invite links
+# 43: Invite links
 
 Status: In Review
 
@@ -7,7 +7,7 @@ Status: In Review
 A project gets one invite link. An Owner or Manager picks an expiry and a limit, creates
 the link and shares it. Anyone who opens it signs in (if needed), sees which project it is
 and presses Join to become a Member. This is the first of three plans; the decisions are
-in [ADR-0014](../adr/0014-project-invite-links.md).
+in [ADR-0015](../adr/0015-project-invite-links.md).
 
 - **API:** create (replacing the live link), read and delete the project's link; preview a
   link by its token; join through it.
@@ -19,9 +19,9 @@ in [ADR-0014](../adr/0014-project-invite-links.md).
 
 Left out:
 
-- Require approval and join requests: plan 40. Every link in this plan is open.
-- The requester's view of their own request: plan 41.
-- Email, MCP tools, several links per project, editing a live link, a ban list (ADR-0014).
+- Require approval and join requests: plan 44. Every link in this plan is open.
+- The requester's view of their own request: plan 45.
+- Email, MCP tools, several links per project, editing a live link, a ban list (ADR-0015).
 - Rate limiting: the API has none, and a 256-bit token can't be guessed.
 
 ## Done when
@@ -185,3 +185,9 @@ Checked in the browser as a throwaway test person signed in through the project'
 uniAuth: sign-in and consent return to the link; the open, full, expired and unknown links;
 Join; the card; the replace and remove dialogs and where focus returns. No element
 overflows at a 320 px wide page. Not checked: the light theme, and a real screen reader.
+
+Merged `dev` on 2026-10-13 after it gained ticket documents, ADR and tech-debt records.
+Those plans had taken numbers 39 to 41, ADR-0014 and TD-016, so these plans became 43 to
+45, the ADR became ADR-0015 and the tech-debt note TD-019. The three migrations were
+renamed to `20261013220000` and later, so they sort after the ones from `dev`. Commit
+messages before the merge still say "plans 39 to 41".

@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component | Proposed location | What | Why |
-| --- | --- | --- | --- |
-| `submitObservation` | `modules/observations/observation.service.ts` | Validate context and store an attributed source-pinned claim. | Separate observed code behavior from approved intent. |
-| `classifyObservation` | `modules/observations/observation.service.ts` | Record human assessment and explanation. | Make differences explicit rather than silently rewriting requirements. |
-| `BehaviorComparison` | `components/observations/behavior-comparison.tsx` | Show intended behavior beside source-backed observations. | Help reviewers assess a concrete mismatch. |
+| Function / component  | Proposed location                                 | What                                                          | Why                                                                    |
+| --------------------- | ------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `submitObservation`   | `modules/observations/observation.service.ts`     | Validate context and store an attributed source-pinned claim. | Separate observed code behavior from approved intent.                  |
+| `classifyObservation` | `modules/observations/observation.service.ts`     | Record human assessment and explanation.                      | Make differences explicit rather than silently rewriting requirements. |
+| `BehaviorComparison`  | `components/observations/behavior-comparison.tsx` | Show intended behavior beside source-backed observations.     | Help reviewers assess a concrete mismatch.                             |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

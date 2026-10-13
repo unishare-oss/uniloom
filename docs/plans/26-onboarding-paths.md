@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component | Proposed location | What | Why |
-| --- | --- | --- | --- |
-| `saveOnboardingPath` | `modules/documents/onboarding.service.ts` | Validate permissions, references, and explicit order. | Keep curated reading paths within project access. |
-| `getOnboardingPath` | `modules/documents/onboarding.service.ts` | Resolve references and mark missing or archived records. | Make stale onboarding content visible. |
-| `OnboardingPathPage` | `components/documents/onboarding-path.tsx` | Present the ordered reading journey. | Help newcomers understand the product. |
+| Function / component | Proposed location                          | What                                                     | Why                                               |
+| -------------------- | ------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------- |
+| `saveOnboardingPath` | `modules/documents/onboarding.service.ts`  | Validate permissions, references, and explicit order.    | Keep curated reading paths within project access. |
+| `getOnboardingPath`  | `modules/documents/onboarding.service.ts`  | Resolve references and mark missing or archived records. | Make stale onboarding content visible.            |
+| `OnboardingPathPage` | `components/documents/onboarding-path.tsx` | Present the ordered reading journey.                     | Help newcomers understand the product.            |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

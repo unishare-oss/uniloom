@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component | Proposed location | What | Why |
-| --- | --- | --- | --- |
-| `setStoryTargetStatus` | `modules/stories/story.service.ts` | Validate target membership and status permissions. | Represent progress per target without a second work hierarchy. |
-| `recordTargetDifference` | `modules/stories/story.service.ts` | Store an attributed difference and its disposition. | Preserve product decisions across clients. |
-| `PlatformMatrix` | `components/stories/platform-matrix.tsx` | Show story-by-target support and linked explanations. | Expose uneven feature support. |
+| Function / component     | Proposed location                        | What                                                  | Why                                                            |
+| ------------------------ | ---------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
+| `setStoryTargetStatus`   | `modules/stories/story.service.ts`       | Validate target membership and status permissions.    | Represent progress per target without a second work hierarchy. |
+| `recordTargetDifference` | `modules/stories/story.service.ts`       | Store an attributed difference and its disposition.   | Preserve product decisions across clients.                     |
+| `PlatformMatrix`         | `components/stories/platform-matrix.tsx` | Show story-by-target support and linked explanations. | Expose uneven feature support.                                 |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

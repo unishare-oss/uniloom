@@ -76,7 +76,7 @@ export const listMyJoinRequests = async (userId: string) => {
 
 /**
  * The caller takes their own request back. The slot it used stays used, and they may
- * ask again through the same link (ADR-0014). 404 if it isn't theirs, 409
+ * ask again through the same link (ADR-0015). 404 if it isn't theirs, 409
  * `already_decided` if it no longer waits.
  */
 export const cancelJoinRequest = async (userId: string, requestId: string) => {

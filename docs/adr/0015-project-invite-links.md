@@ -1,4 +1,4 @@
-# ADR-0014: Project invite links
+# ADR-0015: Project invite links
 
 Status: Proposed
 Date: 2026-10-13
@@ -74,5 +74,5 @@ Option 2, decided with the user on 2026-10-13.
 - `invite` rows are never deleted while their project exists. They are small, and a
   project has few.
 
-Related plans: [39](../plans/39-invite-links.md), [40](../plans/40-join-approval.md),
-[41](../plans/41-join-request-status.md).
+Related plans: [43](../plans/43-invite-links.md), [44](../plans/44-join-approval.md),
+[45](../plans/45-join-request-status.md).

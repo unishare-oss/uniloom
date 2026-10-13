@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DOCUMENT_TEMPLATES } from "@/components/documents/document-templates";
-import type { DocumentKind } from "@/components/documents/document-meta";
+import { type DocumentKind } from "@/components/documents/document-meta";
 import { KindPicker } from "@/components/documents/kind-picker";
 import { Markdown } from "@/components/markdown/markdown";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   useCreateDocument,
   useUpdateDocument,
 } from "@/lib/api/generated/documents/documents";
+import { useGetProject } from "@/lib/api/generated/projects/projects";
 
 /**
  * The write form: new (with the kind picker and the kind's template) or an existing
@@ -39,6 +40,9 @@ export const DocumentForm = ({
   };
 }) => {
   const router = useRouter();
+  const { data: documentKinds } = useGetProject(projectId, {
+    query: { select: (r) => r.data.creatableDocumentKinds },
+  });
   const queryClient = useQueryClient();
   const [kind, setKind] = useState(initial.kind);
   const [title, setTitle] = useState(initial.title);
@@ -88,7 +92,13 @@ export const DocumentForm = ({
         save();
       }}
     >
-      {!documentId && <KindPicker value={kind} onChange={pickKind} />}
+      {!documentId && (
+        <KindPicker
+          kinds={documentKinds ?? []}
+          value={kind}
+          onChange={pickKind}
+        />
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="document-title">Title</Label>

@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component | Proposed location | What | Why |
-| --- | --- | --- | --- |
-| `createQuestion` | `modules/questions/question.service.ts` | Validate context and owner membership before saving. | Make decisions actionable rather than buried in prose. |
-| `resolveQuestion / reopenQuestion` | `modules/questions/question.service.ts` | Check authority and append a resolution transition. | Preserve how an answer changed over time. |
-| `QuestionList / QuestionPage` | `components/questions/` | Show open questions and the recorded answers. | Give people a focused decision queue. |
+| Function / component               | Proposed location                       | What                                                 | Why                                                    |
+| ---------------------------------- | --------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| `createQuestion`                   | `modules/questions/question.service.ts` | Validate context and owner membership before saving. | Make decisions actionable rather than buried in prose. |
+| `resolveQuestion / reopenQuestion` | `modules/questions/question.service.ts` | Check authority and append a resolution transition.  | Preserve how an answer changed over time.              |
+| `QuestionList / QuestionPage`      | `components/questions/`                 | Show open questions and the recorded answers.        | Give people a focused decision queue.                  |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

@@ -1,4 +1,4 @@
-# 40: Require approval and join requests
+# 44: Require approval and join requests
 
 Status: In Review
 
@@ -6,8 +6,8 @@ Status: In Review
 
 An invite link can require approval. A person who opens such a link asks to join instead
 of joining, and an Owner or Manager approves or declines the request on the Members page.
-Builds on [plan 39](39-invite-links.md); decisions are in
-[ADR-0014](../adr/0014-project-invite-links.md).
+Builds on [plan 43](43-invite-links.md); decisions are in
+[ADR-0015](../adr/0015-project-invite-links.md).
 
 - **API:** `joinApproval` on the link; asking through a link creates a request; list,
   approve and decline requests.
@@ -29,7 +29,7 @@ Rules (user decisions, 2026-10-13):
 
 Left out:
 
-- The requester's own view (home page row, cancel, declined and ask-again states): plan 41.
+- The requester's own view (home page row, cancel, declined and ask-again states): plan 45.
   Until then the join page only says the request was sent.
 - Email or in-app notifications to approvers, blocking people, bulk approve.
 
@@ -84,7 +84,7 @@ flowchart TD
     O -- yes --> P2[set PENDING again, no slot] --> R[200 requested]
     O -- no --> T{takeSlot}
     T -- yes --> N[insert PENDING request] --> R
-    T -- no --> E[404, 410 or 409 as in plan 39]
+    T -- no --> E[404, 410 or 409 as in plan 43]
 ```
 
 ```mermaid
@@ -160,7 +160,7 @@ Planned vs actual:
   cycle.
 - Join answers `200` with `result: "requested"`, not `202`.
 - The preview already answers a person with a waiting request when the link is dead, and a
-  person who holds a slot when the link is full (planned for plan 41).
+  person who holds a slot when the link is full (planned for plan 45).
 - Approve and decline answer `data: null` with a message, not the member.
 
 Tests written first and seen failing: `test/join-requests.e2e-spec.ts` (19 for this plan)

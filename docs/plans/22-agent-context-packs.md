@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component | Proposed location | What | Why |
-| --- | --- | --- | --- |
-| `getItemContext` | `modules/items/item-context.service.ts` | Gather permitted linked records and assemble a bounded response. | Reduce repeated reads while keeping source identity. |
-| `getContext / read_item_context` | `REST handler and mcp/tools/` | Expose the same context service through both transports. | Preserve one access-control path. |
-| `ContextPreview` | `components/items/context-preview.tsx` | Let a person inspect the context an agent will receive. | Keep the assembled context understandable. |
+| Function / component             | Proposed location                       | What                                                             | Why                                                  |
+| -------------------------------- | --------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| `getItemContext`                 | `modules/items/item-context.service.ts` | Gather permitted linked records and assemble a bounded response. | Reduce repeated reads while keeping source identity. |
+| `getContext / read_item_context` | `REST handler and mcp/tools/`           | Expose the same context service through both transports.         | Preserve one access-control path.                    |
+| `ContextPreview`                 | `components/items/context-preview.tsx`  | Let a person inspect the context an agent will receive.          | Keep the assembled context understandable.           |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

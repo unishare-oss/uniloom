@@ -64,6 +64,7 @@ import { LabelPicker } from "@/components/items/label-picker";
 import { AssigneeField } from "@/components/items/assignee-field";
 import { Description } from "@/components/items/description";
 import { Checklist } from "@/components/items/checklist";
+import { RelatedDocuments } from "@/components/items/related-documents";
 import { ItemActivity } from "@/components/items/item-activity";
 
 const NO_PARENT = "none";
@@ -288,6 +289,16 @@ export const ItemDetail = ({
             saving={update.isPending}
             onSave={(description) => save({ description })}
           />
+
+          {item.ticketDocumentKinds.length > 0 && (
+            <RelatedDocuments
+              projectId={projectId}
+              itemId={item.id}
+              related={item.related}
+              ticketDocumentKinds={item.ticketDocumentKinds}
+              canEdit={item.canEdit}
+            />
+          )}
 
           <Checklist
             itemId={item.id}

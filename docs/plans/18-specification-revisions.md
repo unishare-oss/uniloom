@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component | Proposed location | What | Why |
-| --- | --- | --- | --- |
-| `createSpecificationRevision` | `modules/documents/document.service.ts` | Compare the expected revision and save a new snapshot transactionally. | Prevent lost edits and preserve approved content. |
-| `approveSpecificationRevision` | `modules/documents/document.service.ts` | Check actor kind, role, authorship, and exact revision. | Make approval attributable and specific. |
-| `RevisionHistory / RevisionComparison` | `components/documents/` | Display snapshots, differences, and approval status. | Make subsequent changes reviewable. |
+| Function / component                   | Proposed location                       | What                                                                   | Why                                               |
+| -------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------- |
+| `createSpecificationRevision`          | `modules/documents/document.service.ts` | Compare the expected revision and save a new snapshot transactionally. | Prevent lost edits and preserve approved content. |
+| `approveSpecificationRevision`         | `modules/documents/document.service.ts` | Check actor kind, role, authorship, and exact revision.                | Make approval attributable and specific.          |
+| `RevisionHistory / RevisionComparison` | `components/documents/`                 | Display snapshots, differences, and approval status.                   | Make subsequent changes reviewable.               |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

@@ -6,7 +6,6 @@ import { useState } from "react";
 import { DocumentList } from "@/components/documents/document-list";
 import {
   DOCUMENT_KIND,
-  DOCUMENT_KINDS,
   type DocumentKind,
 } from "@/components/documents/document-meta";
 import { NewDocumentButton } from "@/components/documents/new-document-button";
@@ -24,6 +23,7 @@ export const KnowledgePage = ({ projectId }: { projectId: string }) => {
   const [kind, setKind] = useState<KindFilter>("ALL");
   const [search, setSearch] = useState("");
   const [archived, setArchived] = useState(false);
+  const [ticketDocuments, setTicketDocuments] = useState(false);
   const q = search.trim();
   const { data: project } = useGetProject(projectId, {
     query: { select: (r) => r.data },
@@ -33,6 +33,7 @@ export const KnowledgePage = ({ projectId }: { projectId: string }) => {
     {
       ...(q && { q }),
       ...(archived && { archived: "true" as const }),
+      ...(ticketDocuments && { includeTicketDocuments: "true" as const }),
     },
     {
       query: {
@@ -69,8 +70,8 @@ export const KnowledgePage = ({ projectId }: { projectId: string }) => {
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-semibold tracking-tight">Knowledge</h1>
           <p className="text-muted-foreground">
-            Briefs, proposals, specs and reference notes live here. Decisions
-            live in ADRs, slice designs in their item.
+            Briefs, proposals, specs and reference notes live here, with ADRs
+            and tech debt in Guided projects. Slice designs live in their item.
           </p>
         </div>
         {canCreate && <NewDocumentButton projectId={projectId} />}
@@ -80,9 +81,9 @@ export const KnowledgePage = ({ projectId }: { projectId: string }) => {
         <Tabs value={kind} onValueChange={(v) => setKind(v as KindFilter)}>
           <TabsList className="h-auto flex-wrap">
             <TabsTrigger value="ALL">All ({count("ALL")})</TabsTrigger>
-            {DOCUMENT_KINDS.map((k) => (
+            {(project?.documentKinds ?? []).map((k) => (
               <TabsTrigger key={k} value={k}>
-                {DOCUMENT_KIND[k].label} ({count(k)})
+                {k === "ADR" ? "ADRs" : DOCUMENT_KIND[k].label} ({count(k)})
               </TabsTrigger>
             ))}
           </TabsList>
@@ -104,6 +105,14 @@ export const KnowledgePage = ({ projectId }: { projectId: string }) => {
             onChange={(e) => setArchived(e.target.checked)}
           />
           Show archived
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={ticketDocuments}
+            onChange={(e) => setTicketDocuments(e.target.checked)}
+          />
+          Show ticket documents
         </label>
       </div>
 

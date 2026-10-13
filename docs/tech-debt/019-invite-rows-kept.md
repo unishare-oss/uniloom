@@ -1,7 +1,7 @@
-# TD-016: Old invite links and join requests are never deleted
+# TD-019: Old invite links and join requests are never deleted
 
 Status: Open
-Found: 2026-10-13, in plans 39 to 41
+Found: 2026-10-13, in plans 43 to 45
 
 ## Problem
 
@@ -15,7 +15,7 @@ join in a loop. A link's limit bounds the requests per link, not the links per p
 ## Why it was left
 
 The rows are what make "one slot per person per link" and "requests outlive their link"
-work ([ADR-0014](../adr/0014-project-invite-links.md)), they are small, and a project
+work ([ADR-0015](../adr/0015-project-invite-links.md)), they are small, and a project
 delete cascades to them. ADR-0011 left the same question open for events and
 notifications, and the two should get one retention policy.
 

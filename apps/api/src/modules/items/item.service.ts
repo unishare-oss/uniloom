@@ -19,6 +19,8 @@ import {
 import { recordReviewSubmission } from '@/modules/notifications/notification.service.js';
 import * as itemRules from './item.rules.js';
 import { toItem, toListRow } from './item.utils.js';
+import { toRelated } from './item-document.utils.js';
+import * as itemDocumentRepo from './item-document.repository.js';
 import type { ActivityChange, ItemAgent, ItemRow } from './item.types.js';
 import { insertActivity } from './activity.repository.js';
 import * as itemRepo from './item.repository.js';
@@ -154,9 +156,22 @@ export const createProjectItem = async (
   return toItem(row, role, userId);
 };
 
+/** The item with the documents it shows: none in a Standard project. */
 export const getItem = async (id: string, userId: string) => {
   const { item, role } = await loadItem(id, userId);
-  return toItem(item, role, userId);
+  if (itemRules.guidedOnlyError(item.project))
+    return {
+      ...toItem(item, role, userId),
+      ticketDocumentKinds: [],
+      related: [],
+    };
+  const parent = item.parentId ? await itemRepo.findItem(item.parentId) : null;
+  const rows = await itemDocumentRepo.findItemDocuments(id, parent?.id ?? null);
+  return {
+    ...toItem(item, role, userId),
+    ticketDocumentKinds: itemRules.ticketDocumentKindsFor(item.project),
+    related: toRelated(rows, id, parent && itemKey(parent)),
+  };
 };
 
 /**
