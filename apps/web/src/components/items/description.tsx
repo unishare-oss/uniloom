@@ -10,10 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 /** Rendered description; Edit opens Write / Preview with Save and Cancel. */
 export const Description = ({
   value,
+  canEdit,
   saving,
   onSave,
 }: {
   value: string;
+  canEdit: boolean;
   saving: boolean;
   onSave: (description: string) => Promise<unknown>;
 }) => {
@@ -29,13 +31,17 @@ export const Description = ({
           <h2 id="description" className="font-semibold">
             Description
           </h2>
-          <Button variant="secondary" onClick={() => setDraft(value)}>
-            <Pencil />
-            Edit
-          </Button>
+          {canEdit && (
+            <Button variant="secondary" onClick={() => setDraft(value)}>
+              <Pencil />
+              Edit
+            </Button>
+          )}
         </div>
         {value.trim() ? (
           <Markdown>{value}</Markdown>
+        ) : !canEdit ? (
+          <p className="text-muted-foreground">No description.</p>
         ) : (
           <button
             type="button"

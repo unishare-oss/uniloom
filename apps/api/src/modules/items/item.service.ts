@@ -221,16 +221,6 @@ export const updateProjectItem = async (
   agent?: ItemAgent,
 ) => {
   const { item, role } = await loadItem(id, userId);
-  const newParent =
-    input.parentId !== undefined
-      ? await checkParent(
-          item.projectId,
-          item.project.mode,
-          item.kind,
-          input.parentId,
-          id,
-        )
-      : null;
   if (input.assigneeId !== undefined && input.assigneeId !== item.assigneeId) {
     if (
       !itemRules.mayAssign(
@@ -249,6 +239,31 @@ export const updateProjectItem = async (
           : 'Members can only unclaim their own ticket: this project turned off self-claim',
       );
   }
+  // Claiming and editing in one request is fine: what counts is who owns it afterwards.
+  const editsSent = [
+    input.title,
+    input.description,
+    input.parentId,
+    input.priority,
+    input.labelIds,
+  ].some((value) => value !== undefined);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    input.assigneeId === undefined ? item.assigneeId : input.assigneeId,
+  );
+  if (editsSent && editMessage) throw apiError(403, 'forbidden', editMessage);
+  const newParent =
+    input.parentId !== undefined
+      ? await checkParent(
+          item.projectId,
+          item.project.mode,
+          item.kind,
+          input.parentId,
+          id,
+        )
+      : null;
   if (input.assigneeId) await checkAssignee(item.projectId, input.assigneeId);
   const { labelIds: sentIds, ...fields } = input;
   const labelIds = sentIds && [...new Set(sentIds)];

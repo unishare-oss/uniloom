@@ -14,6 +14,7 @@ export const ChecklistRow = ({
   first,
   last,
   busy,
+  canEdit,
   onUpdate,
   onToggle,
   onDelete,
@@ -23,6 +24,7 @@ export const ChecklistRow = ({
   first: boolean;
   last: boolean;
   busy: boolean;
+  canEdit: boolean;
   onUpdate: (data: { text: string }, onDone: () => void) => void;
   onToggle: () => void;
   onDelete: () => void;
@@ -68,7 +70,7 @@ export const ChecklistRow = ({
           type="checkbox"
           aria-label={`${entry.text}, done`}
           checked={entry.done}
-          disabled={busy}
+          disabled={busy || !canEdit}
           onChange={onToggle}
           className="mt-1 size-4 shrink-0 accent-primary"
         />
@@ -93,7 +95,7 @@ export const ChecklistRow = ({
             variant="ghost"
             size="icon"
             aria-label="Move up"
-            disabled={busy || first}
+            disabled={busy || !canEdit || first}
             onClick={() => onMove(-1)}
           >
             <ArrowUp />
@@ -102,7 +104,7 @@ export const ChecklistRow = ({
             variant="ghost"
             size="icon"
             aria-label="Move down"
-            disabled={busy || last}
+            disabled={busy || !canEdit || last}
             onClick={() => onMove(1)}
           >
             <ArrowDown />
@@ -111,6 +113,7 @@ export const ChecklistRow = ({
             variant="ghost"
             size="icon"
             aria-label="Edit"
+            disabled={!canEdit}
             onClick={startEdit}
           >
             <Pencil />
@@ -119,7 +122,7 @@ export const ChecklistRow = ({
             variant="ghost"
             size="icon"
             aria-label="Delete"
-            disabled={busy}
+            disabled={busy || !canEdit}
             onClick={onDelete}
           >
             <Trash2 />

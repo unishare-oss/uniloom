@@ -20,10 +20,12 @@ import { useListLabels } from "@/lib/api/generated/labels/labels";
 export const LabelPicker = ({
   projectId,
   labels,
+  disabled,
   onChange,
 }: {
   projectId: string;
   labels: GetItem200["labels"];
+  disabled: boolean;
   onChange: (labels: GetItem200["labels"]) => void;
 }) => {
   const { data: all } = useListLabels(projectId, {
@@ -38,6 +40,7 @@ export const LabelPicker = ({
   return (
     <Select
       multiple
+      disabled={disabled}
       value={labels.map((l) => l.id)}
       onValueChange={(ids) => {
         // One label per group: picking a label drops the other one of its group.

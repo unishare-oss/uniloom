@@ -81,11 +81,11 @@ Mode names are still open: "Standard / Guided" or "Classic / Paired".
 
 People sign in with **uniAuth**. Access to a project is by invitation.
 
-| Role        | Can do                                                                                                           |
-| ----------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Owner**   | Everything: change roles, remove members, key prefix, labels, mode and switches, delete the project              |
-| **Manager** | Create and delete tickets and subtasks, add members (as Member only), approve designs, accept ADRs, move to Done |
-| **Member**  | Read, comment, edit tickets and move tickets assigned to them (not to Done). Works through their own agent       |
+| Role        | Can do                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Owner**   | Everything: change roles, remove members, key prefix, labels, mode and switches, delete the project                 |
+| **Manager** | Create and delete tickets and subtasks, add members (as Member only), approve designs, accept ADRs, move to Done    |
+| **Member**  | Read and comment on any ticket; edit and move tickets assigned to them (not to Done). Works through their own agent |
 
 - **Each person's agent acts as that person.** Every user creates their own access token for their agent. The site shows "Mya's agent created UG-12".
 - **Approver ≠ author** (Guided): a design written by Mya's agent is approved by a different manager, unless the switch is off.

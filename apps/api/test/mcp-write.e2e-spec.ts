@@ -467,6 +467,50 @@ describe('mcp write tools (e2e)', () => {
     });
   });
 
+  describe('members edit only their own tickets', () => {
+    it("answers forbidden to a Member's agent on a ticket that is not theirs", async () => {
+      const w = await withSlice();
+      await ok(w.ownerToken, 'set_criteria', {
+        key: w.slice.key,
+        texts: ['A', 'B', 'C'],
+      });
+      const forbidden =
+        /^forbidden: Members can only edit tickets assigned to them/;
+
+      const edit = await tool(w.memberToken, 'save_item', {
+        key: w.slice.key,
+        title: 'Rewritten',
+      });
+      expect(edit.isError).toBe(true);
+      expect(edit.text).toMatch(forbidden);
+      const set = await tool(w.memberToken, 'set_criteria', {
+        key: w.slice.key,
+        texts: ['X', 'Y', 'Z'],
+      });
+      expect(set.isError).toBe(true);
+      expect(set.text).toMatch(forbidden);
+      const tick = await tool(w.memberToken, 'check_criterion', {
+        key: w.slice.key,
+        which: 1,
+      });
+      expect(tick.isError).toBe(true);
+      expect(tick.text).toMatch(forbidden);
+
+      // Claiming and editing in one call works, and then the checklist is theirs.
+      const claimed = await ok(w.memberToken, 'save_item', {
+        key: w.slice.key,
+        assignee: 'me',
+        title: 'Mine',
+      });
+      expect(claimed).toMatchObject({ title: 'Mine', canEdit: true });
+      const ticked = await ok(w.memberToken, 'check_criterion', {
+        key: w.slice.key,
+        which: 1,
+      });
+      expect(ticked[0].done).toBe(true);
+    });
+  });
+
   describe('activity', () => {
     it('names the agent on every write', async () => {
       const w = await withSlice();
