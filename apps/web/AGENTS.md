@@ -19,6 +19,7 @@ apps/web/
 │   ├── app/            # Routes only: page.tsx, layout.tsx, and global CSS (theme tokens)
 │   │   └── p/[projectId]/   # Board, items/[itemId], trash (inside the app shell)
 │   ├── components/     # Every component, one folder per feature; providers.tsx
+│   │   ├── agent/      # Connect-an-agent page: setup tabs, copy block
 │   │   ├── auth/       # Login, consent, session bootstrap (consent redirect, silent check)
 │   │   ├── board/      # Board, its columns and draggable item cards
 │   │   ├── items/      # Item detail, new-item dialog, trash, kind/priority/state icons

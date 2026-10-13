@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/user/avatar";
 import { ThemeSwitch } from "@/components/user/theme-switch";
@@ -45,6 +46,12 @@ const Profile = () => {
       </p>
       <ThemeSwitch />
       <div className="flex flex-col gap-2">
+        <Link
+          href="/profile/agent"
+          className="inline-flex h-9 items-center justify-center rounded-lg border px-2.5 text-sm font-medium hover:bg-muted"
+        >
+          Connect an agent
+        </Link>
         <a
           href={uniauthAccountURL(`${window.location.origin}/profile`)}
           className="inline-flex h-9 items-center justify-center rounded-lg border px-2.5 text-sm font-medium hover:bg-muted"
