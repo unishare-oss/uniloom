@@ -115,7 +115,11 @@ export const JoinPage = ({ token }: { token: string }) => {
                 Try again
               </Button>
             )}
-            <Button variant="outline" render={<Link href="/" />}>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/" />}
+            >
               Go to your projects
             </Button>
           </div>
@@ -134,7 +138,9 @@ export const JoinPage = ({ token }: { token: string }) => {
         )}
         {preview && !preview.isMember && preview.request === "PENDING" && (
           <div className="flex flex-wrap gap-2">
-            <Button render={<Link href="/" />}>Go to your projects</Button>
+            <Button nativeButton={false} render={<Link href="/" />}>
+              Go to your projects
+            </Button>
             {preview.requestId && (
               <CancelRequestDialog
                 requestId={preview.requestId}
@@ -176,7 +182,11 @@ export const JoinPage = ({ token }: { token: string }) => {
               >
                 {join.isPending ? "Sending…" : "Ask again"}
               </Button>
-              <Button variant="outline" render={<Link href="/" />}>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/" />}
+              >
                 Go to your projects
               </Button>
             </div>
