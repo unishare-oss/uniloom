@@ -52,6 +52,21 @@ export const createMember = (
 };
 
 /**
+ * Their waiting join request for the project is settled: they are in. The row is kept
+ * as APPROVED, so the link they asked through still knows they used a slot.
+ */
+export const settleJoinRequest = (
+  db: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+) => {
+  return db.joinRequest.updateMany({
+    where: { projectId, userId, status: 'PENDING' },
+    data: { status: 'APPROVED' },
+  });
+};
+
+/**
  * Locks the project row until the transaction ends, so two owners demoting or removing
  * each other at once run one at a time. Call it first, before counting owners.
  */

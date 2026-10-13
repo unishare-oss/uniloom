@@ -43,11 +43,15 @@ export const getProject = async (projectId: string, userId: string) => {
     userId,
   );
   if (!project) throw apiError(404, 'not_found', 'Project not found');
+  const canInvite = CREATORS.includes(role);
   return {
     ...project,
     role,
     canManageMembers: role === 'OWNER',
-    canInvite: CREATORS.includes(role),
+    canInvite,
+    joinRequestCount: canInvite
+      ? await projectRepo.countJoinRequests(projectId)
+      : 0,
     canCreateItems: CREATORS.includes(role),
     canAssignOthers: CREATORS.includes(role),
     canEditSettings: role === 'OWNER',

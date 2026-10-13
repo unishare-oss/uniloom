@@ -13,11 +13,14 @@ export const createInviteSchema = z.object({
   expiresIn: z.enum(['1h', '24h', '7d', '30d']),
   /** How many people the link lets in; null = no limit. */
   maxUses: z.number().int().min(1).max(100).nullable(),
+  /** People ask to join and an owner or manager lets them in. Off = anyone joins. */
+  joinApproval: z.boolean().default(false),
 });
 
 export const inviteSchema = z.object({
   /** The secret part of the link: /join/<token>. */
   token: z.string(),
+  joinApproval: z.boolean(),
   maxUses: z.number().int().nullable(),
   useCount: z.number().int(),
   expiresAt: z.iso.datetime(),
@@ -35,9 +38,25 @@ export const invitePreviewSchema = z.object({
   invitedBy: z.string().nullable(),
   /** Already in the project: the web app sends them straight to it. */
   isMember: z.boolean(),
+  /** The link files a request instead of adding the person. */
+  joinApproval: z.boolean(),
+  /** The caller's waiting request for this project, if any. */
+  request: z.enum(['PENDING']).nullable(),
 });
 
 export const joinResultSchema = z.object({
-  result: z.enum(['joined']),
+  /** `requested`: the link needs approval, so a request now waits. */
+  result: z.enum(['joined', 'requested']),
   projectId: z.uuid(),
+});
+
+/** Someone waiting to be let in. */
+export const joinRequestSchema = z.object({
+  id: z.uuid(),
+  userId: z.string(),
+  name: z.string(),
+  email: z.string(),
+  image: z.string().nullable(),
+  /** When they last asked. */
+  requestedAt: z.iso.datetime(),
 });

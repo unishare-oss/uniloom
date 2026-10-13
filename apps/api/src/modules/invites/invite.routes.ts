@@ -4,7 +4,10 @@ import { describe } from '@/openapi.js';
 import {
   deleteProjectInvite,
   getInvitePreview,
+  getJoinRequests,
   getProjectInvite,
+  postApproveJoinRequest,
+  postDeclineJoinRequest,
   postInviteJoin,
   postProjectInvite,
 } from './invite.handlers.js';
@@ -12,6 +15,7 @@ import {
   createInviteSchema,
   invitePreviewSchema,
   inviteSchema,
+  joinRequestSchema,
   joinResultSchema,
 } from './invite.schema.js';
 
@@ -73,8 +77,42 @@ inviteRoutes.post(
   describe({
     tag: 'invites',
     operationId: 'joinByInvite',
-    summary: 'Join the project of an invite link as a Member',
+    summary:
+      'Join the project of an invite link as a Member, or ask to when it needs approval',
     data: joinResultSchema,
   }),
   postInviteJoin,
+);
+inviteRoutes.get(
+  '/projects/:projectId/join-requests',
+  describe({
+    tag: 'invites',
+    operationId: 'listJoinRequests',
+    summary: 'The people waiting to be let in, oldest first (owners, managers)',
+    pathParams: ['projectId'],
+    data: z.array(joinRequestSchema),
+  }),
+  getJoinRequests,
+);
+inviteRoutes.post(
+  '/projects/:projectId/join-requests/:requestId/approve',
+  describe({
+    tag: 'invites',
+    operationId: 'approveJoinRequest',
+    summary: 'Let the person in as a Member (owners, managers)',
+    pathParams: ['projectId', 'requestId'],
+    data: z.null(),
+  }),
+  postApproveJoinRequest,
+);
+inviteRoutes.post(
+  '/projects/:projectId/join-requests/:requestId/decline',
+  describe({
+    tag: 'invites',
+    operationId: 'declineJoinRequest',
+    summary: 'Decline the request; the person may ask again (owners, managers)',
+    pathParams: ['projectId', 'requestId'],
+    data: z.null(),
+  }),
+  postDeclineJoinRequest,
 );

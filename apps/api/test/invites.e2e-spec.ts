@@ -244,6 +244,8 @@ describe('invite links (e2e)', () => {
       projectName: 'Invite test',
       invitedBy: invite.createdBy,
       isMember: false,
+      joinApproval: false,
+      request: null,
     });
     expect(await w.roles()).not.toHaveProperty(visitor.id);
     expect(

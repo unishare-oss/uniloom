@@ -1,6 +1,6 @@
 # 40: Require approval and join requests
 
-Status: Ready
+Status: In Progress
 
 ## Scope
 
@@ -35,26 +35,26 @@ Left out:
 
 ## Done when
 
-- [ ] `invite.joinApproval` and a `join_request` table (project, user, invite, status
+- [x] `invite.joinApproval` and a `join_request` table (project, user, invite, status
       `PENDING`, `APPROVED` or `DECLINED`, who decided, timestamps), unique per invite and
       user, with at most one `PENDING` row per project and user enforced by the database.
-- [ ] `POST /invites/:token/join` on an approval link creates a waiting request and answers
+- [x] `POST /invites/:token/join` on an approval link creates a waiting request and answers
       `200` with `result: "requested"`. The first ask by a person uses a slot; asking again
       after a decline reopens the same request and uses none; a person already waiting in
       this project gets their waiting request back; a full link answers `409 invite_full`
       to a new person.
-- [ ] `GET /projects/:projectId/join-requests` lists the waiting requests, oldest first,
+- [x] `GET /projects/:projectId/join-requests` lists the waiting requests, oldest first,
       for Owners and Managers. `POST …/join-requests/:requestId/approve` adds the person as
       a Member in the same transaction, also after the link was replaced or expired.
       `POST …/decline` marks it declined. A second decision on the same request answers
       `409 already_decided`.
-- [ ] Adding someone by email, or their joining through an open link, removes their waiting
+- [x] Adding someone by email, or their joining through an open link, removes their waiting
       request for that project.
 - [ ] The invite options have a "Require approval" switch; the Members page shows a "Join
       requests" card above the member list while there are requests, with Approve and
       Decline on each row; the sidebar's Members link shows the count; the join page says
       "Ask to join" and then "Request sent".
-- [ ] Seed project `TA`: an approval link with two waiting requests from the seed users,
+- [x] Seed project `TA`: an approval link with two waiting requests from the seed users,
       and a second project you are not in whose approval link the seed prints.
 
 ## Design

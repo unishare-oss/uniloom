@@ -48,6 +48,8 @@ const SEED_PROJECTS = {
   TO: 'Seed · Open invite',
   TF: 'Seed · Full invite',
   TE: 'Seed · Expired invite',
+  TA: 'Seed · Join requests',
+  TQ: 'Seed · Ask to join',
 };
 
 /** Fake people, so there are assignees, authors and an owner who isn't you. */
@@ -959,12 +961,17 @@ const seedDocuments = async (ownerId: string) => {
  */
 const seedInvites = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
-  const day = { expiresIn: '24h' as const, maxUses: null };
+  const day = {
+    expiresIn: '24h' as const,
+    maxUses: null,
+    joinApproval: false,
+  };
 
   const { project: yours } = await seedProject('TV', 'STANDARD', ownerId, []);
   const live = await createInvite(yours.id, ownerId, {
     expiresIn: '7d',
     maxUses: 10,
+    joinApproval: false,
   });
   await joinByInvite(live.token, mya.id);
   await joinByInvite(live.token, ko.id);
@@ -984,6 +991,7 @@ const seedInvites = async (ownerId: string) => {
   const fullLink = await createInvite(full.id, ko.id, {
     expiresIn: '24h',
     maxUses: 1,
+    joinApproval: false,
   });
   await joinByInvite(fullLink.token, mya.id);
   note(
@@ -1000,6 +1008,32 @@ const seedInvites = async (ownerId: string) => {
   note(
     'TE',
     `/join/${expiredLink.token} → "This invite link has expired"; /join/not-a-link → "This invite link doesn't work"`,
+  );
+};
+
+/** Links that need approval (plan 40): requests waiting for you, and a link to ask through. */
+const seedJoinRequests = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const approval = {
+    expiresIn: '7d' as const,
+    maxUses: 10,
+    joinApproval: true,
+  };
+
+  const { project: yours } = await seedProject('TA', 'STANDARD', ownerId, []);
+  const link = await createInvite(yours.id, ownerId, approval);
+  await joinByInvite(link.token, mya.id);
+  await joinByInvite(link.token, ko.id);
+  note(
+    'TA',
+    'Members: "Join requests" lists Mya and Ko above the members and the sidebar shows 2; Approve Mya → she moves to the member list; Decline Ko → he leaves the list; the link still says "2 of 10 requests used"; Create new link keeps waiting requests',
+  );
+
+  const { project: theirs } = await seedProject('TQ', 'STANDARD', ko.id, []);
+  const ask = await createInvite(theirs.id, ko.id, approval);
+  note(
+    'TQ',
+    `/join/${ask.token} → "Ask to join", then "Request sent"; the project is not in your list and its board answers not found until someone approves`,
   );
 };
 
@@ -1021,6 +1055,7 @@ await seedOutsider();
 await seedReviewInbox(owner.id);
 await seedDocuments(owner.id);
 await seedInvites(owner.id);
+await seedJoinRequests(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

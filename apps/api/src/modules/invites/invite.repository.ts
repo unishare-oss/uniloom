@@ -48,6 +48,7 @@ export const insertInvite = (
     projectId: string;
     token: string;
     maxUses: number | null;
+    joinApproval: boolean;
     expiresAt: Date;
     createdById: string;
   },

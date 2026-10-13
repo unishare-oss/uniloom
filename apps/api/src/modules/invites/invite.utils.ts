@@ -8,6 +8,7 @@ export const newToken = () => randomBytes(32).toString('base64url');
 /** The link as owners and managers see it, token included. */
 export const view = (invite: InviteRow, now: Date) => ({
   token: invite.token,
+  joinApproval: invite.joinApproval,
   maxUses: invite.maxUses,
   useCount: invite.useCount,
   expiresAt: invite.expiresAt,

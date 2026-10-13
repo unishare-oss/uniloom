@@ -5,6 +5,7 @@ export interface InviteRow {
   id: string;
   projectId: string;
   token: string;
+  joinApproval: boolean;
   maxUses: number | null;
   useCount: number;
   expiresAt: Date;

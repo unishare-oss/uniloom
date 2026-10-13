@@ -8,6 +8,7 @@ import {
   joinByInvite,
   previewInvite,
 } from './invite.service.js';
+import { decideJoinRequest, listJoinRequests } from './request.service.js';
 
 export const getProjectInvite = async (c: Context) =>
   apiSuccess(c, await getInvite(idParam(c, 'projectId'), c.var.user.id));
@@ -35,5 +36,32 @@ export const postInviteJoin = async (c: Context) => {
     c.req.param('token') ?? '',
     c.var.user.id,
   );
-  return apiSuccess(c, data, `You joined ${projectName}`);
+  return apiSuccess(
+    c,
+    data,
+    data.result === 'joined' ? `You joined ${projectName}` : 'Request sent',
+  );
+};
+
+export const getJoinRequests = async (c: Context) =>
+  apiSuccess(c, await listJoinRequests(idParam(c, 'projectId'), c.var.user.id));
+
+export const postApproveJoinRequest = async (c: Context) => {
+  const name = await decideJoinRequest(
+    idParam(c, 'projectId'),
+    c.var.user.id,
+    idParam(c, 'requestId'),
+    true,
+  );
+  return apiSuccess(c, null, `${name} joined as a Member`);
+};
+
+export const postDeclineJoinRequest = async (c: Context) => {
+  const name = await decideJoinRequest(
+    idParam(c, 'projectId'),
+    c.var.user.id,
+    idParam(c, 'requestId'),
+    false,
+  );
+  return apiSuccess(c, null, `Declined ${name}'s request`);
 };

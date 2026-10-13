@@ -531,6 +531,11 @@
                     "canInvite": {
                       "type": "boolean"
                     },
+                    "joinRequestCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "canCreateItems": {
                       "type": "boolean"
                     },
@@ -584,6 +589,7 @@
                     "role",
                     "canManageMembers",
                     "canInvite",
+                    "joinRequestCount",
                     "canCreateItems",
                     "canAssignOthers",
                     "canEditSettings",
@@ -6226,6 +6232,9 @@
                         "token": {
                           "type": "string"
                         },
+                        "joinApproval": {
+                          "type": "boolean"
+                        },
                         "maxUses": {
                           "anyOf": [
                             {
@@ -6270,6 +6279,7 @@
                       },
                       "required": [
                         "token",
+                        "joinApproval",
                         "maxUses",
                         "useCount",
                         "expiresAt",
@@ -6332,6 +6342,10 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "joinApproval": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -6352,6 +6366,9 @@
                   "properties": {
                     "token": {
                       "type": "string"
+                    },
+                    "joinApproval": {
+                      "type": "boolean"
                     },
                     "maxUses": {
                       "anyOf": [
@@ -6397,6 +6414,7 @@
                   },
                   "required": [
                     "token",
+                    "joinApproval",
                     "maxUses",
                     "useCount",
                     "expiresAt",
@@ -6482,13 +6500,31 @@
                     },
                     "isMember": {
                       "type": "boolean"
+                    },
+                    "joinApproval": {
+                      "type": "boolean"
+                    },
+                    "request": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "PENDING"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "projectId",
                     "projectName",
                     "invitedBy",
-                    "isMember"
+                    "isMember",
+                    "joinApproval",
+                    "request"
                   ]
                 }
               }
@@ -6503,7 +6539,7 @@
         "tags": [
           "invites"
         ],
-        "summary": "Join the project of an invite link as a Member",
+        "summary": "Join the project of an invite link as a Member, or ask to when it needs approval",
         "parameters": [
           {
             "schema": {
@@ -6516,7 +6552,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Join the project of an invite link as a Member",
+            "description": "Join the project of an invite link as a Member, or ask to when it needs approval",
             "content": {
               "application/json": {
                 "schema": {
@@ -6525,7 +6561,8 @@
                     "result": {
                       "type": "string",
                       "enum": [
-                        "joined"
+                        "joined",
+                        "requested"
                       ]
                     },
                     "projectId": {
@@ -6538,6 +6575,158 @@
                     "result",
                     "projectId"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/join-requests": {
+      "get": {
+        "operationId": "listJoinRequests",
+        "tags": [
+          "invites"
+        ],
+        "summary": "The people waiting to be let in, oldest first (owners, managers)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The people waiting to be let in, oldest first (owners, managers)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "userId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "image": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "requestedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "name",
+                      "email",
+                      "image",
+                      "requestedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/join-requests/{requestId}/approve": {
+      "post": {
+        "operationId": "approveJoinRequest",
+        "tags": [
+          "invites"
+        ],
+        "summary": "Let the person in as a Member (owners, managers)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Let the person in as a Member (owners, managers)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/join-requests/{requestId}/decline": {
+      "post": {
+        "operationId": "declineJoinRequest",
+        "tags": [
+          "invites"
+        ],
+        "summary": "Decline the request; the person may ask again (owners, managers)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decline the request; the person may ask again (owners, managers)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
                 }
               }
             }
