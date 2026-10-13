@@ -448,6 +448,8 @@ enum JoinRequestStatus {
   PENDING
   APPROVED
   DECLINED
+  /// The person took their request back (plan 41). Like DECLINED, they may ask again.
+  CANCELED
 }
 
 /// Someone asked to join through an invite link that needs approval. One row per person

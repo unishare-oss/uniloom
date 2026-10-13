@@ -2,9 +2,11 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { describe } from '@/openapi.js';
 import {
+  deleteMyJoinRequest,
   deleteProjectInvite,
   getInvitePreview,
   getJoinRequests,
+  getMyJoinRequests,
   getProjectInvite,
   postApproveJoinRequest,
   postDeclineJoinRequest,
@@ -17,6 +19,7 @@ import {
   inviteSchema,
   joinRequestSchema,
   joinResultSchema,
+  myJoinRequestSchema,
 } from './invite.schema.js';
 
 /**
@@ -115,4 +118,25 @@ inviteRoutes.post(
     data: z.null(),
   }),
   postDeclineJoinRequest,
+);
+inviteRoutes.get(
+  '/join-requests',
+  describe({
+    tag: 'invites',
+    operationId: 'listMyJoinRequests',
+    summary: 'Your own requests that wait for approval, in every project',
+    data: z.array(myJoinRequestSchema),
+  }),
+  getMyJoinRequests,
+);
+inviteRoutes.delete(
+  '/join-requests/:requestId',
+  describe({
+    tag: 'invites',
+    operationId: 'cancelJoinRequest',
+    summary: 'Cancel your own waiting request; you may ask again',
+    pathParams: ['requestId'],
+    data: z.null(),
+  }),
+  deleteMyJoinRequest,
 );

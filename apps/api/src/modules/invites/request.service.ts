@@ -40,19 +40,51 @@ export const decideJoinRequest = async (
     const request = await requestRepo.findById(tx, requestId);
     if (!request || request.projectId !== projectId)
       throw apiError(404, 'not_found', 'Join request not found');
-    if (request.status !== 'PENDING')
+    const decided =
+      request.status === 'PENDING' &&
+      (await requestRepo.decideIfPending(
+        tx,
+        requestId,
+        approve ? 'APPROVED' : 'DECLINED',
+        userId,
+      ));
+    if (!decided)
       throw apiError(
         409,
         'already_decided',
         'This request was already decided',
       );
-    await requestRepo.decide(
-      tx,
-      requestId,
-      approve ? 'APPROVED' : 'DECLINED',
-      userId,
-    );
     if (approve) await joinAsMember(tx, projectId, request.userId);
     return request.user.name;
   });
+};
+
+/**
+ * The caller's own waiting requests. Only the project's name and key go out: the same
+ * that the invite link already showed them, and nothing else about a project they
+ * aren't in.
+ */
+export const listMyJoinRequests = async (userId: string) => {
+  const requests = await requestRepo.findMineWaiting(userId);
+  return requests.map((request) => ({
+    id: request.id,
+    projectName: request.project.name,
+    keyPrefix: request.project.keyPrefix,
+    requestedAt: request.requestedAt,
+  }));
+};
+
+/**
+ * The caller takes their own request back. The slot it used stays used, and they may
+ * ask again through the same link (ADR-0014). 404 if it isn't theirs, 409
+ * `already_decided` if it no longer waits.
+ */
+export const cancelJoinRequest = async (userId: string, requestId: string) => {
+  const request = await requestRepo.findOwn(requestId, userId);
+  if (!request) throw apiError(404, 'not_found', 'Join request not found');
+  if (
+    request.status !== 'PENDING' ||
+    !(await requestRepo.cancelIfPending(requestId, userId))
+  )
+    throw apiError(409, 'already_decided', 'This request was already decided');
 };

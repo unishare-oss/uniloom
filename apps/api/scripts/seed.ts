@@ -31,6 +31,10 @@ import {
   joinByInvite,
 } from '../src/modules/invites/invite.service.js';
 import {
+  decideJoinRequest,
+  listJoinRequests,
+} from '../src/modules/invites/request.service.js';
+import {
   createProject,
   updateProject,
 } from '../src/modules/projects/project.service.js';
@@ -50,6 +54,8 @@ const SEED_PROJECTS = {
   TE: 'Seed · Expired invite',
   TA: 'Seed · Join requests',
   TQ: 'Seed · Ask to join',
+  TW: 'Seed · Waiting',
+  TD: 'Seed · Declined',
 };
 
 /** Fake people, so there are assignees, authors and an owner who isn't you. */
@@ -1037,6 +1043,34 @@ const seedJoinRequests = async (ownerId: string) => {
   );
 };
 
+/** Your own requests (plan 41): one that waits, and one Ko declined. */
+const seedMyRequests = async (ownerId: string) => {
+  const [, ko] = SEED_USERS;
+  const approval = {
+    expiresIn: '7d' as const,
+    maxUses: 10,
+    joinApproval: true,
+  };
+
+  const { project: waiting } = await seedProject('TW', 'STANDARD', ko.id, []);
+  const waitLink = await createInvite(waiting.id, ko.id, approval);
+  await joinByInvite(waitLink.token, ownerId);
+  note(
+    'TW',
+    `Projects: "Waiting for approval" lists Seed · Waiting with Cancel request; /join/${waitLink.token} → "waiting for an owner or manager" with Cancel request; cancel → the row is gone and the link offers Ask again`,
+  );
+
+  const { project: declined } = await seedProject('TD', 'STANDARD', ko.id, []);
+  const declinedLink = await createInvite(declined.id, ko.id, approval);
+  await joinByInvite(declinedLink.token, ownerId);
+  const [request] = await listJoinRequests(declined.id, ko.id);
+  await decideJoinRequest(declined.id, ko.id, request!.id, false);
+  note(
+    'TD',
+    `not under "Waiting for approval"; /join/${declinedLink.token} → "Your request to join Seed · Declined was declined" with Ask again → it waits again`,
+  );
+};
+
 const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -1056,6 +1090,7 @@ await seedReviewInbox(owner.id);
 await seedDocuments(owner.id);
 await seedInvites(owner.id);
 await seedJoinRequests(owner.id);
+await seedMyRequests(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

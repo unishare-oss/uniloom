@@ -53,14 +53,45 @@ export const findById = (tx: Prisma.TransactionClient, id: string) => {
   return tx.joinRequest.findUnique({ where: { id }, include: withUser });
 };
 
-export const decide = (
+/**
+ * Decides the request if it still waits: the check is part of the UPDATE, so a decision
+ * racing the requester's cancel has one winner. False when it no longer waits.
+ */
+export const decideIfPending = async (
   tx: Prisma.TransactionClient,
   id: string,
   status: 'APPROVED' | 'DECLINED',
   decidedById: string,
 ) => {
-  return tx.joinRequest.update({
-    where: { id },
+  const { count } = await tx.joinRequest.updateMany({
+    where: { id, status: 'PENDING' },
     data: { status, decidedById },
   });
+  return count === 1;
+};
+
+/** The person's waiting requests in every project, oldest first, with the project's name. */
+export const findMineWaiting = (userId: string) => {
+  return prisma.joinRequest.findMany({
+    where: { userId, status: 'PENDING' },
+    include: { project: { select: { name: true, keyPrefix: true } } },
+    orderBy: [{ requestedAt: 'asc' }, { id: 'asc' }],
+  });
+};
+
+/** The request, if it is this person's own. */
+export const findOwn = (id: string, userId: string) => {
+  return prisma.joinRequest.findFirst({ where: { id, userId } });
+};
+
+/**
+ * Cancels the request if it still waits: one conditional UPDATE, so a cancel racing an
+ * approval has one winner. False when it was decided meanwhile.
+ */
+export const cancelIfPending = async (id: string, userId: string) => {
+  const { count } = await prisma.joinRequest.updateMany({
+    where: { id, userId, status: 'PENDING' },
+    data: { status: 'CANCELED' },
+  });
+  return count === 1;
 };

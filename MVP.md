@@ -86,7 +86,8 @@ People sign in with **uniAuth**. Access to a project is by invitation.
   (1 hour, 24 hours, 7 days or 30 days) and a limit on how many people it lets in. Anyone
   who opens it signs in and joins as a Member. A new link replaces the old one, which stops
   working at once. With **Require approval** on, people ask to join instead, and an owner
-  or manager approves or declines each request on the Members page. See ADR-0014.
+  or manager approves or declines each request on the Members page. The person sees
+  their waiting requests on the home page and can cancel them. See ADR-0014.
 
 | Role        | Can do                                                                                                              |
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |

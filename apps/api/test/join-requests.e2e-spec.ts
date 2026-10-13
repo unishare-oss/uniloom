@@ -149,6 +149,7 @@ describe('join requests (e2e)', () => {
       isMember: false,
       joinApproval: true,
       request: null,
+      requestId: null,
     });
 
     const res = await join(visitor.cookie, invite.token);
@@ -294,7 +295,7 @@ describe('join requests (e2e)', () => {
     expect((await w.current()).useCount).toBe(1);
     expect(
       await read(await preview(visitor.cookie, invite.token)),
-    ).toMatchObject({ isMember: false, request: null });
+    ).toMatchObject({ isMember: false, request: 'DECLINED' });
   });
 
   it('answers 409 already_decided on a second decision, 404 on an unknown request', async () => {
@@ -490,5 +491,183 @@ describe('join requests (e2e)', () => {
     expect(res.status).toBe(410);
     expect(await read(res)).toMatchObject({ code: 'invite_expired' });
     expect(await w.list()).toEqual([]);
+  });
+
+  describe('the requester', () => {
+    interface MineRow {
+      id: string;
+      projectName: string;
+      keyPrefix: string;
+      requestedAt: string;
+    }
+    const mine = async (cookie: string) =>
+      (await read(
+        await api.send('GET', '/api/join-requests', cookie),
+      )) as MineRow[];
+    const cancel = (cookie: string, requestId: string) =>
+      api.send('DELETE', `/api/join-requests/${requestId}`, cookie);
+
+    it('sees their waiting requests with the project name and key, and nothing else', async () => {
+      const [a, b] = [await setup(), await setup()];
+      const visitor = await person();
+      await join(visitor.cookie, (await a.link()).token);
+      await join(visitor.cookie, (await b.link()).token);
+
+      const rows = await mine(visitor.cookie);
+      expect(rows).toHaveLength(2);
+      expect(Object.keys(rows[0]!).sort()).toEqual([
+        'id',
+        'keyPrefix',
+        'projectName',
+        'requestedAt',
+      ]);
+      expect(rows[0]).toMatchObject({ projectName: 'Approval test' });
+      expect(rows[0]!.keyPrefix).toMatch(/^[A-Z]{5}$/);
+      expect(rows.map((r) => r.id).sort()).toEqual(
+        [(await a.list())[0]!.id, (await b.list())[0]!.id].sort(),
+      );
+      // Other people's requests are not theirs to see.
+      expect(await mine(a.owner.cookie)).toEqual([]);
+    });
+
+    it('no longer lists a request once it is approved or declined', async () => {
+      const [a, b] = [await setup(), await setup()];
+      const visitor = await person();
+      await join(visitor.cookie, (await a.link()).token);
+      await join(visitor.cookie, (await b.link()).token);
+      await a.decide(a.owner.cookie, (await a.list())[0]!.id, 'approve');
+      await b.decide(b.owner.cookie, (await b.list())[0]!.id, 'decline');
+
+      expect(await mine(visitor.cookie)).toEqual([]);
+    });
+
+    it('cancels their own request: it leaves both lists and the slot stays used', async () => {
+      const w = await setup();
+      const visitor = await person();
+      const invite = await w.link({ maxUses: 3 });
+      await join(visitor.cookie, invite.token);
+      const [row] = await mine(visitor.cookie);
+
+      const res = await cancel(visitor.cookie, row!.id);
+      expect(res.status).toBe(200);
+      expect(await mine(visitor.cookie)).toEqual([]);
+      expect(await w.list()).toEqual([]);
+      expect(await w.count()).toBe(0);
+      expect((await w.current()).useCount).toBe(1);
+      expect(
+        await read(await preview(visitor.cookie, invite.token)),
+      ).toMatchObject({ request: 'CANCELED', requestId: null });
+    });
+
+    it("answers 404 for someone else's request or an unknown id, 409 once it is decided", async () => {
+      const w = await setup();
+      const [visitor, other] = [await person(), await person()];
+      const invite = await w.link();
+      await join(visitor.cookie, invite.token);
+      const [row] = await mine(visitor.cookie);
+
+      const hidden = await Promise.all([
+        cancel(other.cookie, row!.id),
+        // An owner declines; they don't cancel for the person.
+        cancel(w.owner.cookie, row!.id),
+        cancel(visitor.cookie, randomUUID()),
+        cancel(visitor.cookie, 'not-a-uuid'),
+      ]);
+      expect(hidden.map((r) => r.status)).toEqual([404, 404, 404, 404]);
+      expect(await w.list()).toHaveLength(1);
+
+      await w.decide(w.owner.cookie, row!.id, 'decline');
+      const late = await cancel(visitor.cookie, row!.id);
+      expect(late.status).toBe(409);
+      expect(await read(late)).toMatchObject({ code: 'already_decided' });
+    });
+
+    it('has one winner when a cancel and an approval race', async () => {
+      const w = await setup();
+      const visitor = await person();
+      const invite = await w.link();
+      await join(visitor.cookie, invite.token);
+      const [row] = await mine(visitor.cookie);
+
+      const [canceled, approved] = await Promise.all([
+        cancel(visitor.cookie, row!.id),
+        w.decide(w.owner.cookie, row!.id, 'approve'),
+      ]);
+      expect([canceled.status, approved.status].sort((x, y) => x - y)).toEqual([
+        200, 409,
+      ]);
+      expect(Boolean((await w.roles())[visitor.id])).toBe(
+        approved.status === 200,
+      );
+    });
+
+    it('asks again after cancelling, through the same link, without a new slot', async () => {
+      const w = await setup();
+      const visitor = await person();
+      const invite = await w.link({ maxUses: 1 });
+      await join(visitor.cookie, invite.token);
+      await cancel(visitor.cookie, (await mine(visitor.cookie))[0]!.id);
+
+      const again = await join(visitor.cookie, invite.token);
+      expect(await read(again)).toEqual({
+        result: 'requested',
+        projectId: w.id,
+      });
+      expect((await w.current()).useCount).toBe(1);
+      expect(await mine(visitor.cookie)).toHaveLength(1);
+      expect(await w.list()).toHaveLength(1);
+    });
+
+    it('previews the state of their request: waiting with its id, then declined', async () => {
+      const w = await setup();
+      const visitor = await person();
+      const invite = await w.link({ maxUses: 1 });
+      await join(visitor.cookie, invite.token);
+      const [row] = await mine(visitor.cookie);
+
+      expect(
+        await read(await preview(visitor.cookie, invite.token)),
+      ).toMatchObject({ request: 'PENDING', requestId: row!.id });
+      await w.decide(w.owner.cookie, row!.id, 'decline');
+      // Full for everyone else, but they hold a slot, so they may ask again.
+      const declined = await preview(visitor.cookie, invite.token);
+      expect(declined.status).toBe(200);
+      expect(await read(declined)).toMatchObject({
+        request: 'DECLINED',
+        requestId: null,
+        isMember: false,
+      });
+    });
+
+    it('still previews a waiting request after its link is replaced, deleted or expired', async () => {
+      const w = await setup();
+      const visitor = await person();
+      const invite = await w.link();
+      await join(visitor.cookie, invite.token);
+      const [row] = await mine(visitor.cookie);
+      const waiting = {
+        projectName: 'Approval test',
+        request: 'PENDING',
+        requestId: row!.id,
+      };
+
+      await prisma.invite.update({
+        where: { token: invite.token },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+      expect(
+        await read(await preview(visitor.cookie, invite.token)),
+      ).toMatchObject(waiting);
+      await w.link();
+      expect(
+        await read(await preview(visitor.cookie, invite.token)),
+      ).toMatchObject(waiting);
+
+      // Once they cancel, the dead link tells them nothing any more.
+      await cancel(visitor.cookie, row!.id);
+      const gone = await preview(visitor.cookie, invite.token);
+      expect(gone.status).toBe(404);
+      expect(await read(gone)).toMatchObject({ code: 'invite_not_found' });
+    });
   });
 });

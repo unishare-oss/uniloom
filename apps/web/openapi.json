@@ -6509,8 +6509,22 @@
                         {
                           "type": "string",
                           "enum": [
-                            "PENDING"
+                            "PENDING",
+                            "DECLINED",
+                            "CANCELED"
                           ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "requestId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                         },
                         {
                           "type": "null"
@@ -6524,7 +6538,8 @@
                     "invitedBy",
                     "isMember",
                     "joinApproval",
-                    "request"
+                    "request",
+                    "requestId"
                   ]
                 }
               }
@@ -6723,6 +6738,87 @@
         "responses": {
           "200": {
             "description": "Decline the request; the person may ask again (owners, managers)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/join-requests": {
+      "get": {
+        "operationId": "listMyJoinRequests",
+        "tags": [
+          "invites"
+        ],
+        "summary": "Your own requests that wait for approval, in every project",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Your own requests that wait for approval, in every project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "projectName": {
+                        "type": "string"
+                      },
+                      "keyPrefix": {
+                        "type": "string"
+                      },
+                      "requestedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "projectName",
+                      "keyPrefix",
+                      "requestedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/join-requests/{requestId}": {
+      "delete": {
+        "operationId": "cancelJoinRequest",
+        "tags": [
+          "invites"
+        ],
+        "summary": "Cancel your own waiting request; you may ask again",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancel your own waiting request; you may ask again",
             "content": {
               "application/json": {
                 "schema": {

@@ -1,5 +1,6 @@
 import { prisma } from '@/db/prisma.js';
 import { Prisma } from '@/generated/prisma/client.js';
+import type { JoinRequestStatus } from '@/generated/prisma/enums.js';
 import { apiError } from '@/http.js';
 import {
   CREATORS,
@@ -69,6 +70,11 @@ export const deleteInvite = async (projectId: string, userId: string) => {
   await inviteRepo.revokeCurrent(prisma, projectId, new Date());
 };
 
+/** A declined or canceled request through this link: the join page offers "Ask again". */
+const againState = (status: JoinRequestStatus | undefined) => {
+  return status === 'DECLINED' || status === 'CANCELED' ? status : null;
+};
+
 /**
  * What the holder of a link sees before joining. A member gets the project even through
  * a dead link, so an old link in a chat still takes them there; so does someone whose
@@ -92,7 +98,8 @@ export const previewInvite = async (token: string, userId: string) => {
     invitedBy: invite.createdBy?.name ?? null,
     isMember,
     joinApproval: invite.joinApproval,
-    request: pending ? ('PENDING' as const) : null,
+    request: pending ? ('PENDING' as const) : againState(mine?.status),
+    requestId: pending?.id ?? null,
   };
 };
 

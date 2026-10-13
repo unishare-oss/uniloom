@@ -40,8 +40,13 @@ export const invitePreviewSchema = z.object({
   isMember: z.boolean(),
   /** The link files a request instead of adding the person. */
   joinApproval: z.boolean(),
-  /** The caller's waiting request for this project, if any. */
-  request: z.enum(['PENDING']).nullable(),
+  /**
+   * The caller's request: `PENDING` anywhere in this project, else `DECLINED` or
+   * `CANCELED` if that is how their request through this link ended.
+   */
+  request: z.enum(['PENDING', 'DECLINED', 'CANCELED']).nullable(),
+  /** The waiting request's id, to cancel it. */
+  requestId: z.uuid().nullable(),
 });
 
 export const joinResultSchema = z.object({
@@ -58,5 +63,13 @@ export const joinRequestSchema = z.object({
   email: z.string(),
   image: z.string().nullable(),
   /** When they last asked. */
+  requestedAt: z.iso.datetime(),
+});
+
+/** One of the caller's own waiting requests. */
+export const myJoinRequestSchema = z.object({
+  id: z.uuid(),
+  projectName: z.string(),
+  keyPrefix: z.string(),
   requestedAt: z.iso.datetime(),
 });

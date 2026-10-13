@@ -8,7 +8,12 @@ import {
   joinByInvite,
   previewInvite,
 } from './invite.service.js';
-import { decideJoinRequest, listJoinRequests } from './request.service.js';
+import {
+  cancelJoinRequest,
+  decideJoinRequest,
+  listJoinRequests,
+  listMyJoinRequests,
+} from './request.service.js';
 
 export const getProjectInvite = async (c: Context) =>
   apiSuccess(c, await getInvite(idParam(c, 'projectId'), c.var.user.id));
@@ -64,4 +69,12 @@ export const postDeclineJoinRequest = async (c: Context) => {
     false,
   );
   return apiSuccess(c, null, `Declined ${name}'s request`);
+};
+
+export const getMyJoinRequests = async (c: Context) =>
+  apiSuccess(c, await listMyJoinRequests(c.var.user.id));
+
+export const deleteMyJoinRequest = async (c: Context) => {
+  await cancelJoinRequest(c.var.user.id, idParam(c, 'requestId'));
+  return apiSuccess(c, null, 'Request canceled');
 };

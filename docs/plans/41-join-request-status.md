@@ -1,6 +1,6 @@
 # 41: The requester's view of a join request
 
-Status: Ready
+Status: In Progress
 
 ## Scope
 
@@ -25,20 +25,20 @@ Left out:
 
 ## Done when
 
-- [ ] `GET /join-requests` returns the caller's waiting requests with the project's name
+- [x] `GET /join-requests` returns the caller's waiting requests with the project's name
       and key prefix and when they asked. It never returns anything else about a project
       the caller isn't in.
-- [ ] `DELETE /join-requests/:requestId` cancels the caller's own waiting request (status
+- [x] `DELETE /join-requests/:requestId` cancels the caller's own waiting request (status
       `CANCELED`, slot kept); someone else's request or an unknown id answers `404`; a
       request that is no longer waiting answers `409 already_decided`.
-- [ ] `GET /invites/:token` returns the caller's request state for that project (`PENDING`,
+- [x] `GET /invites/:token` returns the caller's request state for that project (`PENDING`,
       `DECLINED`, `CANCELED` or none), also when the link is expired, full or deleted and
       the caller has a waiting request from it.
 - [ ] The home page shows "Waiting for approval" under the projects, one row per request
       with a Cancel button, and nothing when there are none.
 - [ ] The join page shows: waiting (with "Cancel request"), declined (with "Ask again"
       while the link is live), and sends an approved person to the board.
-- [ ] Seed: a project you are not in where you have a waiting request, and one where your
+- [x] Seed: a project you are not in where you have a waiting request, and one where your
       request was declined; the seed prints both links.
 
 ## Design

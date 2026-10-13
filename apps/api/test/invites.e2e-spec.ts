@@ -246,6 +246,7 @@ describe('invite links (e2e)', () => {
       isMember: false,
       joinApproval: false,
       request: null,
+      requestId: null,
     });
     expect(await w.roles()).not.toHaveProperty(visitor.id);
     expect(
