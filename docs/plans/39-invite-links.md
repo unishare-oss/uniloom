@@ -26,14 +26,14 @@ Left out:
 
 ## Done when
 
-- [ ] An `invite` table (project, token, `maxUses`, `useCount`, `expiresAt`, creator,
+- [x] An `invite` table (project, token, `maxUses`, `useCount`, `expiresAt`, creator,
       `revokedAt`) with at most one row per project where `revokedAt` is null, enforced by
       the database.
-- [ ] `POST`, `GET` and `DELETE /projects/:projectId/invite` work for Owners and Managers
+- [x] `POST`, `GET` and `DELETE /projects/:projectId/invite` work for Owners and Managers
       (`403 forbidden` for a Member, `404` for a non-member). Creating takes an expiry of
       1 hour, 24 hours, 7 days or 30 days and a limit of 1 to 100 or none, and the previous
       link stops working in the same transaction.
-- [ ] `GET /invites/:token` returns the project name, who made the link and whether the
+- [x] `GET /invites/:token` returns the project name, who made the link and whether the
       caller is already a member. `POST /invites/:token/join` adds the caller as a Member
       and uses one slot. An unknown or deleted link answers `404 invite_not_found`, an
       expired one `410 invite_expired`, a full one `409 invite_full`, and none of them name

@@ -16,6 +16,7 @@ apps/api/
 │   │   ├── users/           # /api/me, consent
 │   │   ├── projects/        # projects, mode presets, membership
 │   │   ├── items/           # items, states, blocked-by
+│   │   ├── invites/         # a project's invite link, joining through it
 │   │   └── uniauth/         # uniAuth receivers and event tokens
 │   ├── auth/                # Better Auth (`auth`), session and consent middleware
 │   ├── utils/               # Helpers used by 3+ modules, one file per topic (none yet)

@@ -3,8 +3,8 @@
 //
 // SEED_OWNER_EMAIL picks your account (default: the first user who signed in). It may list
 // several, comma-separated: the first is "you" in the items, and the others get the same
-// role in every seed project. Reruns replace the seed projects (keys TG, TS, TR, TM, TC,
-// TL, TX, TI) and never touch any other project.
+// role in every seed project. Reruns replace the seed projects (every key in SEED_PROJECTS)
+// and never touch any other project.
 //
 // A plan that adds a rule adds its cases here: a function per project, item titles that
 // say what to try and what should happen.
@@ -27,6 +27,10 @@ import {
 } from '../src/modules/items/checklist.service.js';
 import { createDocument } from '../src/modules/documents/document.service.js';
 import {
+  createInvite,
+  joinByInvite,
+} from '../src/modules/invites/invite.service.js';
+import {
   createProject,
   updateProject,
 } from '../src/modules/projects/project.service.js';
@@ -40,6 +44,10 @@ const SEED_PROJECTS = {
   TL: 'Seed · Lowered limits',
   TX: 'Seed · Not a member',
   TI: 'Seed · Review inbox',
+  TV: 'Seed · Invite link',
+  TO: 'Seed · Open invite',
+  TF: 'Seed · Full invite',
+  TE: 'Seed · Expired invite',
 };
 
 /** Fake people, so there are assignees, authors and an owner who isn't you. */
@@ -945,6 +953,56 @@ const seedDocuments = async (ownerId: string) => {
   );
 };
 
+/**
+ * Invite links (plan 39): one you manage, and three to projects you're not in. Open each
+ * printed path on the web app's origin.
+ */
+const seedInvites = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const day = { expiresIn: '24h' as const, maxUses: null };
+
+  const { project: yours } = await seedProject('TV', 'STANDARD', ownerId, []);
+  const live = await createInvite(yours.id, ownerId, {
+    expiresIn: '7d',
+    maxUses: 10,
+  });
+  await joinByInvite(live.token, mya.id);
+  await joinByInvite(live.token, ko.id);
+  note(
+    'TV',
+    'Members: the Invite link card shows the link, "2 of 10 used" and when it expires; Copy link and Copy invite message work; Create new link and Delete link ask first; Remove on Mya asks and offers to turn the link off',
+  );
+
+  const { project: open } = await seedProject('TO', 'STANDARD', ko.id, []);
+  const openLink = await createInvite(open.id, ko.id, day);
+  note(
+    'TO',
+    `/join/${openLink.token} → "Join Seed · Open invite", invited by Ko; Join project → its board, you are a Member; open the link again → straight to the board`,
+  );
+
+  const { project: full } = await seedProject('TF', 'STANDARD', ko.id, []);
+  const fullLink = await createInvite(full.id, ko.id, {
+    expiresIn: '24h',
+    maxUses: 1,
+  });
+  await joinByInvite(fullLink.token, mya.id);
+  note(
+    'TF',
+    `/join/${fullLink.token} → "This invite link is full", no project name, no Join button`,
+  );
+
+  const { project: expired } = await seedProject('TE', 'STANDARD', ko.id, []);
+  const expiredLink = await createInvite(expired.id, ko.id, day);
+  await prisma.invite.update({
+    where: { token: expiredLink.token },
+    data: { expiresAt: new Date(Date.now() - 60_000) },
+  });
+  note(
+    'TE',
+    `/join/${expiredLink.token} → "This invite link has expired"; /join/not-a-link → "This invite link doesn't work"`,
+  );
+};
+
 const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -962,6 +1020,7 @@ await seedLoweredLimits(owner.id);
 await seedOutsider();
 await seedReviewInbox(owner.id);
 await seedDocuments(owner.id);
+await seedInvites(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

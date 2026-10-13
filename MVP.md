@@ -81,6 +81,12 @@ Mode names are still open: "Standard / Guided" or "Classic / Paired".
 
 People sign in with **uniAuth**. Access to a project is by invitation.
 
+- **Add by email:** an owner or manager adds someone who has already signed in to Uniloom.
+- **Invite link:** a project has one link. Its creator (owner or manager) picks an expiry
+  (1 hour, 24 hours, 7 days or 30 days) and a limit on how many people it lets in. Anyone
+  who opens it signs in and joins as a Member. A new link replaces the old one, which stops
+  working at once. See ADR-0014.
+
 | Role        | Can do                                                                                                              |
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |
 | **Owner**   | Everything: change roles, remove members, key prefix, labels, mode and switches, delete the project                 |

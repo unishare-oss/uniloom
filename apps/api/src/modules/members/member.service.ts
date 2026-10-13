@@ -70,6 +70,18 @@ export const addMember = async (
 };
 
 /**
+ * Adds `userId` as a Member inside the caller's transaction, for a join through an invite
+ * link. No role check: the link is the permission. Throws P2002 if they already belong.
+ */
+export const joinAsMember = (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+) => {
+  return memberRepo.createMember(tx, projectId, userId, 'MEMBER');
+};
+
+/**
  * 404 if the target isn't a member, 409 `last_owner` if changing them to `newRole` (or
  * removing them, when null) would leave no owner. Call it with the project locked.
  */

@@ -41,6 +41,16 @@ export const insertMember = (projectId: string, userId: string, role: Role) => {
     });
 };
 
+/** Inside the caller's transaction. Throws P2002 if the user already belongs. */
+export const createMember = (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+  role: Role,
+) => {
+  return tx.member.create({ data: { projectId, userId, role } });
+};
+
 /**
  * Locks the project row until the transaction ends, so two owners demoting or removing
  * each other at once run one at a time. Call it first, before counting owners.

@@ -47,6 +47,7 @@ export const getProject = async (projectId: string, userId: string) => {
     ...project,
     role,
     canManageMembers: role === 'OWNER',
+    canInvite: CREATORS.includes(role),
     canCreateItems: CREATORS.includes(role),
     canAssignOthers: CREATORS.includes(role),
     canEditSettings: role === 'OWNER',
