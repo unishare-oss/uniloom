@@ -1037,6 +1037,23 @@ const seedTicketDocuments = async (ownerId: string) => {
       "Mya's spec on her ticket: you can read it, but Edit is hidden and a direct PATCH → 403",
     body: '## Read only for you\n',
   });
+  const mcpBrief = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      'Create a brief over MCP as a member: refused → save_document with project TM, kind BRIEF answers forbidden',
+    assigneeId: ownerId,
+  });
+  const mcpSpec = await createProjectItem(memberProject.id, mya.id, {
+    kind: 'FEATURE',
+    title:
+      'Write a spec on your own ticket over MCP as a member: allowed → save_document with this ticket and kind SPEC; the same on a ticket assigned to Mya answers forbidden',
+    assigneeId: ownerId,
+  });
+  note(mcpBrief.key, 'agent as member: save_document BRIEF → forbidden');
+  note(
+    mcpSpec.key,
+    'agent as member: save_document SPEC on this ticket → works',
+  );
   note(feature.key, 'Related: spec, tech stack, archived link; New spec, Link');
   note(slice.key, 'Related: inherited documents "From" the feature, read only');
   note(

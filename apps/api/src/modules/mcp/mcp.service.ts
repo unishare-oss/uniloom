@@ -1,8 +1,16 @@
 import { HTTPException } from 'hono/http-exception';
+import { z } from 'zod';
 import { apiError } from '@/http.js';
+import * as documentService from '@/modules/documents/document.service.js';
 import * as checklistService from '@/modules/items/checklist.service.js';
+import { createTicketDocument } from '@/modules/items/item-document.service.js';
+import { createTicketDocumentSchema } from '@/modules/items/item.schema.js';
 import * as itemService from '@/modules/items/item.service.js';
-import type { ItemKind, Priority } from '@/generated/prisma/enums.js';
+import type {
+  DocumentKind,
+  ItemKind,
+  Priority,
+} from '@/generated/prisma/enums.js';
 import * as labelService from '@/modules/labels/label.service.js';
 import * as memberService from '@/modules/members/member.service.js';
 import * as projectService from '@/modules/projects/project.service.js';
@@ -273,4 +281,125 @@ export const checkCriterion = async (
   return toCriteria(
     (await itemService.getItem(itemId, agent.userId)).checklist,
   );
+};
+
+/** A Knowledge project's documents as slim rows, newest edit first. */
+export const listDocuments = async (
+  userId: string,
+  input: {
+    project: string;
+    kind?: DocumentKind;
+    query?: string;
+    archived?: boolean;
+  },
+) => {
+  const documents = await documentService.listDocuments(
+    await findProjectId(input.project),
+    userId,
+    {
+      kind: input.kind,
+      q: input.query,
+      archived: input.archived ? 'true' : 'false',
+    },
+  );
+  return documents.map((document) => ({
+    id: document.id,
+    kind: document.kind,
+    title: document.title,
+    purpose: document.purpose,
+    number: document.number,
+    status: document.status,
+    createdFrom: document.createdFrom?.key ?? null,
+    archived: document.archivedAt !== null,
+    updatedAt: document.updatedAt,
+  }));
+};
+
+/** One document with its body. A malformed id is the same 404 as a missing one. */
+export const getDocument = async (userId: string, id: string) => {
+  if (!z.uuid().safeParse(id).success)
+    throw apiError(404, 'not_found', 'Document not found');
+  return documentService.getDocument(id, userId);
+};
+
+/**
+ * Creates a document (no `id`: from the project, or from a ticket) or edits one (`id`: title,
+ * purpose, body). The services decide who may.
+ */
+export const saveDocument = async (
+  agent: Agent,
+  input: {
+    id?: string;
+    project?: string;
+    kind?: DocumentKind;
+    title?: string;
+    purpose?: string;
+    body?: string;
+    ticket?: string;
+    status?: string;
+  },
+) => {
+  const { userId } = agent;
+  if (input.id !== undefined) {
+    if (
+      input.kind !== undefined ||
+      input.ticket !== undefined ||
+      input.status !== undefined
+    )
+      throw apiError(
+        400,
+        'invalid_input',
+        'An existing document only takes title, purpose and body: its kind, ticket and status cannot be set',
+      );
+    if (!z.uuid().safeParse(input.id).success)
+      throw apiError(404, 'not_found', 'Document not found');
+    return documentService.updateDocumentById(input.id, userId, {
+      title: input.title,
+      purpose: input.purpose,
+      body: input.body,
+    });
+  }
+  if (input.status !== undefined)
+    throw apiError(
+      400,
+      'invalid_input',
+      'Statuses are for people on the website: leave status out',
+    );
+  if (!input.project || !input.kind || !input.title)
+    throw apiError(
+      400,
+      'invalid_input',
+      'Creating a document needs project, kind and title',
+    );
+  const fields = {
+    title: input.title,
+    purpose: input.purpose,
+    body: input.body,
+  };
+  if (!input.ticket)
+    return documentService.createDocument(
+      await findProjectId(input.project),
+      userId,
+      { ...fields, kind: input.kind },
+    );
+  if (
+    input.ticket.trim().split('-')[0].toUpperCase() !==
+    input.project.trim().toUpperCase()
+  )
+    throw apiError(
+      400,
+      'invalid_input',
+      `The ticket ${input.ticket} is not in project ${input.project}`,
+    );
+  const kind = createTicketDocumentSchema.shape.kind.safeParse(input.kind);
+  if (!kind.success)
+    throw apiError(
+      400,
+      'invalid_input',
+      'From a ticket the kind is SPEC, REFERENCE, ADR or TECH_DEBT',
+    );
+  return createTicketDocument(await findItemId(input.ticket), userId, {
+    ...fields,
+    kind: kind.data,
+  });
 };
