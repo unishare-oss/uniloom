@@ -3,6 +3,7 @@ import { notificationRoutes } from '@/modules/notifications/notification.routes.
 import { Hono } from 'hono';
 import { auth } from '@/auth/auth.js';
 import { requireConsent, requireSession } from '@/auth/middleware.js';
+import { documentRoutes } from '@/modules/documents/document.routes.js';
 import { itemRoutes } from '@/modules/items/item.routes.js';
 import { labelRoutes } from '@/modules/labels/label.routes.js';
 import { memberRoutes } from '@/modules/members/member.routes.js';
@@ -30,3 +31,4 @@ apiRoutes.route('/', memberRoutes);
 apiRoutes.route('/', reviewRoutes);
 apiRoutes.route('/', notificationRoutes);
 apiRoutes.route('/', labelRoutes);
+apiRoutes.route('/', documentRoutes);

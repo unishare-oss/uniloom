@@ -51,6 +51,7 @@ export const getProject = async (projectId: string, userId: string) => {
     canAssignOthers: CREATORS.includes(role),
     canEditSettings: role === 'OWNER',
     canCreateLabels: CREATORS.includes(role),
+    canCreateDocuments: CREATORS.includes(role),
     canClaim: CREATORS.includes(role) || project.selfClaimAllowed,
     canMoveToDone: mayMoveToDone(role),
     assignableRoles: assignableRoles(role),

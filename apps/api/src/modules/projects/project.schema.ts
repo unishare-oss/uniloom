@@ -63,6 +63,8 @@ export const projectDetailSchema = projectSchema.extend({
   canEditSettings: z.boolean(),
   /** Whether the caller may add labels and change their name and colour (owners, managers). */
   canCreateLabels: z.boolean(),
+  /** Whether the caller may write knowledge documents (owners, managers). */
+  canCreateDocuments: z.boolean(),
   /** Whether the caller may claim a free ticket (owners, managers, or members when self-claim is on). */
   canClaim: z.boolean(),
   /** Whether the caller may move a ticket into a Done state (owners, managers). */

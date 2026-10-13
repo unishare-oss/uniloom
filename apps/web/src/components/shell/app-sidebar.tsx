@@ -2,6 +2,7 @@
 
 import {
   ChevronLeft,
+  BookOpen,
   Columns3,
   LayoutGrid,
   Inbox,
@@ -165,6 +166,16 @@ export const AppSidebar = () => {
                 >
                   <Columns3 />
                   <span>Board</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className={linkClass}
+                  isActive={pathname.startsWith(`/p/${current.id}/docs`)}
+                  render={<Link href={`/p/${current.id}/docs`} />}
+                >
+                  <BookOpen />
+                  <span>Knowledge</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
