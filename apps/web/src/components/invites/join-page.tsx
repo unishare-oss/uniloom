@@ -32,8 +32,9 @@ const DEAD_LINKS: Record<string, { title: string; hint: string }> = {
 };
 
 /**
- * Where an invite link leads: which project it is and a button to join. Joining is a
- * button press, never the page load, so a link preview in a chat app can't add anyone.
+ * Where an invite link leads: which project it is and a button to join, or to ask when
+ * the link needs approval. Joining is a button press, never the page load, so a link
+ * preview in a chat app can't add anyone.
  */
 export const JoinPage = ({ token }: { token: string }) => {
   const router = useRouter();
@@ -50,6 +51,13 @@ export const JoinPage = ({ token }: { token: string }) => {
     mutation: {
       onSuccess: async (res) => {
         toast.success(successMessage(res));
+        if (res.data.result === "requested") {
+          // The preview now says the request is waiting.
+          await queryClient.invalidateQueries({
+            queryKey: getPreviewInviteQueryKey(token),
+          });
+          return;
+        }
         await queryClient.invalidateQueries({
           queryKey: getListProjectsQueryKey(),
         });
@@ -102,7 +110,26 @@ export const JoinPage = ({ token }: { token: string }) => {
           </div>
         )}
 
-        {preview && !preview.isMember && (
+        {preview && !preview.isMember && preview.request === "PENDING" && (
+          <div role="status" className="flex flex-col gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight wrap-break-word">
+              Request sent
+            </h1>
+            <p className="text-muted-foreground">
+              You&rsquo;ll get into {preview.projectName} once an owner or
+              manager approves it. Check back here or in your projects.
+            </p>
+          </div>
+        )}
+        {preview && !preview.isMember && preview.request === "PENDING" && (
+          <div>
+            <Button variant="outline" render={<Link href="/" />}>
+              Go to your projects
+            </Button>
+          </div>
+        )}
+
+        {preview && !preview.isMember && preview.request === null && (
           <>
             <div className="flex flex-col gap-2">
               <h1 className="text-2xl font-semibold tracking-tight wrap-break-word">
@@ -112,7 +139,9 @@ export const JoinPage = ({ token }: { token: string }) => {
                 {preview.invitedBy
                   ? `${preview.invitedBy} invited you to this project.`
                   : "You're invited to this project."}{" "}
-                You&rsquo;ll join as a Member.
+                {preview.joinApproval
+                  ? "An owner or manager approves each request."
+                  : "You'll join as a Member."}
               </p>
             </div>
             <div>
@@ -122,7 +151,13 @@ export const JoinPage = ({ token }: { token: string }) => {
                 aria-busy={join.isPending}
                 onClick={() => join.mutate({ token })}
               >
-                {join.isPending ? "Joining…" : "Join project"}
+                {preview.joinApproval
+                  ? join.isPending
+                    ? "Sending…"
+                    : "Ask to join"
+                  : join.isPending
+                    ? "Joining…"
+                    : "Join project"}
               </Button>
             </div>
           </>

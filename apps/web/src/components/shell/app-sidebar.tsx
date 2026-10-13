@@ -34,7 +34,10 @@ import { ProjectChip } from "@/components/projects/project-chip";
 import { useGetReviews } from "@/lib/api/generated/reviews/reviews";
 import { useGetNotifications } from "@/lib/api/generated/notifications/notifications";
 import { useGetMe } from "@/lib/api/generated/users/users";
-import { useListProjects } from "@/lib/api/generated/projects/projects";
+import {
+  useGetProject,
+  useListProjects,
+} from "@/lib/api/generated/projects/projects";
 
 // The active link is a filled block with an ink outline and offset shadow (UniShare's look).
 const linkClass =
@@ -86,6 +89,14 @@ export const AppSidebar = () => {
         ? "Tasks waiting for review"
         : "Unread notifications";
   const current = projects?.find((w) => w.id === projectId);
+  // People waiting to be let into the open project (0 for a Member, who can't see them).
+  const { data: waiting = 0 } = useGetProject(projectId ?? "", {
+    query: {
+      enabled: !!current,
+      select: (response) => response.data.joinRequestCount,
+      retry: false,
+    },
+  });
   const others = projects?.filter((w) => w.id !== projectId) ?? [];
 
   // On a phone, close the sheet after following a link.
@@ -196,7 +207,17 @@ export const AppSidebar = () => {
                   render={<Link href={`/p/${current.id}/members`} />}
                 >
                   <Users />
-                  <span>Members</span>
+                  <span className="flex-1">Members</span>
+                  {waiting > 0 && (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${pathname.endsWith("/members") ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"}`}
+                    >
+                      {waiting}
+                      <span className="sr-only">
+                        {waiting === 1 ? " join request" : " join requests"}
+                      </span>
+                    </span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

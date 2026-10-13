@@ -3,9 +3,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { InviteLinkCard } from "@/components/members/invite-link-card";
+import { JoinRequestsCard } from "@/components/members/join-requests-card";
 import { RemoveMemberDialog } from "@/components/members/remove-member-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,9 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("MEMBER");
+  const memberList = useRef<HTMLUListElement>(null);
+  // After the last join request is decided its card is gone: focus the member list.
+  const focusMembers = useCallback(() => memberList.current?.focus(), []);
   const { data: members, error } = useListMembers(projectId, {
     query: { select: (r) => r.data },
   });
@@ -173,14 +177,26 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
       )}
 
       {canInvite && project && (
-        <InviteLinkCard projectId={projectId} projectName={project.name} />
+        <InviteLinkCard
+          projectId={projectId}
+          projectName={project.name}
+          waiting={project.joinRequestCount}
+        />
+      )}
+      {canInvite && (
+        <JoinRequestsCard projectId={projectId} onEmptied={focusMembers} />
       )}
 
       {error && <p role="alert">{error.message}</p>}
       {!members && !error && <Skeleton className="h-40 w-full rounded-xl" />}
 
       {members && (
-        <ul className="divide-y rounded-xl border bg-card">
+        <ul
+          ref={memberList}
+          tabIndex={-1}
+          aria-label="Members"
+          className="divide-y rounded-xl border bg-card outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
           {members.map((member) => (
             <li
               key={member.userId}

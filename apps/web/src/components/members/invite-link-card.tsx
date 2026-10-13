@@ -28,8 +28,8 @@ import { timeAgo } from "@/lib/time";
 const statusLine = (invite: CreateInvite201) => {
   const used =
     invite.maxUses === null
-      ? `${invite.useCount} joined`
-      : `${invite.useCount} of ${invite.maxUses} used`;
+      ? `${invite.useCount} ${invite.joinApproval ? "asked" : "joined"}`
+      : `${invite.useCount} of ${invite.maxUses} ${invite.joinApproval ? "requests used" : "used"}`;
   if (invite.state === "expired")
     return `Expired ${timeAgo(invite.expiresAt)}. ${used}.`;
   if (invite.state === "full") return `Full: ${used}.`;
@@ -43,9 +43,12 @@ const statusLine = (invite: CreateInvite201) => {
 export const InviteLinkCard = ({
   projectId,
   projectName,
+  waiting,
 }: {
   projectId: string;
   projectName: string;
+  /** People waiting for approval: the dialogs say their requests stay. */
+  waiting: number;
 }) => {
   const queryClient = useQueryClient();
   const headingId = useId();
@@ -101,8 +104,10 @@ export const InviteLinkCard = ({
           Invite link
         </h2>
         <p className="text-sm text-muted-foreground">
-          Anyone with the link can join this project as a Member. They sign in
-          first if they are new to Uniloom.
+          {invite?.joinApproval
+            ? "Anyone with the link can ask to join this project. An owner or manager approves each request."
+            : "Anyone with the link can join this project as a Member."}{" "}
+          New people sign in first.
         </p>
       </div>
 
@@ -143,6 +148,7 @@ export const InviteLinkCard = ({
                         projectName,
                         url,
                         expiresAt: invite.expiresAt,
+                        joinApproval: invite.joinApproval,
                       }),
                       "Invite message copied",
                     )
@@ -155,10 +161,12 @@ export const InviteLinkCard = ({
             )}
             <ReplaceLinkDialog
               currentWorks={invite.state === "live"}
+              waiting={waiting}
               busy={busy}
               onCreate={(next) => create.mutateAsync({ projectId, data: next })}
             />
             <DeleteLinkDialog
+              waiting={waiting}
               busy={busy}
               onDelete={() => remove.mutateAsync({ projectId })}
             />

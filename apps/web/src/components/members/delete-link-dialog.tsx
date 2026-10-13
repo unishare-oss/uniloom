@@ -14,12 +14,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { waitingNote } from "@/components/members/invite-message";
 
 /** Asks before turning the invite link off. */
 export const DeleteLinkDialog = ({
+  waiting,
   busy,
   onDelete,
 }: {
+  /** People waiting for approval. */
+  waiting: number;
   busy: boolean;
   /** Resolves when the link is gone; the dialog closes then. */
   onDelete: () => Promise<unknown>;
@@ -42,6 +46,7 @@ export const DeleteLinkDialog = ({
           <AlertDialogDescription>
             It stops working right away. People who already joined stay in the
             project.
+            {waitingNote(waiting)}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -3,6 +3,7 @@
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { waitingNote } from "@/components/members/invite-message";
 import {
   Dialog,
   DialogContent,
@@ -24,11 +25,14 @@ import {
  */
 export const ReplaceLinkDialog = ({
   currentWorks,
+  waiting,
   busy,
   onCreate,
 }: {
   /** False when the current link is already expired or full: nothing to warn about. */
   currentWorks: boolean;
+  /** People waiting for approval. */
+  waiting: number;
   busy: boolean;
   /** Resolves when the new link exists; the dialog closes then. */
   onCreate: (choices: InviteChoices) => Promise<unknown>;
@@ -60,6 +64,7 @@ export const ReplaceLinkDialog = ({
               {currentWorks
                 ? "The current link stops working right away. People who already joined stay in the project."
                 : "The current link no longer works. The new one replaces it."}
+              {waitingNote(waiting)}
             </DialogDescription>
           </DialogHeader>
           <InviteOptions
