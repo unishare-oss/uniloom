@@ -6,6 +6,7 @@ import {
   Columns3,
   LayoutGrid,
   Inbox,
+  Plug,
   Settings,
   SquarePlus,
   Trash2,
@@ -242,7 +243,19 @@ export const AppSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t-2 border-border p-0">
+      <SidebarFooter className="gap-0 border-t-2 border-border p-0">
+        <SidebarMenu className="px-2 pt-2">
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className={linkClass}
+              isActive={pathname === "/profile/agent"}
+              render={<Link href="/profile/agent" />}
+            >
+              <Plug />
+              <span>Connect an agent</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
         <Link
           href="/profile"
           className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted"
