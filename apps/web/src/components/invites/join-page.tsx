@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { CancelRequestDialog } from "@/components/invites/cancel-request-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { successMessage } from "@/lib/api/fetcher";
 import {
+  getListMyJoinRequestsQueryKey,
   getPreviewInviteQueryKey,
   useJoinByInvite,
   usePreviewInvite,
@@ -52,10 +54,16 @@ export const JoinPage = ({ token }: { token: string }) => {
       onSuccess: async (res) => {
         toast.success(successMessage(res));
         if (res.data.result === "requested") {
-          // The preview now says the request is waiting.
-          await queryClient.invalidateQueries({
-            queryKey: getPreviewInviteQueryKey(token),
-          });
+          // The preview now says the request is waiting, and so does the home page.
+          await Promise.all([
+            queryClient.invalidateQueries({
+              queryKey: getPreviewInviteQueryKey(token),
+            }),
+            queryClient.invalidateQueries({
+              queryKey: getListMyJoinRequestsQueryKey(),
+            }),
+          ]);
+          join.reset();
           return;
         }
         await queryClient.invalidateQueries({
@@ -79,6 +87,9 @@ export const JoinPage = ({ token }: { token: string }) => {
   }, [preview, router]);
 
   const dead = error ? DEAD_LINKS[error.code] : undefined;
+  // Their earlier request through this link ended; they keep its slot and may ask again.
+  const again =
+    preview?.request === "DECLINED" || preview?.request === "CANCELED";
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col px-6 py-12">
@@ -113,20 +124,63 @@ export const JoinPage = ({ token }: { token: string }) => {
         {preview && !preview.isMember && preview.request === "PENDING" && (
           <div role="status" className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold tracking-tight wrap-break-word">
-              Request sent
+              Waiting for approval
             </h1>
             <p className="text-muted-foreground">
-              You&rsquo;ll get into {preview.projectName} once an owner or
-              manager approves it. Check back here or in your projects.
+              Your request to join {preview.projectName} is waiting for an owner
+              or manager. Check back here or on your projects page.
             </p>
           </div>
         )}
         {preview && !preview.isMember && preview.request === "PENDING" && (
-          <div>
-            <Button variant="outline" render={<Link href="/" />}>
-              Go to your projects
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button render={<Link href="/" />}>Go to your projects</Button>
+            {preview.requestId && (
+              <CancelRequestDialog
+                requestId={preview.requestId}
+                projectName={preview.projectName}
+                onCanceled={() =>
+                  void queryClient.invalidateQueries({
+                    queryKey: getPreviewInviteQueryKey(token),
+                  })
+                }
+              />
+            )}
           </div>
+        )}
+
+        {preview && !preview.isMember && again && (
+          <>
+            <div
+              role={preview.request === "DECLINED" ? "alert" : "status"}
+              className="flex flex-col gap-2"
+            >
+              <h1 className="text-2xl font-semibold tracking-tight wrap-break-word">
+                {preview.request === "DECLINED"
+                  ? "Your request was declined"
+                  : "You canceled your request"}
+              </h1>
+              <p className="text-muted-foreground">
+                {preview.request === "DECLINED"
+                  ? `Your request to join ${preview.projectName} was declined.`
+                  : `You canceled your request to join ${preview.projectName}.`}{" "}
+                You can ask again while this link works.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                disabled={join.isPending}
+                aria-busy={join.isPending}
+                onClick={() => join.mutate({ token })}
+              >
+                {join.isPending ? "Sending…" : "Ask again"}
+              </Button>
+              <Button variant="outline" render={<Link href="/" />}>
+                Go to your projects
+              </Button>
+            </div>
+          </>
         )}
 
         {preview && !preview.isMember && preview.request === null && (
