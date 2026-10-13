@@ -2,6 +2,8 @@
 
 import { Columns3, Plus } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useRef } from "react";
+import { PendingRequests } from "@/components/projects/pending-requests";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,17 +13,26 @@ import { formatDate } from "@/lib/time";
 const pill =
   "rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide uppercase";
 
-/** Your projects as cards; each opens its board. */
+/** Your projects as cards; each opens its board. Below them, the ones you asked to join. */
 export const ProjectList = () => {
   const { data: projects, error } = useListProjects({
     query: { select: (r) => r.data },
   });
+  const heading = useRef<HTMLHeadingElement>(null);
+  // After the last waiting request is canceled its section is gone: focus the heading.
+  const focusHeading = useCallback(() => heading.current?.focus(), []);
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
+          <h1
+            ref={heading}
+            tabIndex={-1}
+            className="text-3xl font-semibold tracking-tight outline-none"
+          >
+            Projects
+          </h1>
           <p className="text-muted-foreground">
             Pick one to open its board, or start a new one.
           </p>
@@ -94,6 +105,8 @@ export const ProjectList = () => {
           </Link>
         ))}
       </div>
+
+      <PendingRequests onEmptied={focusHeading} />
     </main>
   );
 };

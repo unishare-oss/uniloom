@@ -83,4 +83,65 @@ describe('database schema (e2e)', () => {
       0,
     );
   });
+
+  it('allows one live invite link per project, and any number of revoked ones', async () => {
+    const project = await newProject();
+    const link = (revokedAt: Date | null) =>
+      prisma.invite.create({
+        data: {
+          projectId: project.id,
+          token: randomUUID(),
+          expiresAt: new Date(Date.now() + 3600_000),
+          revokedAt,
+        },
+      });
+    await link(new Date());
+    await link(new Date());
+    await link(null);
+
+    await expect(link(null)).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('refuses an invite limit below 1', async () => {
+    const project = await newProject();
+    await expect(
+      prisma.invite.create({
+        data: {
+          projectId: project.id,
+          token: randomUUID(),
+          expiresAt: new Date(Date.now() + 3600_000),
+          maxUses: 0,
+        },
+      }),
+    ).rejects.toThrow(/invite_max_uses/);
+  });
+
+  it('allows one waiting join request per person per project, and one row per link', async () => {
+    const project = await newProject();
+    const user = await newUser();
+    const link = (revokedAt: Date | null) =>
+      prisma.invite.create({
+        data: {
+          projectId: project.id,
+          token: randomUUID(),
+          expiresAt: new Date(Date.now() + 3600_000),
+          revokedAt,
+        },
+      });
+    const [old, current] = [await link(new Date()), await link(null)];
+    const request = (inviteId: string, status: 'PENDING' | 'DECLINED') =>
+      prisma.joinRequest.create({
+        data: { projectId: project.id, userId: user.id, inviteId, status },
+      });
+    await request(old.id, 'DECLINED');
+    await request(current.id, 'PENDING');
+
+    await expect(request(current.id, 'DECLINED')).rejects.toMatchObject({
+      code: 'P2002',
+    });
+    const third = await link(new Date());
+    await expect(request(third.id, 'PENDING')).rejects.toMatchObject({
+      code: 'P2002',
+    });
+  });
 });

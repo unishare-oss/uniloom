@@ -41,15 +41,46 @@ export const insertMember = (projectId: string, userId: string, role: Role) => {
     });
 };
 
-/**
- * Locks the project row until the transaction ends, so two owners demoting or removing
- * each other at once run one at a time. Call it first, before counting owners.
- */
-export const lockProject = (
+/** Inside the caller's transaction. Throws P2002 if the user already belongs. */
+export const createMember = (
   tx: Prisma.TransactionClient,
   projectId: string,
+  userId: string,
+  role: Role,
 ) => {
-  return tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
+  return tx.member.create({ data: { projectId, userId, role } });
+};
+
+/**
+ * Their waiting join request for the project is settled: they are in. The row is kept
+ * as APPROVED, so the link they asked through still knows they used a slot.
+ */
+export const settleJoinRequest = (
+  db: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+) => {
+  return db.joinRequest.updateMany({
+    where: { projectId, userId, status: 'PENDING' },
+    data: { status: 'APPROVED' },
+  });
+};
+
+/** Call it first, before counting owners, so two owners demoting each other run one at a time. */
+export { lockProject } from '@/db/locks.js';
+
+/** Inside the caller's transaction. False if the user already belongs: nothing changes. */
+export const createMemberIfMissing = async (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+  role: Role,
+) => {
+  const { count } = await tx.member.createMany({
+    data: [{ projectId, userId, role }],
+    skipDuplicates: true,
+  });
+  return count === 1;
 };
 
 export const countOwners = (

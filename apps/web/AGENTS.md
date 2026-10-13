@@ -23,8 +23,10 @@ apps/web/
 │   │   ├── auth/       # Login, consent, session bootstrap (consent redirect, silent check)
 │   │   ├── board/      # Board, its columns and draggable item cards
 │   │   ├── items/      # Item detail, new-item dialog, trash, kind/priority/state icons
+│   │   ├── invites/    # The join page an invite link leads to
 │   │   ├── legal/      # Layout for the terms and privacy pages
 │   │   ├── markdown/   # Markdown renderer and its Mermaid diagrams
+│   │   ├── members/    # Members page, invite link card, role select, remove dialog
 │   │   ├── shell/      # App shell: sidebar and layout for signed-in pages
 │   │   ├── user/       # Profile, avatar and theme switch
 │   │   ├── projects/   # Project list, new-project dialog, project chip

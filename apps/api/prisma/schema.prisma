@@ -29,12 +29,15 @@ model User {
   notifications Notification[]
   activities    Activity[]
 
-  sessions      Session[]
-  accounts      Account[]
-  memberships   Member[]
-  assignedItems Item[]     @relation("ItemAssignee")
-  createdItems  Item[]     @relation("ItemCreatedBy")
-  documents     Document[] @relation("DocumentAuthor")
+  sessions            Session[]
+  accounts            Account[]
+  memberships         Member[]
+  assignedItems       Item[]        @relation("ItemAssignee")
+  createdItems        Item[]        @relation("ItemCreatedBy")
+  documents           Document[]    @relation("DocumentAuthor")
+  invites             Invite[]      @relation("InviteCreatedBy")
+  joinRequests        JoinRequest[]
+  decidedJoinRequests JoinRequest[] @relation("JoinRequestDecidedBy")
 
   @@map("user")
 }
@@ -127,11 +130,13 @@ model Project {
   notifications Notification[]
   activities    Activity[]
 
-  members   Member[]
-  states    State[]
-  items     Item[]
-  labels    Label[]
-  documents Document[]
+  members      Member[]
+  states       State[]
+  items        Item[]
+  labels       Label[]
+  documents    Document[]
+  invites      Invite[]
+  joinRequests JoinRequest[]
 
   @@map("project")
 }
@@ -461,4 +466,69 @@ model ItemDocument {
   @@id([itemId, documentId])
   @@index([documentId])
   @@map("item_document")
+}
+
+// ---------------------------------------------------------------------------
+// Invite links and join requests (docs/plans/43-invite-links.md, 44-join-approval.md,
+// ADR-0015)
+
+/// A project's invite link. A project has at most one where `revokedAt` is null (a
+/// partial unique index in the migration); replaced and deleted links keep their rows.
+/// The migration also adds a CHECK that `maxUses` is null or at least 1.
+model Invite {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  projectId    String    @db.Uuid
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 32 random bytes, base64url. The only secret of the link, stored as is.
+  token        String    @unique
+  /// When on, people ask to join and an owner or manager lets them in (plan 44).
+  joinApproval Boolean   @default(false)
+  /// How many people the link lets in; null = no limit.
+  maxUses      Int?
+  /// People who used a slot. Only ever goes up.
+  useCount     Int       @default(0)
+  expiresAt    DateTime
+  createdById  String?
+  createdBy    User?     @relation("InviteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  /// Set when the link is deleted or replaced: it stops working at once.
+  revokedAt    DateTime?
+
+  joinRequests JoinRequest[]
+
+  @@index([projectId])
+  @@map("invite")
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  /// The person took their request back (plan 45). Like DECLINED, they may ask again.
+  CANCELED
+}
+
+/// Someone asked to join through an invite link that needs approval. One row per person
+/// per link, so they use one slot however often they ask; decided rows are kept for that.
+/// A person has at most one PENDING row per project (a partial unique index in the
+/// migration). Requests outlive their link and never expire.
+model JoinRequest {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  projectId   String            @db.Uuid
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviteId    String            @db.Uuid
+  invite      Invite            @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+  status      JoinRequestStatus @default(PENDING)
+  decidedById String?
+  decidedBy   User?             @relation("JoinRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  /// When they last asked: asking again after a decline moves it.
+  requestedAt DateTime          @default(now())
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([inviteId, userId])
+  @@index([projectId, status])
+  @@map("join_request")
 }

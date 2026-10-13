@@ -66,7 +66,37 @@ export const addMember = async (
   const member = await memberRepo.insertMember(projectId, user.id, input.role);
   if (!member)
     throw apiError(409, 'already_member', 'They are already a member');
+  // If they had asked to join through an invite link, that request is answered now.
+  await memberRepo.settleJoinRequest(prisma, projectId, user.id);
   return view(member);
+};
+
+/**
+ * Adds `userId` as a Member inside the caller's transaction, for a join through an invite
+ * link or an approved request, and settles their waiting request if they had one. No
+ * role check: the link or the approval is the permission. Throws P2002 if they already
+ * belong.
+ */
+export const joinAsMember = async (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+) => {
+  await memberRepo.createMember(tx, projectId, userId, 'MEMBER');
+  await memberRepo.settleJoinRequest(tx, projectId, userId);
+};
+
+/**
+ * For an approved join request: adds `userId` as a Member unless they already belong
+ * (added by email meanwhile), in which case their role stays as it is.
+ */
+export const approveAsMember = async (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+) => {
+  await memberRepo.createMemberIfMissing(tx, projectId, userId, 'MEMBER');
+  await memberRepo.settleJoinRequest(tx, projectId, userId);
 };
 
 /**
