@@ -6,6 +6,7 @@ import {
   Columns3,
   LayoutGrid,
   Inbox,
+  LifeBuoy,
   Plug,
   Settings,
   SquarePlus,
@@ -274,6 +275,16 @@ export const AppSidebar = () => {
             >
               <Plug />
               <span>Connect an agent</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className={linkClass}
+              isActive={pathname === "/guide"}
+              render={<Link href="/guide" />}
+            >
+              <LifeBuoy />
+              <span>Guide</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
