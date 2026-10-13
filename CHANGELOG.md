@@ -1,3 +1,20 @@
+# [1.8.0](https://github.com/unishare-oss/uniloom/compare/v1.7.0...v1.8.0) (2026-10-13)
+
+
+### Bug Fixes
+
+* **api:** documents edit by current role only ([dc3ec48](https://github.com/unishare-oss/uniloom/commit/dc3ec4855a2af66419e1d6cee8da9d984a08aea9))
+* **api:** order retried review event first in e2e test ([dca5c84](https://github.com/unishare-oss/uniloom/commit/dca5c8438a633a24628efbfcaee246a9c162caff))
+* review findings for knowledge documents ([cc8c8c0](https://github.com/unishare-oss/uniloom/commit/cc8c8c02efbf3094bbd7b86cc21a9b7c72783550))
+* **web:** show only the claim hint on tickets members can't edit ([36507d3](https://github.com/unishare-oss/uniloom/commit/36507d3206f9587abd759614e2d6a683fb1f7233))
+
+
+### Features
+
+* **api:** members edit only tickets assigned to them ([5fac7b4](https://github.com/unishare-oss/uniloom/commit/5fac7b47059531b4e85188aae6104209304d1765))
+* knowledge documents library ([04fe8e8](https://github.com/unishare-oss/uniloom/commit/04fe8e86d0d96a60d4b97ca350b4bf56acfcafa0))
+* **web:** add connect-an-agent page ([8b8a700](https://github.com/unishare-oss/uniloom/commit/8b8a700dd837124e196452b420e2e4445fbb0979))
+
 # [1.7.0](https://github.com/unishare-oss/uniloom/compare/v1.6.0...v1.7.0) (2026-10-12)
 
 
