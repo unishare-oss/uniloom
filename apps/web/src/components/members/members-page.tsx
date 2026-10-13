@@ -1,10 +1,12 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOut, UserPlus, X } from "lucide-react";
+import { LogOut, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { InviteLinkCard } from "@/components/members/invite-link-card";
+import { RemoveMemberDialog } from "@/components/members/remove-member-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +19,11 @@ import {
   useListMembers,
   useRemoveMember,
 } from "@/lib/api/generated/members/members";
+import {
+  getGetInviteQueryKey,
+  useDeleteInvite,
+  useGetInvite,
+} from "@/lib/api/generated/invites/invites";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import {
   getGetProjectQueryKey,
@@ -31,7 +38,8 @@ import {
 
 /**
  * Who is in the project and with which role. Owners add, change and remove; managers
- * add people as Member. What each may do comes from the project's flags.
+ * add people as Member and, like owners, manage the invite link. What each may do comes
+ * from the project's flags.
  */
 export const MembersPage = ({ projectId }: { projectId: string }) => {
   const queryClient = useQueryClient();
@@ -95,6 +103,20 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
   });
 
   const canManage = project?.canManageMembers ?? false;
+  const canInvite = project?.canInvite ?? false;
+  // The card reads the same query: this copy tells the remove dialog a link is live.
+  const { data: invite } = useGetInvite(projectId, {
+    query: { select: (r) => r.data, enabled: canInvite },
+  });
+  const deleteLink = useDeleteInvite({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: getGetInviteQueryKey(projectId),
+        }),
+      onError,
+    },
+  });
   const assignable = project?.assignableRoles ?? [];
   const busy = add.isPending || change.isPending || remove.isPending;
 
@@ -150,6 +172,10 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
         </form>
       )}
 
+      {canInvite && project && (
+        <InviteLinkCard projectId={projectId} projectName={project.name} />
+      )}
+
       {error && <p role="alert">{error.message}</p>}
       {!members && !error && <Skeleton className="h-40 w-full rounded-xl" />}
 
@@ -192,16 +218,18 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
                 <span className="text-sm">{roleLabels[member.role]}</span>
               )}
               {canManage && member.userId !== me?.id && (
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() =>
-                    remove.mutate({ projectId, userId: member.userId })
-                  }
-                >
-                  <X />
-                  Remove
-                </Button>
+                <RemoveMemberDialog
+                  name={member.name}
+                  linkIsLive={invite?.state === "live"}
+                  busy={busy}
+                  onRemove={async (alsoDeleteLink) => {
+                    await remove.mutateAsync({
+                      projectId,
+                      userId: member.userId,
+                    });
+                    if (alsoDeleteLink) deleteLink.mutate({ projectId });
+                  }}
+                />
               )}
             </li>
           ))}

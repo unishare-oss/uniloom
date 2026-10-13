@@ -47,7 +47,7 @@ Left out:
       message", "3 of 10 used, expires in 5 hours", "Delete link" and "Create new link",
       the last two behind a dialog that says the current link stops working. Removing a
       member asks first, with a ticked "Also turn off the invite link" when one is live.
-- [ ] Seed projects with a live link, a full link and an expired link (the seed prints
+- [x] Seed projects with a live link, a full link and an expired link (the seed prints
       their URLs and what each should do); `MVP.md` §4 and §11 describe invite links.
 
 ## Design
