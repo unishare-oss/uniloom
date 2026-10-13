@@ -20,7 +20,11 @@ const deadLinkError = (state: Exclude<LinkState, 'live'>) => {
   if (state === 'expired')
     return apiError(410, 'invite_expired', 'This invite link has expired');
   if (state === 'full')
-    return apiError(409, 'invite_full', 'This invite link is full');
+    return apiError(
+      409,
+      'invite_full',
+      'This invite link has reached its limit',
+    );
   return apiError(404, 'invite_not_found', "This invite link doesn't work");
 };
 

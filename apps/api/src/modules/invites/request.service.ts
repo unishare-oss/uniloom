@@ -52,7 +52,7 @@ export const decideJoinRequest = async (
       throw apiError(
         409,
         'already_decided',
-        'This request was already decided',
+        'This request is no longer pending',
       );
     if (approve) await joinAsMember(tx, projectId, request.userId);
     return request.user.name;
@@ -86,5 +86,5 @@ export const cancelJoinRequest = async (userId: string, requestId: string) => {
     request.status !== 'PENDING' ||
     !(await requestRepo.cancelIfPending(requestId, userId))
   )
-    throw apiError(409, 'already_decided', 'This request was already decided');
+    throw apiError(409, 'already_decided', 'This request is no longer pending');
 };

@@ -983,7 +983,7 @@ const seedInvites = async (ownerId: string) => {
   await joinByInvite(live.token, ko.id);
   note(
     'TV',
-    'Members: the Invite link card shows the link, "2 of 10 used" and when it expires; Copy link and Copy invite message work; Create new link and Delete link ask first; Remove on Mya asks and offers to turn the link off',
+    'Members: the Invite link card shows the link, "2 of 10 people joined", who created it and the exact expiry and when it expires; Copy link and Copy invite message work; Create new link and Delete link ask first; Remove on Mya asks and offers to delete the link too',
   );
 
   const { project: open } = await seedProject('TO', 'STANDARD', ko.id, []);
@@ -1002,7 +1002,7 @@ const seedInvites = async (ownerId: string) => {
   await joinByInvite(fullLink.token, mya.id);
   note(
     'TF',
-    `/join/${fullLink.token} → "This invite link is full", no project name, no Join button`,
+    `/join/${fullLink.token} → "This invite link has reached its limit", no project name, no Join button`,
   );
 
   const { project: expired } = await seedProject('TE', 'STANDARD', ko.id, []);
@@ -1032,7 +1032,7 @@ const seedJoinRequests = async (ownerId: string) => {
   await joinByInvite(link.token, ko.id);
   note(
     'TA',
-    'Members: "Join requests" lists Mya and Ko above the members and the sidebar shows 2; Approve Mya → she moves to the member list; Decline Ko → he leaves the list; the link still says "2 of 10 requests used"; Create new link keeps waiting requests',
+    'Members: "Join requests" lists Mya and Ko above the members and the sidebar shows 2; Approve Mya → she moves to the member list; Decline Ko → he leaves the list; the link still says "2 of 10 requests"; Create new link keeps waiting requests',
   );
 
   const { project: theirs } = await seedProject('TQ', 'STANDARD', ko.id, []);
