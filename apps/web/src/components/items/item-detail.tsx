@@ -267,6 +267,7 @@ export const ItemDetail = ({
               key={item.title}
               defaultValue={item.title}
               maxLength={200}
+              disabled={!item.canEdit}
               className="h-12 text-xl font-semibold hover:border-ring/60 md:text-xl"
               onBlur={(event) => {
                 const title = event.target.value.trim();
@@ -276,10 +277,18 @@ export const ItemDetail = ({
                 if (event.key === "Enter") event.currentTarget.blur();
               }}
             />
+            {!item.canEdit && (
+              <p className="text-sm text-muted-foreground">
+                {item.assigneeId === null && project.canClaim
+                  ? "Claim it to edit"
+                  : "Only its assignee, owners and managers can edit it"}
+              </p>
+            )}
           </div>
 
           <Description
             value={item.description}
+            canEdit={item.canEdit}
             saving={update.isPending}
             onSave={(description) => save({ description })}
           />
@@ -287,6 +296,7 @@ export const ItemDetail = ({
           <Checklist
             itemId={item.id}
             entries={item.checklist}
+            canEdit={item.canEdit}
             refresh={refresh}
             onError={onError}
           />
@@ -369,7 +379,7 @@ export const ItemDetail = ({
                       size="icon"
                       className="shrink-0 text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:text-foreground"
                       aria-label={`Stop waiting on ${blocker?.key ?? "this item"}`}
-                      disabled={removeBlocker.isPending}
+                      disabled={!item.canEdit || removeBlocker.isPending}
                       onClick={() =>
                         removeBlocker.mutate({ id: item.id, blockerId })
                       }
@@ -390,7 +400,11 @@ export const ItemDetail = ({
                       });
                   }}
                   items={blockerOptions}
-                  disabled={!blockerOptions.length || addBlocker.isPending}
+                  disabled={
+                    !item.canEdit ||
+                    !blockerOptions.length ||
+                    addBlocker.isPending
+                  }
                 >
                   <SelectTrigger
                     aria-label="Item this one waits on"
@@ -475,6 +489,7 @@ export const ItemDetail = ({
                   value: p,
                   label: priorityLabel(p),
                 }))}
+                disabled={!item.canEdit}
               >
                 <SelectTrigger
                   aria-label="Priority"
@@ -507,6 +522,7 @@ export const ItemDetail = ({
               <LabelPicker
                 projectId={projectId}
                 labels={item.labels}
+                disabled={!item.canEdit}
                 onChange={(labels) =>
                   void saveNow(
                     { labelIds: labels.map((l) => l.id) },
@@ -524,6 +540,7 @@ export const ItemDetail = ({
                   void saveNow({ parentId }, { parentId });
                 }}
                 items={parents}
+                disabled={!item.canEdit}
               >
                 <SelectTrigger
                   aria-label="Parent"

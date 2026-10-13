@@ -11,7 +11,14 @@ export const addBlocker = async (
   userId: string,
   blockerId: string,
 ) => {
-  const { item } = await loadItem(id, userId);
+  const { item, role } = await loadItem(id, userId);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    item.assigneeId,
+  );
+  if (editMessage) throw apiError(403, 'forbidden', editMessage);
   if (blockerId === id)
     throw apiError(400, 'self_block', "An item can't wait on itself");
   const blocker = await itemRepo.findItem(blockerId);
@@ -47,6 +54,13 @@ export const removeBlocker = async (
   userId: string,
   blockerId: string,
 ) => {
-  await loadItem(id, userId);
+  const { item, role } = await loadItem(id, userId);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    item.assigneeId,
+  );
+  if (editMessage) throw apiError(403, 'forbidden', editMessage);
   await blockerRepo.deleteLink(id, blockerId);
 };

@@ -1,5 +1,5 @@
 import type { Role } from '@/generated/prisma/enums.js';
-import { mayMove } from './item.rules.js';
+import { mayEdit, mayMove } from './item.rules.js';
 import type { findActivity } from './activity.repository.js';
 import type { Activity, EntryRow, ItemRow } from './item.types.js';
 
@@ -30,6 +30,7 @@ export const toItem = (row: ItemRow, role: Role, userId: string) => {
     priority: row.priority,
     assigneeId: row.assigneeId,
     canMove: mayMove(role, userId, row.assigneeId, row.state.key),
+    canEdit: mayEdit(role, userId, row.assigneeId),
     parentId: row.parentId,
     createdById: row.createdById,
     blockedBy: row.blockedBy.map((link) => link.blockerId),

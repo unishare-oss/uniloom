@@ -269,6 +269,19 @@ describe('labels (e2e)', () => {
       const free = (await w.add(w.owner, { name: 'free', color: 'GREEN' }))
         .body;
 
+      // A member can't label a ticket that isn't theirs, but can once it is assigned.
+      expect((await w.setLabels(w.member, [bug.id])).status).toBe(403);
+      const me = (await read(await api.send('GET', '/api/me', w.member))) as {
+        id: string;
+      };
+      expect(
+        (
+          await api.send('PATCH', `/api/items/${w.item.id}`, w.owner, {
+            assigneeId: me.id,
+          })
+        ).status,
+      ).toBe(200);
+
       const set = await w.setLabels(w.member, [bug.id, free.id]);
       expect(set.status).toBe(200);
       expect(set.body.labels.map((l) => l.name)).toEqual(['bug', 'free']);

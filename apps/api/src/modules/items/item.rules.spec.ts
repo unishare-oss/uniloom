@@ -4,6 +4,8 @@ import {
   kindError,
   labelGroupError,
   mayAssign,
+  editError,
+  mayEdit,
   mayMove,
   mayMoveToDone,
   wouldCreateCycle,
@@ -95,6 +97,40 @@ describe('mayAssign', () => {
     ['me', 'mya'], // hand over their own
   ] as const)('refuses a member changing %s to %s', (from, to) => {
     expect(mayAssign('MEMBER', 'me', from, to, true)).toBe(false);
+  });
+});
+
+describe('mayEdit', () => {
+  it.each(['OWNER', 'MANAGER'] as const)('lets %s edit any ticket', (role) => {
+    expect(mayEdit(role, 'me', null)).toBe(true);
+    expect(mayEdit(role, 'me', 'mya')).toBe(true);
+    expect(mayEdit(role, 'me', 'me')).toBe(true);
+  });
+
+  it('lets a member edit only a ticket assigned to them', () => {
+    expect(mayEdit('MEMBER', 'me', 'me')).toBe(true);
+    expect(mayEdit('MEMBER', 'me', 'mya')).toBe(false);
+    expect(mayEdit('MEMBER', 'me', null)).toBe(false);
+  });
+});
+
+describe('editError', () => {
+  it('is null when they may edit', () => {
+    expect(
+      editError({ selfClaimAllowed: true }, 'MEMBER', 'me', 'me'),
+    ).toBeNull();
+    expect(
+      editError({ selfClaimAllowed: false }, 'MANAGER', 'me', null),
+    ).toBeNull();
+  });
+
+  it('says to claim it when self-claim is on, to ask a manager when off', () => {
+    expect(editError({ selfClaimAllowed: true }, 'MEMBER', 'me', null)).toMatch(
+      /claim it first/,
+    );
+    expect(
+      editError({ selfClaimAllowed: false }, 'MEMBER', 'me', 'mya'),
+    ).toMatch(/ask an owner or manager/);
   });
 });
 

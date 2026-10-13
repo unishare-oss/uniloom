@@ -740,18 +740,212 @@ describe('items (e2e)', () => {
         body: { assigneeId: null },
       });
       // Same assignee again is no change, so a member's other edits still work
+      expect((await set(w.cookie, memberId)).status).toBe(200);
       expect(
         (
           await api.send('PATCH', `/api/items/${item.id}`, member, {
             title: 'Same',
-            assigneeId: null,
+            assigneeId: memberId,
           })
         ).status,
       ).toBe(200);
+      expect((await set(w.cookie, null)).status).toBe(200);
       // A non-member is still invalid_assignee for an owner
       const outsider = await api.signInReady();
       expect((await set(w.cookie, await me(outsider.cookie))).body.code).toBe(
         'invalid_assignee',
+      );
+    });
+  });
+
+  describe('members edit only their own tickets', () => {
+    /** A Standard project with two free tasks, an owner and a member. */
+    const withMember = async () => {
+      const w = await project('STANDARD');
+      const free = (await w.add({ kind: 'TASK', title: 'Free' })).body;
+      const other = (await w.add({ kind: 'TASK', title: 'Other' })).body;
+      const joined = await api.signInReady();
+      const invited = await api.send(
+        'POST',
+        `/api/projects/${w.id}/members`,
+        w.cookie,
+        { email: joined.profile.email, role: 'MEMBER' },
+      );
+      expect(invited.status).toBe(201);
+      const member = joined.cookie;
+      const memberId = (
+        (await read(await api.send('GET', '/api/me', member))) as Item
+      ).id;
+      const patch = async (id: string, body: object) => {
+        const res = await api.send('PATCH', `/api/items/${id}`, member, body);
+        return {
+          status: res.status,
+          body: (await read(res)) as Item & {
+            code?: string;
+            message?: string;
+            canEdit?: boolean;
+          },
+        };
+      };
+      return { w, free, other, member, memberId, patch };
+    };
+
+    it('refuses a member any edit of a ticket that is not theirs', async () => {
+      const { w, free, other, member, patch } = await withMember();
+      const blockerUrl = `/api/items/${free.id}/blockers`;
+      const checklistUrl = `/api/items/${free.id}/checklist`;
+      const entry = (await read(
+        await api.send('POST', checklistUrl, w.cookie, { text: 'E' }),
+      )) as Entry;
+
+      const refused = await patch(free.id, { title: 'Mine now' });
+      expect(refused).toMatchObject({
+        status: 403,
+        body: { code: 'forbidden' },
+      });
+      expect(refused.body.message).toMatch(/claim it first/);
+      expect((await patch(free.id, { priority: 'HIGH' })).status).toBe(403);
+      expect((await patch(free.id, { labelIds: [] })).status).toBe(403);
+      for (const [method, url, body] of [
+        ['POST', checklistUrl, { text: 'X' }],
+        ['PATCH', `${checklistUrl}/${entry.id}`, { done: true }],
+        ['DELETE', `${checklistUrl}/${entry.id}`, undefined],
+        ['PUT', `${checklistUrl}/order`, { ids: [entry.id] }],
+        ['POST', blockerUrl, { blockerId: other.id }],
+      ] as const)
+        expect(
+          (await api.send(method, url, member, body)).status,
+          `${method} ${url}`,
+        ).toBe(403);
+
+      // The owner's ticket is untouched, and reading is open to the member.
+      const got = (await read(
+        await api.send('GET', `/api/items/${free.id}`, member),
+      )) as Item & { canEdit: boolean };
+      expect(got).toMatchObject({
+        canEdit: false,
+        checklist: [{ text: 'E', done: false }],
+        blockedBy: [],
+      });
+    });
+
+    it('refuses a member any edit of a ticket assigned to someone else', async () => {
+      const { w, free, other, member, patch } = await withMember();
+      const ownerId = (
+        (await read(await api.send('GET', '/api/me', w.cookie))) as Item
+      ).id;
+      expect(
+        (
+          await api.send('PATCH', `/api/items/${other.id}`, w.cookie, {
+            assigneeId: ownerId,
+          })
+        ).status,
+      ).toBe(200);
+      const checklistUrl = `/api/items/${other.id}/checklist`;
+      const entry = (await read(
+        await api.send('POST', checklistUrl, w.cookie, { text: 'E' }),
+      )) as Entry;
+      expect(
+        (
+          await api.send('POST', `/api/items/${other.id}/blockers`, w.cookie, {
+            blockerId: free.id,
+          })
+        ).status,
+      ).toBe(201);
+
+      expect((await patch(other.id, { title: 'Mine now' })).status).toBe(403);
+      for (const [method, url, body] of [
+        ['PATCH', `${checklistUrl}/${entry.id}`, { done: true }],
+        ['DELETE', `/api/items/${other.id}/blockers/${free.id}`, undefined],
+      ] as const)
+        expect(
+          (await api.send(method, url, member, body)).status,
+          `${method} ${url}`,
+        ).toBe(403);
+      const got = (await read(
+        await api.send('GET', `/api/items/${other.id}`, member),
+      )) as Item & { canEdit: boolean; blockedBy: unknown[] };
+      expect(got.canEdit).toBe(false);
+      expect(got.blockedBy).toHaveLength(1);
+    });
+
+    it('lets a member claim a free ticket and edit it, or claim and edit in one request', async () => {
+      const { free, other, memberId, patch } = await withMember();
+
+      const both = await patch(free.id, {
+        assigneeId: memberId,
+        title: 'Claimed and renamed',
+      });
+      expect(both).toMatchObject({
+        status: 200,
+        body: {
+          assigneeId: memberId,
+          title: 'Claimed and renamed',
+          canEdit: true,
+        },
+      });
+
+      expect((await patch(other.id, { assigneeId: memberId })).status).toBe(
+        200,
+      );
+      expect((await patch(other.id, { title: 'Then edit' })).status).toBe(200);
+
+      // After unclaiming, it is no longer theirs to edit.
+      expect((await patch(other.id, { assigneeId: null })).status).toBe(200);
+      expect((await patch(other.id, { title: 'Again' })).status).toBe(403);
+    });
+
+    it('lets a member work the checklist and blockers of their own ticket', async () => {
+      const { w, free, other, member, memberId, patch } = await withMember();
+      await patch(free.id, { assigneeId: memberId });
+      const checklistUrl = `/api/items/${free.id}/checklist`;
+      const added = await api.send('POST', checklistUrl, member, { text: 'E' });
+      expect(added.status).toBe(201);
+      const entry = (await read(added)) as Entry;
+      expect(
+        (
+          await api.send('PATCH', `${checklistUrl}/${entry.id}`, member, {
+            done: true,
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await api.send('POST', `/api/items/${free.id}/blockers`, member, {
+            blockerId: other.id,
+          })
+        ).status,
+      ).toBe(201);
+      // An owner still edits anyone's ticket.
+      expect(
+        (
+          await api.send('PATCH', `/api/items/${free.id}`, w.cookie, {
+            title: 'Owner edit',
+          })
+        ).status,
+      ).toBe(200);
+    });
+
+    it('tells a member to ask for an assignment when the project turned off self-claim', async () => {
+      const { w, free, memberId, patch } = await withMember();
+      expect(
+        (
+          await api.send('PATCH', `/api/projects/${w.id}`, w.cookie, {
+            selfClaimAllowed: false,
+          })
+        ).status,
+      ).toBe(200);
+
+      const refused = await patch(free.id, {
+        assigneeId: memberId,
+        title: 'Claim and edit',
+      });
+      expect(refused).toMatchObject({
+        status: 403,
+        body: { code: 'forbidden' },
+      });
+      expect((await patch(free.id, { title: 'Edit' })).body.message).toMatch(
+        /ask an owner or manager to assign it/,
       );
     });
   });
@@ -1006,8 +1200,8 @@ describe('items (e2e)', () => {
       return { w, item, url, add, list, member: joined.cookie };
     };
 
-    it('adds entries at the end, for any member, and returns them with the item', async () => {
-      const { w, url, add, list, member } = await withTask();
+    it('adds entries at the end and returns them with the item', async () => {
+      const { w, url, add, list } = await withTask();
       const res = await api.send('POST', url, w.cookie, { text: '  First  ' });
       expect(res.status).toBe(201);
       expect(await read(res)).toEqual({
@@ -1017,7 +1211,7 @@ describe('items (e2e)', () => {
         evidence: null,
         position: 0,
       });
-      await add('Second', member);
+      await add('Second');
       expect((await list()).map((e) => [e.text, e.position])).toEqual([
         ['First', 0],
         ['Second', 1],

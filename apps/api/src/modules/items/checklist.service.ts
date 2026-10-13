@@ -1,6 +1,7 @@
 import { prisma } from '@/db/prisma.js';
 import { apiError } from '@/http.js';
 import type { Prisma } from '@/generated/prisma/client.js';
+import * as itemRules from './item.rules.js';
 import { toEntry } from './item.utils.js';
 import type { ItemAgent } from './item.types.js';
 import { insertActivity } from './activity.repository.js';
@@ -27,7 +28,14 @@ export const addChecklistEntry = async (
   input: { text: string },
   agent?: ItemAgent,
 ) => {
-  const { item } = await loadItem(itemId, userId);
+  const { item, role } = await loadItem(itemId, userId);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    item.assigneeId,
+  );
+  if (editMessage) throw apiError(403, 'forbidden', editMessage);
   // Locked, so two adds at once can't take the same position or both pass the limit.
   const entry = await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, itemId);
@@ -66,7 +74,14 @@ export const updateChecklistEntry = async (
   input: { text?: string; done?: boolean; evidence?: string | null },
   agent?: ItemAgent,
 ) => {
-  const { item } = await loadItem(itemId, userId);
+  const { item, role } = await loadItem(itemId, userId);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    item.assigneeId,
+  );
+  if (editMessage) throw apiError(403, 'forbidden', editMessage);
   // Locked, so a delete can't remove the entry between the check and the update.
   const entry = await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, itemId);
@@ -109,7 +124,14 @@ export const removeChecklistEntry = async (
   userId: string,
   agent?: ItemAgent,
 ) => {
-  const { item } = await loadItem(itemId, userId);
+  const { item, role } = await loadItem(itemId, userId);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    item.assigneeId,
+  );
+  if (editMessage) throw apiError(403, 'forbidden', editMessage);
   await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, itemId);
     const entry = await checklistRepo.findEntry(tx, itemId, entryId);
@@ -137,7 +159,14 @@ export const reorderChecklist = async (
   userId: string,
   ids: string[],
 ) => {
-  await loadItem(itemId, userId);
+  const { item, role } = await loadItem(itemId, userId);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    item.assigneeId,
+  );
+  if (editMessage) throw apiError(403, 'forbidden', editMessage);
   const entries = await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, itemId);
     const current = await itemRepo.findChecklist(tx, itemId);
@@ -164,7 +193,14 @@ export const replaceChecklist = async (
   texts: string[],
   agent?: ItemAgent,
 ) => {
-  const { item } = await loadItem(itemId, userId);
+  const { item, role } = await loadItem(itemId, userId);
+  const editMessage = itemRules.editError(
+    item.project,
+    role,
+    userId,
+    item.assigneeId,
+  );
+  if (editMessage) throw apiError(403, 'forbidden', editMessage);
   const entries = await prisma.$transaction(async (tx) => {
     await itemRepo.lockItem(tx, itemId);
     const max = item.project.checklistMax;

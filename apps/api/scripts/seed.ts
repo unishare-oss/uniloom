@@ -571,6 +571,19 @@ const seedMember = async (ownerId: string) => {
     parentId: feature.id,
     assigneeId: mya.id,
   });
+  const freeEdit = await item({
+    kind: 'SLICE',
+    title:
+      'Slice nobody has. Title, priority, labels, checklist and parent are disabled ("Claim it to edit"); a direct edit → 403; claim it, then edit → works',
+    parentId: feature.id,
+  });
+  const taken2 = await item({
+    kind: 'SLICE',
+    title:
+      'Slice assigned to Mya. Edit controls are disabled ("Only its assignee, owners and managers can edit it"); a direct edit or checklist tick → 403',
+    parentId: feature.id,
+    assigneeId: mya.id,
+  });
   const mine = await item({
     kind: 'SLICE',
     title:
@@ -661,6 +674,14 @@ const seedMember = async (ownerId: string) => {
     slice.key,
     'card does not drag, State disabled; Claim it → then State works; edit the title, set a blocker → works',
   );
+  note(
+    freeEdit.key,
+    'edit → 403 forbidden "claim it first"; Claim it → every edit control works; Unclaim → disabled again',
+  );
+  note(
+    taken2.key,
+    'edit, checklist tick and blocker changes → 403 forbidden; reading stays open',
+  );
   note(mine.key, 'State has no Done; In Progress → works');
   note(
     unticked.key,
@@ -695,6 +716,16 @@ const seedNoSelfClaim = async (ownerId: string) => {
     parentId: free.id,
     assigneeId: ownerId,
   });
+  const freeEdit = await item({
+    kind: 'SLICE',
+    title:
+      'Slice nobody has. Edit is disabled ("Only its assignee, owners and managers can edit it"); a direct edit → 403 "ask an owner or manager to assign it": no claim here, a manager assigns it',
+    parentId: free.id,
+  });
+  note(
+    freeEdit.key,
+    'edit → 403 forbidden; no Claim; once a manager assigns it to you, edits work',
+  );
   note(
     free.key,
     'Assignee shows no Claim button; a direct claim → 403 forbidden',
