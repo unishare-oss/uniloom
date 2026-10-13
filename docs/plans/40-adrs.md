@@ -83,7 +83,7 @@ stateDiagram-v2
 
 ## Changes
 
-Not committed. Branch `feat/ticket-documents`, migration `20261013185703_adrs` (adds to
+Commits `6f7868e` (API), `704baf3` (web) and `e9d0e47` (docs), shared by plans 39 to 41. Branch `feat/ticket-documents`, migration `20261013185703_adrs` (adds to
 plan 39's; applied to the shared dev DB).
 
 **API**

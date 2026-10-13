@@ -78,7 +78,7 @@ sequenceDiagram
 
 ## Changes
 
-Not committed. Branch `feat/ticket-documents`, migration `20261013210000_tech_debt`
+Commits `6f7868e` (API), `704baf3` (web) and `e9d0e47` (docs), shared by plans 39 to 41. Branch `feat/ticket-documents`, migration `20261013210000_tech_debt`
 (adds to plans 39 and 40's; applied to the shared dev DB).
 
 **API**

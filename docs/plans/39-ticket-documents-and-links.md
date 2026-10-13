@@ -48,7 +48,7 @@ because plans 40 and 41 need ticket documents and links. User to confirm.
 - [x] `POST /api/items/:id/documents/new` `{ kind, title, purpose, body }` creates a ticket
       document (kind `SPEC` or `REFERENCE`, `homeItemId` and `createdFromItemId` set):
       `403` with `editError`'s message when the person can't edit the ticket, `409
-  guided_only` in a Standard project; `PATCH /api/documents/:id` on a ticket document
+guided_only` in a Standard project; `PATCH /api/documents/:id` on a ticket document
       follows the same edit rule. `GET /api/projects/:id/documents` leaves ticket
       documents out unless `includeTicketDocuments=true`.
 - [x] `POST /api/items/:id/documents` `{ documentId }` and
@@ -152,8 +152,7 @@ sequenceDiagram
 
 ## Changes
 
-Not committed yet. Branch `feat/ticket-documents`, migration
-`20261013112707_ticket_documents_and_links`.
+Commits `6f7868e` (API), `704baf3` (web) and `e9d0e47` (docs), shared by plans 39 to 41. Branch `feat/ticket-documents`, migration `20261013112707_ticket_documents_and_links`.
 
 **API**
 
