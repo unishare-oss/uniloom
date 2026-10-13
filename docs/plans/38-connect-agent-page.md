@@ -65,7 +65,7 @@ sequenceDiagram
 
 ## Changes
 
-No commits yet (left for the user).
+Commits: `8b8a700 feat(web): add connect-an-agent page`.
 
 - `apps/web/src/app/profile/agent/page.tsx`: new route; `AppShell` around `ConnectAgent`,
   loaded with `dynamic(..., { ssr: false })` like `/profile`. `/profile/*` is already
