@@ -1,6 +1,6 @@
 # 41: The requester's view of a join request
 
-Status: In Progress
+Status: In Review
 
 ## Scope
 
@@ -34,9 +34,9 @@ Left out:
 - [x] `GET /invites/:token` returns the caller's request state for that project (`PENDING`,
       `DECLINED`, `CANCELED` or none), also when the link is expired, full or deleted and
       the caller has a waiting request from it.
-- [ ] The home page shows "Waiting for approval" under the projects, one row per request
+- [x] The home page shows "Waiting for approval" under the projects, one row per request
       with a Cancel button, and nothing when there are none.
-- [ ] The join page shows: waiting (with "Cancel request"), declined (with "Ask again"
+- [x] The join page shows: waiting (with "Cancel request"), declined (with "Ask again"
       while the link is live), and sends an approved person to the board.
 - [x] Seed: a project you are not in where you have a waiting request, and one where your
       request was declined; the seed prints both links.
@@ -89,3 +89,38 @@ Notes:
   failing before the service changes.
 
 ## Changes
+
+Commits: `2ef43c5` (API), `67c328c` (web), `1341159` and `2650df9` (wording).
+
+What changed and how:
+
+- `CANCELED` added to the status enum.
+- `listMyJoinRequests` and `cancelJoinRequest`; the preview returns `DECLINED` or
+  `CANCELED` and the waiting request's id.
+- Web: `PendingRequests` and `PendingRequestRow` on the home page, `CancelRequestDialog`,
+  and the waiting, declined and canceled states on the join page.
+
+Planned vs actual:
+
+- A bug found by the race test: `decideJoinRequest` read the request under the project
+  lock and then updated it without a condition, so an approval could overwrite a cancel
+  made in between. Both now use a conditional update (`decideIfPending`,
+  `cancelIfPending`) and the loser gets `409 already_decided`.
+- The preview has `requestId`, which the plan did not list: the join page needs it to
+  cancel.
+- A declined or canceled person on a dead link sees the dead-link message, not their old
+  request. "Ask again" only shows while the link still lets them ask.
+- `CancelRequestDialog` sits in `components/invites/`, shared by the home page and the join
+  page.
+
+Tests written first and seen failing: eight cases under "the requester" in
+`test/join-requests.e2e-spec.ts`. Expectations changed, both because this plan changes the
+preview: the declined preview in the same file now expects `DECLINED` (plan 40 returned
+null), and the preview tests gained `requestId`. `test/app.e2e-spec.ts` gained two
+operations.
+
+Checked in the browser: "Waiting for approval" under the projects with two rows; Cancel
+asked first, removed the row and moved focus to the next row's button; the declined link
+showed "Ask again", which put the request back to waiting.
+
+Tech debt noted: [TD-016](../tech-debt/016-invite-rows-kept.md).

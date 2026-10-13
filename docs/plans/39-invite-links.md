@@ -1,6 +1,6 @@
 # 39: Invite links
 
-Status: In Progress
+Status: In Review
 
 ## Scope
 
@@ -39,10 +39,10 @@ Left out:
       expired one `410 invite_expired`, a full one `409 invite_full`, and none of them name
       the project. A member who joins again gets the project back and uses no slot. When
       two people race for the last slot, exactly one gets in.
-- [ ] `/join/<token>`: a signed-out visitor goes through login and consent and comes back
+- [x] `/join/<token>`: a signed-out visitor goes through login and consent and comes back
       to the same page; the page shows the project and a Join button, then opens the board;
       each error code has its own message and a way onward.
-- [ ] The Members page shows an "Invite link" card to Owners and Managers: options and
+- [x] The Members page shows an "Invite link" card to Owners and Managers: options and
       "Create link" when there is none; otherwise the link, "Copy link", "Copy invite
       message", "3 of 10 used, expires in 5 hours", "Delete link" and "Create new link",
       the last two behind a dialog that says the current link stops working. Removing a
@@ -147,3 +147,41 @@ Notes:
   are written and seen failing before the service.
 
 ## Changes
+
+Commits: `41eab32` (API), `fc1d7cc` (web), `4bfa4f8` (link buttons), `1341159` and
+`2650df9` (wording and the card's details).
+
+What changed and how:
+
+- New `invites` module: `createInvite`, `getInvite`, `deleteInvite`, `previewInvite`,
+  `joinByInvite`. `takeSlot` is one conditional `updateMany`, so the limit check and the
+  count are a single statement.
+- `invite` table with a partial unique index (one row per project where `revokedAt` is
+  null) and a CHECK on `maxUses`. `prisma migrate diff` stays empty with the hand-written
+  index, so it is not seen as drift.
+- `joinAsMember` in the members service, and `canInvite` on the project.
+- Web: `/join/[token]`, `InviteLinkCard`, `InviteOptions`, `ReplaceLinkDialog`,
+  `DeleteLinkDialog`, `RemoveMemberDialog`, and `/join` in the proxy's protected paths.
+
+Planned vs actual:
+
+- Join answers `200` in both cases (the flow chart said `201` for a new member):
+  `describe()` takes one status per route.
+- The same person pressing Join twice at once was not in the plan. The second insert
+  fails on the membership key, the transaction rolls back and gives the slot back, and the
+  API answers "joined". There is a test for it.
+- `DeleteLinkDialog` is its own component (the plan folded it into the card).
+- After the user's review the card also shows who created the link and when, the exact
+  expiry and the usage as a small list, instead of one status line.
+- The wording was revised in a later pass: "full" reads "has reached its limit", and the
+  remove dialog says "Also delete the invite link".
+- The token is left out of `pathParams`, as `userId` is on the members routes.
+
+Tests written first and seen failing: `invite.rules.spec.ts` (6), `test/invites.e2e-spec.ts`
+(19) and two cases in `test/schema.e2e-spec.ts`. One existing expectation changed:
+`test/app.e2e-spec.ts` lists every operation in the spec, and gained the five new ones.
+
+Checked in the browser as a throwaway test person signed in through the project's mock
+uniAuth: sign-in and consent return to the link; the open, full, expired and unknown links;
+Join; the card; the replace and remove dialogs and where focus returns. No element
+overflows at a 320 px wide page. Not checked: the light theme, and a real screen reader.

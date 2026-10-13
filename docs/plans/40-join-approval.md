@@ -1,6 +1,6 @@
 # 40: Require approval and join requests
 
-Status: In Progress
+Status: In Review
 
 ## Scope
 
@@ -50,7 +50,7 @@ Left out:
       `409 already_decided`.
 - [x] Adding someone by email, or their joining through an open link, removes their waiting
       request for that project.
-- [ ] The invite options have a "Require approval" switch; the Members page shows a "Join
+- [x] The invite options have a "Require approval" switch; the Members page shows a "Join
       requests" card above the member list while there are requests, with Approve and
       Decline on each row; the sidebar's Members link shows the count; the join page says
       "Ask to join" and then "Request sent".
@@ -136,3 +136,38 @@ Notes:
   failing before the service.
 
 ## Changes
+
+Commits: `e9f6c08` (API), `20ff4e6` (web), `1341159` and `2650df9` (wording).
+
+What changed and how:
+
+- `invite.joinApproval`, the `join_request` table with `@@unique([inviteId, userId])` and a
+  partial unique index on `(projectId, userId)` where the status is `PENDING`.
+- `joinByInvite` files a request on an approval link (`askToJoin`); `request.service.ts`
+  has `listJoinRequests` and `decideJoinRequest`.
+- `joinRequestCount` on the project, read by the sidebar.
+- Web: the "Require approval" switch, `JoinRequestsCard`, `JoinRequestRow`, the count on
+  the Members link, and the ask and waiting states of the join page.
+
+Planned vs actual:
+
+- A waiting request of someone who gets in another way is set to `APPROVED`, not deleted
+  (the plan said deleted). The row is what remembers that they used a slot of that link.
+  `settleJoinRequest` lives in the members repository, and `joinAsMember` and `addMember`
+  call it, so `members` never imports `invites`.
+- `askToJoin` stayed in `invite.service.ts` (the plan put it in `request.service.ts`): it
+  needs the dead-link errors that live there, and the other way round would be an import
+  cycle.
+- Join answers `200` with `result: "requested"`, not `202`.
+- The preview already answers a person with a waiting request when the link is dead, and a
+  person who holds a slot when the link is full (planned for plan 41).
+- Approve and decline answer `data: null` with a message, not the member.
+
+Tests written first and seen failing: `test/join-requests.e2e-spec.ts` (19 for this plan)
+and one case in `test/schema.e2e-spec.ts`. Expectations changed, both because this plan
+adds fields: the preview test in `test/invites.e2e-spec.ts` gained `joinApproval` and
+`request`, and `test/app.e2e-spec.ts` gained three operations.
+
+Checked in the browser: the card with two requests and the count of 2; Approve moved Mya
+to the members and focus to Ko's Approve; Decline emptied the card and focus went to the
+member list; "Ask to join" then the waiting state.
