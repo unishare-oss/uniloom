@@ -84,7 +84,7 @@ export const InviteOptions = ({
             id={`${approvalId}-hint`}
             className="text-sm text-muted-foreground"
           >
-            People ask to join, and an owner or manager lets them in.
+            People ask to join. An owner or manager approves each request.
           </span>
         </div>
       </div>

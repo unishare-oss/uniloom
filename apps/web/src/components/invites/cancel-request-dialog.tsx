@@ -77,11 +77,11 @@ export const CancelRequestDialog = ({
             Cancel your request to join {projectName}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            You can ask again while the invite link works.
+            You can ask again while the invite link still works.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Keep waiting</AlertDialogCancel>
+          <AlertDialogCancel>Keep request</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={cancel.isPending}

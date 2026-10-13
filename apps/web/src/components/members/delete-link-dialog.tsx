@@ -44,8 +44,8 @@ export const DeleteLinkDialog = ({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete the invite link?</AlertDialogTitle>
           <AlertDialogDescription>
-            It stops working right away. People who already joined stay in the
-            project.
+            It stops working right away. People who already joined keep their
+            access.
             {waitingNote(waiting)}
           </AlertDialogDescription>
         </AlertDialogHeader>

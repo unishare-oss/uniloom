@@ -84,8 +84,8 @@ export const JoinRequestsCard = ({
           Join requests
         </h2>
         <p className="text-sm text-muted-foreground">
-          People who asked to join through the invite link. Approving adds them
-          as a Member.
+          These people asked to join through the invite link. Approve to add
+          them as a Member.
         </p>
       </div>
       <ul ref={listRef} className="divide-y rounded-xl border bg-card">

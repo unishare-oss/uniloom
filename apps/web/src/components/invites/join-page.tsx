@@ -24,13 +24,23 @@ const DEAD_LINKS: Record<string, { title: string; hint: string }> = {
     hint: "Ask the person who sent it for a new one.",
   },
   invite_full: {
-    title: "This invite link is full",
-    hint: "Everyone it could let in has joined. Ask for a new one.",
+    title: "This invite link has reached its limit",
+    hint: "It can't let anyone else in. Ask the person who sent it for a new one.",
   },
   invite_not_found: {
     title: "This invite link doesn't work",
-    hint: "It may have been replaced or deleted. Ask for a new one.",
+    hint: "It may have been replaced or deleted. Ask the person who sent it for a new one.",
   },
+};
+
+/** The sentence under "Join <project>": who invited them and what pressing the button does. */
+const invitation = (invitedBy: string | null, joinApproval: boolean) => {
+  const opening = invitedBy
+    ? `${invitedBy} invited you to`
+    : "You've been invited to";
+  return joinApproval
+    ? `${opening} this project. An owner or manager needs to approve your request.`
+    : `${opening} join this project as a Member.`;
 };
 
 /**
@@ -131,8 +141,8 @@ export const JoinPage = ({ token }: { token: string }) => {
               Waiting for approval
             </h1>
             <p className="text-muted-foreground">
-              Your request to join {preview.projectName} is waiting for an owner
-              or manager. Check back here or on your projects page.
+              An owner or manager of {preview.projectName} needs to approve your
+              request. You can check its status here or on your Projects page.
             </p>
           </div>
         )}
@@ -168,9 +178,9 @@ export const JoinPage = ({ token }: { token: string }) => {
               </h1>
               <p className="text-muted-foreground">
                 {preview.request === "DECLINED"
-                  ? `Your request to join ${preview.projectName} was declined.`
+                  ? `An owner or manager declined your request to join ${preview.projectName}.`
                   : `You canceled your request to join ${preview.projectName}.`}{" "}
-                You can ask again while this link works.
+                You can ask again while this link still works.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -200,12 +210,7 @@ export const JoinPage = ({ token }: { token: string }) => {
                 Join {preview.projectName}
               </h1>
               <p className="text-muted-foreground">
-                {preview.invitedBy
-                  ? `${preview.invitedBy} invited you to this project.`
-                  : "You're invited to this project."}{" "}
-                {preview.joinApproval
-                  ? "An owner or manager approves each request."
-                  : "You'll join as a Member."}
+                {invitation(preview.invitedBy, preview.joinApproval)}
               </p>
             </div>
             <div>

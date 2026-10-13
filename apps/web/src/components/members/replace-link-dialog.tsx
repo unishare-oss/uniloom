@@ -62,8 +62,8 @@ export const ReplaceLinkDialog = ({
             <DialogTitle>Create a new invite link?</DialogTitle>
             <DialogDescription>
               {currentWorks
-                ? "The current link stops working right away. People who already joined stay in the project."
-                : "The current link no longer works. The new one replaces it."}
+                ? "The current link stops working right away. People who already joined keep their access."
+                : "The current link no longer works. A new one replaces it."}
               {waitingNote(waiting)}
             </DialogDescription>
           </DialogHeader>

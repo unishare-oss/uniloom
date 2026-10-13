@@ -42,8 +42,8 @@ export const PendingRequests = ({
           Waiting for approval
         </h2>
         <p className="text-muted-foreground">
-          You asked to join these projects. An owner or manager of each one lets
-          you in.
+          You asked to join these projects. You&rsquo;ll get access once an
+          owner or manager approves.
         </p>
       </div>
       <ul ref={listRef} className="divide-y rounded-xl border bg-card">

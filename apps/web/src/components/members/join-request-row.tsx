@@ -21,7 +21,7 @@ export const JoinRequestRow = ({
     <span className="flex min-w-0 flex-1 flex-col">
       <span className="truncate font-medium">{request.name}</span>
       <span className="truncate text-sm text-muted-foreground">
-        {request.email} · asked {timeAgo(request.requestedAt)}
+        {request.email} · requested {timeAgo(request.requestedAt)}
       </span>
     </span>
     {/* The names make each pair of buttons tell its person to a screen reader. */}

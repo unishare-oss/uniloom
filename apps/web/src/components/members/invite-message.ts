@@ -19,9 +19,9 @@ export const inviteMessage = ({
 }) => {
   const opening = invitedBy
     ? `${invitedBy} invited you to join ${projectName} on Uniloom.`
-    : `You're invited to join ${projectName} on Uniloom.`;
+    : `You've been invited to join ${projectName} on Uniloom.`;
   const approval = joinApproval
-    ? "\nAn owner or manager approves each request."
+    ? "\nAn owner or manager will approve your request."
     : "";
   return `${opening}\n${url}\nThis link expires ${timeAgo(expiresAt)}.${approval}`;
 };
@@ -30,6 +30,6 @@ export const inviteMessage = ({
 export const waitingNote = (waiting: number) => {
   if (waiting === 0) return "";
   return waiting === 1
-    ? " The 1 join request stays in the list."
-    : ` The ${waiting} join requests stay in the list.`;
+    ? " The 1 pending join request stays on this page."
+    : ` The ${waiting} pending join requests stay on this page.`;
 };

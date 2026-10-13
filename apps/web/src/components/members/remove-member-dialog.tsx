@@ -68,9 +68,9 @@ export const RemoveMemberDialog = ({
               onChange={(event) => setAlsoDeleteLink(event.target.checked)}
             />
             <label htmlFor={checkboxId} className="flex flex-col gap-0.5">
-              <span className="font-medium">Also turn off the invite link</span>
+              <span className="font-medium">Also delete the invite link</span>
               <span className="text-muted-foreground">
-                Otherwise they can rejoin through it.
+                If you keep it, they can use it to rejoin.
               </span>
             </label>
           </div>

@@ -22,18 +22,17 @@ import {
   useGetInvite,
 } from "@/lib/api/generated/invites/invites";
 import type { CreateInvite201 } from "@/lib/api/generated/uniloomAPI.schemas";
-import { timeAgo } from "@/lib/time";
+import { formatDateTime, timeAgo } from "@/lib/time";
 
-/** "2 of 10 used, expires in 5 hours", or why the link no longer works. */
-const statusLine = (invite: CreateInvite201) => {
-  const used =
-    invite.maxUses === null
-      ? `${invite.useCount} ${invite.joinApproval ? "asked" : "joined"}`
-      : `${invite.useCount} of ${invite.maxUses} ${invite.joinApproval ? "requests used" : "used"}`;
-  if (invite.state === "expired")
-    return `Expired ${timeAgo(invite.expiresAt)}. ${used}.`;
-  if (invite.state === "full") return `Full: ${used}.`;
-  return `${used}, expires ${timeAgo(invite.expiresAt)}.`;
+/** "2 of 10 people joined" or "2 of 10 requests", by the kind of link. */
+const usedLine = (invite: CreateInvite201) => {
+  const { useCount, maxUses } = invite;
+  if (invite.joinApproval) {
+    if (maxUses !== null) return `${useCount} of ${maxUses} requests`;
+    return `${useCount} ${useCount === 1 ? "request" : "requests"}, no limit`;
+  }
+  if (maxUses !== null) return `${useCount} of ${maxUses} people joined`;
+  return `${useCount} ${useCount === 1 ? "person" : "people"} joined, no limit`;
 };
 
 /**
@@ -87,7 +86,7 @@ export const InviteLinkCard = ({
       await navigator.clipboard.writeText(text);
       toast.success(done);
     } catch {
-      toast.error("Couldn't copy. Select the link and copy it by hand.");
+      toast.error("Couldn't copy. Select the link and copy it manually.");
     }
   };
 
@@ -105,9 +104,9 @@ export const InviteLinkCard = ({
         </h2>
         <p className="text-sm text-muted-foreground">
           {invite?.joinApproval
-            ? "Anyone with the link can ask to join this project. An owner or manager approves each request."
-            : "Anyone with the link can join this project as a Member."}{" "}
-          New people sign in first.
+            ? "Anyone with this link can ask to join. An owner or manager approves each request."
+            : "Anyone with this link can join as a Member."}{" "}
+          People new to Uniloom sign in first.
         </p>
       </div>
 
@@ -124,10 +123,37 @@ export const InviteLinkCard = ({
               className="font-mono text-sm"
               onFocus={(event) => event.target.select()}
             />
-            <p className="text-sm text-muted-foreground">
-              {statusLine(invite)}
-            </p>
           </div>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">Created</dt>
+            <dd>
+              <time dateTime={invite.createdAt}>
+                {formatDateTime(invite.createdAt)}
+              </time>
+              {invite.createdBy && ` by ${invite.createdBy}`}
+            </dd>
+            <dt className="text-muted-foreground">
+              {invite.state === "expired" ? "Expired" : "Expires"}
+            </dt>
+            <dd>
+              <time dateTime={invite.expiresAt}>
+                {formatDateTime(invite.expiresAt)}
+              </time>{" "}
+              ({timeAgo(invite.expiresAt)})
+            </dd>
+            <dt className="text-muted-foreground">Used</dt>
+            <dd>
+              {usedLine(invite)}
+              {invite.state === "full" && " (limit reached)"}
+            </dd>
+          </dl>
+          {invite.state !== "live" && (
+            <p role="status" className="text-sm font-medium">
+              {invite.state === "expired"
+                ? "This link has expired. Create a new one to invite people."
+                : "This link has reached its limit. Create a new one to invite more people."}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             {invite.state === "live" && (
               <>

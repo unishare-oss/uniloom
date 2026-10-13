@@ -18,7 +18,7 @@ export const PendingRequestRow = ({
     <span className="flex min-w-0 flex-1 flex-col">
       <span className="truncate font-medium">{request.projectName}</span>
       <span className="text-sm text-muted-foreground">
-        Asked {timeAgo(request.requestedAt)}
+        Requested {timeAgo(request.requestedAt)}
       </span>
     </span>
     <CancelRequestDialog

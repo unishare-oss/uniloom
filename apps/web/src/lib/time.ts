@@ -1,5 +1,14 @@
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
 const relative = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+
+/** "3 Oct 2026, 14:05", in the reader's locale and time zone. */
+export const formatDateTime = (iso: string) => {
+  return dateTimeFormat.format(new Date(iso));
+};
 
 /** "3 Oct 2026", in the reader's locale. */
 export const formatDate = (iso: string) => {
