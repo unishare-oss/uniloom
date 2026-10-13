@@ -2,9 +2,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { INSTRUCTIONS } from './mcp.instructions.js';
 import {
   checkCriterionSchema,
+  getDocumentSchema,
   itemSchema,
+  listDocumentsSchema,
   listItemsSchema,
   projectSchema,
+  saveDocumentSchema,
   saveItemSchema,
   setCriteriaSchema,
 } from './mcp.schema.js';
@@ -175,6 +178,54 @@ export const buildServer = (agent: Agent) => {
         return reply(
           await mcpService.checkCriterion(agent, key, which, evidence),
         );
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'list_documents',
+    {
+      description:
+        "Slim rows of a project's Knowledge documents (id, kind, title, purpose, number, status), newest edit first. Filter by kind or a search query. A ticket's own documents are in get_item's related.",
+      inputSchema: listDocumentsSchema,
+    },
+    async (input) => {
+      try {
+        return reply(await mcpService.listDocuments(agent.userId, input));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'get_document',
+    {
+      description:
+        'One document in full by its id: Markdown body, number, status, home ticket and the ticket it was created from.',
+      inputSchema: getDocumentSchema,
+    },
+    async ({ id }) => {
+      try {
+        return reply(await mcpService.getDocument(agent.userId, id));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'save_document',
+    {
+      description:
+        'Create a document (no id: needs project, kind and title; give ticket to write it from that ticket) or edit title, purpose and body of one (id). Body is Markdown; sections by kind: BRIEF: Problem, Goal, Users, Out of scope. PROPOSAL: Summary, Motivation, Options, Recommendation, Open questions. SPEC: Overview, Behaviour, Edge cases, Acceptance. REFERENCE: Overview, Details, Links. TECH_DEBT: What, Why it matters, Suggested fix. ADR: Context, Options, Decision, Consequences. With ticket the kind is SPEC, REFERENCE, ADR or TECH_DEBT.',
+      inputSchema: saveDocumentSchema,
+    },
+    async (input) => {
+      try {
+        return reply(await mcpService.saveDocument(agent, input));
       } catch (error) {
         return toToolError(error);
       }

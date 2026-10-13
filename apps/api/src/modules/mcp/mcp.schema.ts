@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import {
+  createDocumentSchema,
+  listDocumentsQuerySchema,
+} from '@/modules/documents/document.schema.js';
+import {
   addChecklistEntrySchema,
   createItemSchema,
   updateChecklistEntrySchema,
@@ -60,4 +64,48 @@ export const checkCriterionSchema = z.object({
   evidence: updateChecklistEntrySchema.shape.evidence.describe(
     'A commit SHA, test name or link that shows it is met',
   ),
+});
+
+const documentId = z
+  .string()
+  .describe("Document id, from list_documents or get_item's related");
+
+export const listDocumentsSchema = z.object({
+  project: projectKey,
+  kind: listDocumentsQuerySchema.shape.kind.describe('Only this kind'),
+  query: listDocumentsQuerySchema.shape.q.describe(
+    'Search the title and purpose',
+  ),
+  archived: z.boolean().optional().describe('true also lists archived ones'),
+});
+
+export const getDocumentSchema = z.object({ id: documentId });
+
+// Text limits are the website's (documents/document.schema.ts).
+export const saveDocumentSchema = z.object({
+  id: documentId
+    .optional()
+    .describe('Leave out to create a document; give it to update that one'),
+  project: projectKey
+    .optional()
+    .describe('Required to create (with kind and title)'),
+  kind: createDocumentSchema.shape.kind
+    .optional()
+    .describe('Required to create. Never changes afterwards'),
+  title: createDocumentSchema.shape.title
+    .optional()
+    .describe('Required to create'),
+  purpose: createDocumentSchema.shape.purpose.describe(
+    'One line: what it is for',
+  ),
+  body: createDocumentSchema.shape.body.describe('Markdown'),
+  ticket: itemKey
+    .optional()
+    .describe(
+      'Create from this ticket (Guided projects): SPEC and REFERENCE belong to it; ADR and TECH_DEBT are kept in Knowledge and linked to it',
+    ),
+  status: z
+    .string()
+    .optional()
+    .describe('Not accepted: statuses are for people on the website'),
 });

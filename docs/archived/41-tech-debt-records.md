@@ -1,6 +1,6 @@
 # 41: Tech debt records
 
-Status: In Review
+Status: Done
 
 ## Scope
 

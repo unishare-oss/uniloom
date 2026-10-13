@@ -142,7 +142,7 @@ Agents such as Claude Code connect to Uniloom's `/mcp` on the web origin and sig
 claude mcp add --transport http uniloom http://127.0.0.1:3013/mcp
 ```
 
-Run `/mcp` in Claude Code to sign in. This needs uniAuth to accept Uniloom's `/mcp` as an MCP resource (a second token audience next to Unishare's); until it does, sign-in fails even though the e2e tests pass. The read tools are `list_projects`, `list_items`, `get_item`, `list_states`, `list_labels` and `get_criteria`; projects and items are addressed by key (`TG`, `TG-12`).
+Run `/mcp` in Claude Code to sign in. This needs uniAuth to accept Uniloom's `/mcp` as an MCP resource (a second token audience next to Unishare's); until it does, sign-in fails even though the e2e tests pass. The read tools include `list_projects`, `list_items`, `get_item`, `list_states`, `list_labels`, `get_criteria`, `list_documents` and `get_document`; the server lists every tool, including the write tools such as `save_item` and `save_document`. Projects and items are addressed by key (`TG`, `TG-12`), documents by id.
 
 ### Run everything in Docker
 

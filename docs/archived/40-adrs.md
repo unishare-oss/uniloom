@@ -1,6 +1,6 @@
 # 40: ADRs
 
-Status: In Review
+Status: Done
 
 ## Scope
 
