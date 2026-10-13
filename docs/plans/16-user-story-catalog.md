@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component        | Proposed location                     | What                                                             | Why                                                     |
-| --------------------------- | ------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------- |
-| `createStory / updateStory` | `modules/stories/story.service.ts`    | Enforce project permissions and stable story/criterion identity. | Keep references useful as wording evolves.              |
-| `findStories`               | `modules/stories/story.repository.ts` | Read bounded summaries by project and filters.                   | Support a behavior catalog without loading all details. |
-| `StoryCatalog / StoryPage`  | `components/stories/`                 | Browse and author structured product behavior.                   | Separate enduring requirements from execution status.   |
+| Function / component | Proposed location | What | Why |
+| --- | --- | --- | --- |
+| `createStory / updateStory` | `modules/stories/story.service.ts` | Enforce project permissions and stable story/criterion identity. | Keep references useful as wording evolves. |
+| `findStories` | `modules/stories/story.repository.ts` | Read bounded summaries by project and filters. | Support a behavior catalog without loading all details. |
+| `StoryCatalog / StoryPage` | `components/stories/` | Browse and author structured product behavior. | Separate enduring requirements from execution status. |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

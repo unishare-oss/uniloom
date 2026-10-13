@@ -26,12 +26,12 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component              | Proposed location                      | What                                                                | Why                                                    |
-| --------------------------------- | -------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
-| `linkCriterionToItem`             | `modules/stories/story.service.ts`     | Validate authority and both endpoints before storing a link.        | Make requirement coverage explicit.                    |
+| Function / component | Proposed location | What | Why |
+| --- | --- | --- | --- |
+| `linkCriterionToItem` | `modules/stories/story.service.ts` | Validate authority and both endpoints before storing a link. | Make requirement coverage explicit. |
 | `recordEvidence / verifyEvidence` | `modules/evidence/evidence.service.ts` | Store attributed evidence and a separate human verification action. | Avoid presenting a claim as independently established. |
-| `getCoverage`                     | `modules/stories/story.service.ts`     | Summarize criterion links, item states, and evidence.               | Expose concrete gaps without guessing correctness.     |
-| `CoveragePage`                    | `components/stories/coverage-page.tsx` | Render a filterable coverage table.                                 | Make gaps easy to inspect.                             |
+| `getCoverage` | `modules/stories/story.service.ts` | Summarize criterion links, item states, and evidence. | Expose concrete gaps without guessing correctness. |
+| `CoveragePage` | `components/stories/coverage-page.tsx` | Render a filterable coverage table. | Make gaps easy to inspect. |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

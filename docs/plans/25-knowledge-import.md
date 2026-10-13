@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component     | Proposed location                       | What                                                                 | Why                                              |
-| ------------------------ | --------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------ |
-| `previewKnowledgeImport` | `modules/imports/import.service.ts`     | Parse bounded inputs and report mappings without persisting records. | Make the result reviewable before import.        |
-| `confirmKnowledgeImport` | `modules/imports/import.service.ts`     | Validate the selected preview and create attributed drafts.          | Avoid silent overwrites and inherited approvals. |
-| `ImportPreview`          | `components/imports/import-preview.tsx` | Show proposed records, validation issues, and confirmation.          | Let the user choose what enters the library.     |
+| Function / component | Proposed location | What | Why |
+| --- | --- | --- | --- |
+| `previewKnowledgeImport` | `modules/imports/import.service.ts` | Parse bounded inputs and report mappings without persisting records. | Make the result reviewable before import. |
+| `confirmKnowledgeImport` | `modules/imports/import.service.ts` | Validate the selected preview and create attributed drafts. | Avoid silent overwrites and inherited approvals. |
+| `ImportPreview` | `components/imports/import-preview.tsx` | Show proposed records, validation issues, and confirmation. | Let the user choose what enters the library. |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI

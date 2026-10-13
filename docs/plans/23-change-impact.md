@@ -26,11 +26,11 @@ replace MVP.md or authorize bringing later capabilities forward.
 
 ## Design
 
-| Function / component     | Proposed location                       | What                                                    | Why                                                |
-| ------------------------ | --------------------------------------- | ------------------------------------------------------- | -------------------------------------------------- |
-| `getChangeImpact`        | `modules/documents/document.service.ts` | Read the selected change and its direct linked records. | Give a bounded, explainable impact list.           |
-| `recordImpactAssessment` | `modules/documents/document.service.ts` | Store a human disposition against a particular change.  | Retain which change was actually assessed.         |
-| `ImpactPage`             | `components/documents/impact-page.tsx`  | Display affected references and assessment history.     | Help reviewers follow through on contract changes. |
+| Function / component | Proposed location | What | Why |
+| --- | --- | --- | --- |
+| `getChangeImpact` | `modules/documents/document.service.ts` | Read the selected change and its direct linked records. | Give a bounded, explainable impact list. |
+| `recordImpactAssessment` | `modules/documents/document.service.ts` | Store a human disposition against a particular change. | Retain which change was actually assessed. |
+| `ImpactPage` | `components/documents/impact-page.tsx` | Display affected references and assessment history. | Help reviewers follow through on contract changes. |
 
 Locations are relative to apps/api/src or apps/web/src. Backend queries stay in
 repositories; services own permissions and behavior; handlers describe OpenAPI
