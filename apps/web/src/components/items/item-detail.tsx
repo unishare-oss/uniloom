@@ -277,12 +277,8 @@ export const ItemDetail = ({
                 if (event.key === "Enter") event.currentTarget.blur();
               }}
             />
-            {!item.canEdit && (
-              <p className="text-sm text-muted-foreground">
-                {item.assigneeId === null && project.canClaim
-                  ? "Claim it to edit"
-                  : "Only its assignee, owners and managers can edit it"}
-              </p>
+            {!item.canEdit && item.assigneeId === null && project.canClaim && (
+              <p className="text-sm text-muted-foreground">Claim it to edit</p>
             )}
           </div>
 
