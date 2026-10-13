@@ -18,11 +18,13 @@ import { ChecklistRow, type Entry } from "@/components/items/checklist-row";
 export const Checklist = ({
   itemId,
   entries,
+  canEdit,
   refresh,
   onError,
 }: {
   itemId: string;
   entries: Entry[];
+  canEdit: boolean;
   refresh: () => Promise<unknown>;
   onError: (err: { message: string }) => void;
 }) => {
@@ -108,6 +110,7 @@ export const Checklist = ({
               first={index === 0}
               last={index === entries.length - 1}
               busy={busy}
+              canEdit={canEdit}
               onUpdate={(data, onDone) =>
                 update.mutate(
                   { id: itemId, entryId: entry.id, data },
@@ -121,26 +124,28 @@ export const Checklist = ({
           ))}
         </ul>
       )}
-      <div className="flex items-center gap-2">
-        <Input
-          aria-label="New checklist entry"
-          placeholder="Add a done-when entry"
-          maxLength={500}
-          value={text}
-          readOnly={add.isPending}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") addEntry();
-          }}
-        />
-        <Button
-          variant="secondary"
-          disabled={add.isPending || !text.trim()}
-          onClick={addEntry}
-        >
-          Add
-        </Button>
-      </div>
+      {canEdit && (
+        <div className="flex items-center gap-2">
+          <Input
+            aria-label="New checklist entry"
+            placeholder="Add a done-when entry"
+            maxLength={500}
+            value={text}
+            readOnly={add.isPending}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") addEntry();
+            }}
+          />
+          <Button
+            variant="secondary"
+            disabled={add.isPending || !text.trim()}
+            onClick={addEntry}
+          >
+            Add
+          </Button>
+        </div>
+      )}
     </section>
   );
 };

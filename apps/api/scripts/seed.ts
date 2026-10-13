@@ -25,6 +25,7 @@ import {
   addChecklistEntry,
   updateChecklistEntry,
 } from '../src/modules/items/checklist.service.js';
+import { createDocument } from '../src/modules/documents/document.service.js';
 import {
   createProject,
   updateProject,
@@ -570,6 +571,19 @@ const seedMember = async (ownerId: string) => {
     parentId: feature.id,
     assigneeId: mya.id,
   });
+  const freeEdit = await item({
+    kind: 'SLICE',
+    title:
+      'Slice nobody has. Title, priority, labels, checklist and parent are disabled ("Claim it to edit"); a direct edit → 403; claim it, then edit → works',
+    parentId: feature.id,
+  });
+  const taken2 = await item({
+    kind: 'SLICE',
+    title:
+      'Slice assigned to Mya. Edit controls are disabled ("Only its assignee, owners and managers can edit it"); a direct edit or checklist tick → 403',
+    parentId: feature.id,
+    assigneeId: mya.id,
+  });
   const mine = await item({
     kind: 'SLICE',
     title:
@@ -660,6 +674,14 @@ const seedMember = async (ownerId: string) => {
     slice.key,
     'card does not drag, State disabled; Claim it → then State works; edit the title, set a blocker → works',
   );
+  note(
+    freeEdit.key,
+    'edit → 403 forbidden "claim it first"; Claim it → every edit control works; Unclaim → disabled again',
+  );
+  note(
+    taken2.key,
+    'edit, checklist tick and blocker changes → 403 forbidden; reading stays open',
+  );
   note(mine.key, 'State has no Done; In Progress → works');
   note(
     unticked.key,
@@ -694,6 +716,16 @@ const seedNoSelfClaim = async (ownerId: string) => {
     parentId: free.id,
     assigneeId: ownerId,
   });
+  const freeEdit = await item({
+    kind: 'SLICE',
+    title:
+      'Slice nobody has. Edit is disabled ("Only its assignee, owners and managers can edit it"); a direct edit → 403 "ask an owner or manager to assign it": no claim here, a manager assigns it',
+    parentId: free.id,
+  });
+  note(
+    freeEdit.key,
+    'edit → 403 forbidden; no Claim; once a manager assigns it to you, edits work',
+  );
   note(
     free.key,
     'Assignee shows no Claim button; a direct claim → 403 forbidden',
@@ -832,6 +864,87 @@ const seedReviewInbox = async (ownerId: string) => {
   );
 };
 
+/** Documents of every kind in the guided project (you own it) and the member project. */
+const seedDocuments = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const guided = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TG' },
+  });
+  const memberProject = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TM' },
+  });
+  const body = (text: string) =>
+    `## ${text}\n\nMarkdown with a list:\n\n- one\n- two\n\n\`\`\`mermaid\nflowchart LR\n  A --> B\n\`\`\`\n`;
+
+  await createDocument(guided.id, ownerId, {
+    kind: 'BRIEF',
+    title:
+      'Brief: open it → Markdown and a diagram render; you can Edit and Archive',
+    purpose: 'Shows the read page with its meta sidebar.',
+    body: body('Brief'),
+  });
+  await createDocument(guided.id, ownerId, {
+    kind: 'PROPOSAL',
+    title:
+      'Proposal: New document → pick another kind → the template swaps in until you type',
+    purpose: 'A proposal to try the library filters on.',
+    body: body('Proposal'),
+  });
+  await createDocument(guided.id, ownerId, {
+    kind: 'SPEC',
+    title: 'Spec: search "spec" in the box → only this one stays',
+    purpose: 'Shows the title search and the Spec tab count.',
+    body: body('Spec'),
+  });
+  await createDocument(guided.id, ownerId, {
+    kind: 'REFERENCE',
+    title:
+      'Reference: architecture overview, pick the Reference tab → only this one',
+    purpose: 'An architecture note, the kind used for a tech-stack overview.',
+    body: body('Reference'),
+  });
+  const old = await createDocument(guided.id, ownerId, {
+    kind: 'BRIEF',
+    title: 'Archived: shows only with Show archived on; Restore brings it back',
+    purpose: 'An archived brief.',
+    body: body('Archived'),
+  });
+  await prisma.document.update({
+    where: { id: old.id },
+    data: { archivedAt: new Date() },
+  });
+  await createDocument(memberProject.id, mya.id, {
+    kind: 'BRIEF',
+    title: 'As a Member: Edit is hidden here',
+    purpose: 'Written by the owner; you can only read it.',
+    body: body('Read only'),
+  });
+  await createDocument(memberProject.id, ko.id, {
+    kind: 'REFERENCE',
+    title: 'By a Manager: you are a Member, so Edit and Archive are hidden',
+    purpose: 'A manager wrote this.',
+    body: body('Read only'),
+  });
+  await prisma.document.create({
+    data: {
+      projectId: memberProject.id,
+      authorId: ownerId,
+      kind: 'PROPOSAL',
+      title: 'Yours, but you are a Member now: Edit and Archive are hidden',
+      purpose: 'Only your current role counts, not who wrote it.',
+      body: body('Yours'),
+    },
+  });
+  note(
+    'TG docs',
+    'Knowledge: kind tabs with counts, title search, Show archived',
+  );
+  note(
+    'TM docs',
+    'Knowledge: no New document button; PATCH on any document, even your own → 403 forbidden',
+  );
+};
+
 const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -848,6 +961,7 @@ await seedNoSelfClaim(owner.id);
 await seedLoweredLimits(owner.id);
 await seedOutsider();
 await seedReviewInbox(owner.id);
+await seedDocuments(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

@@ -356,6 +356,16 @@ it('rolls partial fan-out back, retries with backoff, and allows recovery of exh
   });
   expect(pending.failedAt).not.toBeNull();
   await retryReviewEvent(event.id);
+  pending = await prisma.reviewEvent.findUniqueOrThrow({
+    where: { id: event.id },
+  });
+  expect(pending.failedAt).toBeNull();
+  expect(pending.attempts).toBe(0);
+  // Retry makes it due now; other test files' events can be older, so put it first.
+  await prisma.reviewEvent.update({
+    where: { id: event.id },
+    data: { nextAttemptAt: new Date(0) },
+  });
   expect(await processNextReviewEvent()).toBe(true);
   expect(
     await prisma.notification.count({ where: { eventId: event.id } }),

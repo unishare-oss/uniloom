@@ -73,8 +73,36 @@ export const wouldCreateCycle = (
 };
 
 /**
- * Whether `role` may move a ticket whose assignee is `assigneeId`. Owners and managers move
- * any ticket; a member only moves one assigned to them.
+ * Whether `role` may change a ticket assigned to `assigneeId` (its fields, checklist and
+ * blocked-by links). Owners and managers may change any ticket; a member only their own.
+ */
+export const mayEdit = (
+  role: Role,
+  userId: string,
+  assigneeId: string | null,
+) => {
+  return CREATORS.includes(role) || assigneeId === userId;
+};
+
+/**
+ * Why `role` can't edit a ticket assigned to `assigneeId`, or null when they can. The
+ * message says whether the member can claim it or must ask for it to be assigned.
+ */
+export const editError = (
+  project: { selfClaimAllowed: boolean },
+  role: Role,
+  userId: string,
+  assigneeId: string | null,
+) => {
+  if (mayEdit(role, userId, assigneeId)) return null;
+  return project.selfClaimAllowed
+    ? 'Members can only edit tickets assigned to them: claim it first'
+    : 'Members can only edit tickets assigned to them: ask an owner or manager to assign it';
+};
+
+/**
+ * Whether `role` may move a ticket whose assignee is `assigneeId`. Moving is editing plus
+ * the In Review lock: after submission only owners and managers move it.
  */
 export const mayMove = (
   role: Role,
@@ -84,7 +112,7 @@ export const mayMove = (
 ) => {
   return (
     CREATORS.includes(role) ||
-    (sourceStateKey !== 'in_review' && assigneeId === userId)
+    (sourceStateKey !== 'in_review' && mayEdit(role, userId, assigneeId))
   );
 };
 

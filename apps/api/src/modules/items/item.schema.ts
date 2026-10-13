@@ -75,6 +75,8 @@ export const itemSchema = z.object({
   assigneeId: z.string().nullable(),
   /** Whether the caller may move it: the web reads this and never repeats the rule. */
   canMove: z.boolean(),
+  /** Whether the caller may edit its fields, checklist and blockers: the web never repeats the rule. */
+  canEdit: z.boolean(),
   parentId: z.uuid().nullable(),
   createdById: z.string().nullable(),
   /** Ids of the items this one waits on. */
