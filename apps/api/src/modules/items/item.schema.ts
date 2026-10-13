@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LabelColor } from '@/generated/prisma/enums.js';
+import { DocumentStatus, LabelColor } from '@/generated/prisma/enums.js';
 
 const priority = z.enum(['URGENT', 'HIGH', 'MEDIUM', 'LOW', 'NONE']);
 
@@ -26,6 +26,16 @@ export const updateItemSchema = z.object({
 export const moveItemSchema = z.object({ stateId: z.uuid() });
 
 export const addBlockerSchema = z.object({ blockerId: z.uuid() });
+
+export const linkDocumentSchema = z.object({ documentId: z.uuid() });
+
+/** A document written from a ticket: its own spec or reference, or an ADR kept in Knowledge. */
+export const createTicketDocumentSchema = z.object({
+  kind: z.enum(['SPEC', 'REFERENCE', 'ADR', 'TECH_DEBT']),
+  title: z.string().trim().min(1).max(200),
+  purpose: z.string().trim().max(300).optional(),
+  body: z.string().max(100_000).optional(),
+});
 
 const kind = z.enum(['TASK', 'SUBTASK', 'FEATURE', 'SLICE']);
 
@@ -87,6 +97,29 @@ export const itemSchema = z.object({
   labels: z.array(itemLabelSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+});
+
+/** A document on the item page, without its body. */
+export const relatedDocumentSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(['BRIEF', 'PROPOSAL', 'SPEC', 'REFERENCE', 'ADR', 'TECH_DEBT']),
+  /** ADR-7: per project and kind; null for kinds without a number. */
+  number: z.number().int().nullable(),
+  status: z.enum(DocumentStatus).nullable(),
+  title: z.string(),
+  archived: z.boolean(),
+  /** `ticket`: belongs to a ticket (the item or its parent); `project`: a Knowledge document. */
+  home: z.enum(['ticket', 'project']),
+  /** The parent's key when the document comes from the parent (read only); null when it is the item's own. */
+  from: z.string().nullable(),
+});
+
+/** One item with the documents it shows under its description. */
+export const itemDetailSchema = itemSchema.extend({
+  /** The kinds a person may start from this ticket; empty in a Standard project. */
+  ticketDocumentKinds: z.array(z.enum(['SPEC', 'ADR', 'TECH_DEBT'])),
+  /** Empty in a Standard project. */
+  related: z.array(relatedDocumentSchema),
 });
 
 export const itemRowSchema = z.object({

@@ -6,12 +6,14 @@ import {
   getDocuments,
   patchDocument,
   postDocument,
+  postDocumentStatus,
 } from './document.handlers.js';
 import {
   createDocumentSchema,
   documentSchema,
   documentSummarySchema,
   listDocumentsQuerySchema,
+  setDocumentStatusSchema,
   updateDocumentSchema,
 } from './document.schema.js';
 
@@ -60,10 +62,24 @@ documentRoutes.patch(
   describe({
     tag: 'documents',
     operationId: 'updateDocument',
-    summary: 'Edit or archive a document (owners and managers)',
+    summary:
+      "Edit or archive a document (owners and managers; a ticket document follows the ticket's edit rule)",
     pathParams: ['id'],
     body: updateDocumentSchema,
     data: documentSchema,
   }),
   patchDocument,
+);
+documentRoutes.post(
+  '/documents/:id/status',
+  describe({
+    tag: 'documents',
+    operationId: 'setDocumentStatus',
+    summary:
+      "Move an ADR (accept, reject, supersede) or tech debt (fix, won't fix) to its next status (owners and managers)",
+    pathParams: ['id'],
+    body: setDocumentStatusSchema,
+    data: documentSchema,
+  }),
+  postDocumentStatus,
 );

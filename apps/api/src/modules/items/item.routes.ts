@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { describe } from '@/openapi.js';
+import { documentSchema } from '@/modules/documents/document.schema.js';
 import {
   deleteBlocker,
+  deleteDocumentLink,
   deleteChecklistEntry,
   deleteItemById,
   getDeletedItems,
@@ -12,6 +14,8 @@ import {
   patchChecklistEntry,
   patchItem,
   postBlocker,
+  postDocumentLink,
+  postTicketDocument,
   postChecklistEntry,
   postRestoreItem,
   postProjectItem,
@@ -20,6 +24,9 @@ import {
 } from './item.handlers.js';
 import {
   addBlockerSchema,
+  createTicketDocumentSchema,
+  itemDetailSchema,
+  linkDocumentSchema,
   activitySchema,
   addChecklistEntrySchema,
   checklistEntrySchema,
@@ -76,9 +83,9 @@ itemRoutes.get(
   describe({
     tag: 'items',
     operationId: 'getItem',
-    summary: 'One item',
+    summary: 'One item with its related documents',
     pathParams: ['id'],
-    data: itemSchema,
+    data: itemDetailSchema,
   }),
   getItemById,
 );
@@ -152,6 +159,45 @@ itemRoutes.delete(
     data: z.null(),
   }),
   deleteBlocker,
+);
+itemRoutes.post(
+  '/items/:id/documents/new',
+  describe({
+    tag: 'items',
+    operationId: 'createTicketDocument',
+    summary:
+      "Write a spec or reference on this ticket, raise an ADR or tech debt from it (Guided projects; follows the ticket's edit rule)",
+    pathParams: ['id'],
+    body: createTicketDocumentSchema,
+    data: documentSchema,
+    status: 201,
+  }),
+  postTicketDocument,
+);
+itemRoutes.post(
+  '/items/:id/documents',
+  describe({
+    tag: 'items',
+    operationId: 'linkDocument',
+    summary:
+      "Link a Knowledge document to this ticket (Guided projects; follows the ticket's edit rule)",
+    pathParams: ['id'],
+    body: linkDocumentSchema,
+    data: itemDetailSchema,
+  }),
+  postDocumentLink,
+);
+itemRoutes.delete(
+  '/items/:id/documents/:documentId',
+  describe({
+    tag: 'items',
+    operationId: 'unlinkDocument',
+    summary:
+      "Remove a Knowledge document's link to this ticket (Guided projects; follows the ticket's edit rule)",
+    pathParams: ['id', 'documentId'],
+    data: z.null(),
+  }),
+  deleteDocumentLink,
 );
 itemRoutes.post(
   '/items/:id/checklist',

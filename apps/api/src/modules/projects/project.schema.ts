@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Role } from '@/generated/prisma/enums.js';
+import { DocumentKind, Role } from '@/generated/prisma/enums.js';
 
 export const createProjectSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -65,6 +65,10 @@ export const projectDetailSchema = projectSchema.extend({
   canCreateLabels: z.boolean(),
   /** Whether the caller may write knowledge documents (owners, managers). */
   canCreateDocuments: z.boolean(),
+  /** The kinds of Knowledge document this project has (ADRs and tech debt: Guided only). */
+  documentKinds: z.array(z.enum(DocumentKind)),
+  /** The kinds the Knowledge page can create (tech debt is raised from a ticket). */
+  creatableDocumentKinds: z.array(z.enum(DocumentKind)),
   /** Whether the caller may claim a free ticket (owners, managers, or members when self-claim is on). */
   canClaim: z.boolean(),
   /** Whether the caller may move a ticket into a Done state (owners, managers). */
