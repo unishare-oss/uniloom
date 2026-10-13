@@ -53,7 +53,12 @@ export const InviteLinkCard = ({
   const headingId = useId();
   const linkId = useId();
   const [choices, setChoices] = useState<InviteChoices>(DEFAULT_CHOICES);
-  const { data: invite, isSuccess } = useGetInvite(projectId, {
+  const {
+    data: invite,
+    isSuccess,
+    error,
+    refetch,
+  } = useGetInvite(projectId, {
     query: { select: (r) => r.data },
   });
 
@@ -90,6 +95,29 @@ export const InviteLinkCard = ({
     }
   };
 
+  if (error)
+    return (
+      <section
+        aria-labelledby={headingId}
+        className="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      >
+        <h2 id={headingId} className="font-semibold">
+          Invite link
+        </h2>
+        <p role="alert" className="text-sm">
+          Couldn&rsquo;t load the invite link. {error.message}
+        </p>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void refetch()}
+          >
+            Try again
+          </Button>
+        </div>
+      </section>
+    );
   if (!isSuccess) return null;
   const url = invite ? `${window.location.origin}/join/${invite.token}` : "";
 

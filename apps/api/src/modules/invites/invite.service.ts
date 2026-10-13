@@ -110,8 +110,8 @@ export const previewInvite = async (token: string, userId: string) => {
 /**
  * Inside the join transaction, for a link that needs approval. A waiting request in the
  * project is kept as is. Someone who already asked through this link asks again without
- * a new slot (ADR-0015: one slot per person per link). Anyone else takes a slot first.
- * False when the link no longer lets them ask.
+ * a new slot, also when the link is full (ADR-0015: one slot per person per link).
+ * Anyone else takes a slot first. False when the link no longer lets them ask.
  */
 const askToJoin = async (
   tx: Prisma.TransactionClient,
@@ -119,12 +119,13 @@ const askToJoin = async (
   userId: string,
   now: Date,
 ) => {
+  // A replaced or expired link lets nobody ask, whatever requests they already have.
+  const state = linkState(invite, now);
+  if (state === 'revoked' || state === 'expired') return false;
   if (await requestRepo.findPending(tx, invite.projectId, userId)) return true;
   const mine = await requestRepo.findForInvite(tx, invite.id, userId);
   if (mine) {
-    const state = linkState(invite, now);
-    if (state === 'revoked' || state === 'expired') return false;
-    await requestRepo.reopen(tx, mine.id, now);
+    await requestRepo.reopenIfDecided(tx, mine.id, now);
     return true;
   }
   if (!(await inviteRepo.takeSlot(tx, invite.id, now))) return false;

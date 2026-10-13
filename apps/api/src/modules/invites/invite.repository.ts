@@ -3,16 +3,8 @@ import type { Prisma } from '@/generated/prisma/client.js';
 
 const withCreator = { createdBy: { select: { name: true } } };
 
-/**
- * Locks the project row until the transaction ends, so two people replacing the link at
- * once run one at a time.
- */
-export const lockProject = (
-  tx: Prisma.TransactionClient,
-  projectId: string,
-) => {
-  return tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
-};
+/** Call it first, so two people replacing the link or deciding a request run one at a time. */
+export { lockProject } from '@/db/locks.js';
 
 /** The project's link that isn't revoked: there is at most one. It may be expired or full. */
 export const findCurrent = (projectId: string) => {

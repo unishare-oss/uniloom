@@ -55,7 +55,13 @@ export const DeleteLinkDialog = ({
             variant="destructive"
             disabled={busy}
             aria-busy={busy}
-            onClick={() => void onDelete().then(() => setOpen(false))}
+            onClick={() =>
+              void onDelete().then(
+                () => setOpen(false),
+                // The mutation already showed why: stay open so they can retry.
+                () => undefined,
+              )
+            }
           >
             Delete link
           </AlertDialogAction>

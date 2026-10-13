@@ -87,6 +87,19 @@ export const joinAsMember = async (
 };
 
 /**
+ * For an approved join request: adds `userId` as a Member unless they already belong
+ * (added by email meanwhile), in which case their role stays as it is.
+ */
+export const approveAsMember = async (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  userId: string,
+) => {
+  await memberRepo.createMemberIfMissing(tx, projectId, userId, 'MEMBER');
+  await memberRepo.settleJoinRequest(tx, projectId, userId);
+};
+
+/**
  * 404 if the target isn't a member, 409 `last_owner` if changing them to `newRole` (or
  * removing them, when null) would leave no owner. Call it with the project locked.
  */

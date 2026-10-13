@@ -55,7 +55,11 @@ export const ReplaceLinkDialog = ({
           className="flex flex-col gap-5"
           onSubmit={(event) => {
             event.preventDefault();
-            void onCreate(choices).then(() => setOpen(false));
+            void onCreate(choices).then(
+              () => setOpen(false),
+              // The mutation already showed why: stay open so they can retry.
+              () => undefined,
+            );
           }}
         >
           <DialogHeader>

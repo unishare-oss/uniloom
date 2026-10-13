@@ -32,10 +32,18 @@ export const insertRequest = (
   return tx.joinRequest.create({ data });
 };
 
-/** A decided request waits again: the person asked once more through the same link. */
-export const reopen = (tx: Prisma.TransactionClient, id: string, now: Date) => {
-  return tx.joinRequest.update({
-    where: { id },
+/**
+ * A decided request waits again: the person asked once more through the same link. The
+ * status check is part of the UPDATE, so it never overwrites a request that changed
+ * meanwhile.
+ */
+export const reopenIfDecided = (
+  tx: Prisma.TransactionClient,
+  id: string,
+  now: Date,
+) => {
+  return tx.joinRequest.updateMany({
+    where: { id, status: { not: 'PENDING' } },
     data: { status: 'PENDING', requestedAt: now, decidedById: null },
   });
 };

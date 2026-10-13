@@ -243,7 +243,8 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
                       projectId,
                       userId: member.userId,
                     });
-                    if (alsoDeleteLink) deleteLink.mutate({ projectId });
+                    if (alsoDeleteLink)
+                      await deleteLink.mutateAsync({ projectId });
                   }}
                 />
               )}

@@ -171,3 +171,17 @@ adds fields: the preview test in `test/invites.e2e-spec.ts` gained `joinApproval
 Checked in the browser: the card with two requests and the count of 2; Approve moved Mya
 to the members and focus to Ko's Approve; Decline emptied the card and focus went to the
 member list; "Ask to join" then the waiting state.
+
+After the code review of PR #47 (2026-10-13):
+
+- Approving someone who became a member while their request waited now settles the
+  request and keeps their role (`approveAsMember`); before, the insert failed.
+- A replaced or expired link refuses a join even when the person already has a waiting
+  request. A full link still answers the people who hold one of its slots.
+- Asking again is a conditional update (`reopenIfDecided`), like deciding and cancelling.
+- `lockProject` had three copies (members, items, invites). It is now one function in
+  `src/db/locks.ts` that the three repositories re-export.
+- `getProject` reads the project and the request count in parallel.
+- Web: a failed create, delete or remove keeps its dialog open instead of leaving an
+  unhandled rejection; the invite card shows a load error with "Try again"; removing a
+  member waits for the link to be deleted before the dialog closes.

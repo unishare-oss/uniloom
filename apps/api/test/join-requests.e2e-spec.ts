@@ -493,6 +493,44 @@ describe('join requests (e2e)', () => {
     expect(await w.list()).toEqual([]);
   });
 
+  it('approves someone who became a member while their request waited', async () => {
+    const w = await setup();
+    const visitor = await person();
+    const invite = await w.link();
+    await join(visitor.cookie, invite.token);
+    const [request] = await w.list();
+    // An add by email that raced the request: a member with a request still waiting.
+    await prisma.member.create({
+      data: { projectId: w.id, userId: visitor.id, role: 'MANAGER' },
+    });
+
+    const res = await w.decide(w.owner.cookie, request!.id, 'approve');
+    expect(res.status).toBe(200);
+    expect(await w.list()).toEqual([]);
+    // Their role is not lowered to Member.
+    expect((await w.roles())[visitor.id]).toBe('MANAGER');
+  });
+
+  it('refuses a join through a dead link even when a request is already waiting', async () => {
+    const w = await setup();
+    const visitor = await person();
+    const invite = await w.link();
+    await join(visitor.cookie, invite.token);
+    await prisma.invite.update({
+      where: { token: invite.token },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+
+    const expired = await join(visitor.cookie, invite.token);
+    expect(expired.status).toBe(410);
+    expect(await read(expired)).toMatchObject({ code: 'invite_expired' });
+    await w.link();
+    const replaced = await join(visitor.cookie, invite.token);
+    expect(replaced.status).toBe(404);
+    // The request itself is untouched.
+    expect(await w.list()).toHaveLength(1);
+  });
+
   describe('the requester', () => {
     interface MineRow {
       id: string;

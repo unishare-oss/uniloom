@@ -82,8 +82,10 @@ export const RemoveMemberDialog = ({
             disabled={busy}
             aria-busy={busy}
             onClick={() =>
-              void onRemove(linkIsLive && alsoDeleteLink).then(() =>
-                setOpen(false),
+              void onRemove(linkIsLive && alsoDeleteLink).then(
+                () => setOpen(false),
+                // The mutation already showed why: stay open so they can retry.
+                () => undefined,
               )
             }
           >

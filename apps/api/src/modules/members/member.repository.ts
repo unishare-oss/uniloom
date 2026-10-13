@@ -66,15 +66,21 @@ export const settleJoinRequest = (
   });
 };
 
-/**
- * Locks the project row until the transaction ends, so two owners demoting or removing
- * each other at once run one at a time. Call it first, before counting owners.
- */
-export const lockProject = (
+/** Call it first, before counting owners, so two owners demoting each other run one at a time. */
+export { lockProject } from '@/db/locks.js';
+
+/** Inside the caller's transaction. False if the user already belongs: nothing changes. */
+export const createMemberIfMissing = async (
   tx: Prisma.TransactionClient,
   projectId: string,
+  userId: string,
+  role: Role,
 ) => {
-  return tx.$queryRaw`SELECT 1 FROM "project" WHERE "id" = ${projectId}::uuid FOR UPDATE`;
+  const { count } = await tx.member.createMany({
+    data: [{ projectId, userId, role }],
+    skipDuplicates: true,
+  });
+  return count === 1;
 };
 
 export const countOwners = (

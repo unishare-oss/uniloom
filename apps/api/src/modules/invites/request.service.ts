@@ -1,8 +1,8 @@
 import { prisma } from '@/db/prisma.js';
 import { apiError } from '@/http.js';
 import {
+  approveAsMember,
   CREATORS,
-  joinAsMember,
   requireRole,
 } from '@/modules/members/member.service.js';
 import { lockProject } from './invite.repository.js';
@@ -54,7 +54,8 @@ export const decideJoinRequest = async (
         'already_decided',
         'This request is no longer pending',
       );
-    if (approve) await joinAsMember(tx, projectId, request.userId);
+    // They may have been added by email meanwhile: then only the request is settled.
+    if (approve) await approveAsMember(tx, projectId, request.userId);
     return request.user.name;
   });
 };
