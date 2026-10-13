@@ -1,3 +1,13 @@
+# [1.9.0](https://github.com/unishare-oss/uniloom/compare/v1.8.0...v1.9.0) (2026-10-13)
+
+
+### Features
+
+* **api:** document tools over MCP ([ebba3e5](https://github.com/unishare-oss/uniloom/commit/ebba3e51961666258fca2cf7815e15a2cdb999f6))
+* **api:** ticket documents, ADRs and tech debt records ([6f7868e](https://github.com/unishare-oss/uniloom/commit/6f7868eb7ce98ae6873336fc8069fab9f22ed43a))
+* **web:** add user guide page ([af72674](https://github.com/unishare-oss/uniloom/commit/af72674b032a1f01caf1e6cb2c45589b8767667e))
+* **web:** related documents, ADR and tech debt pages ([704baf3](https://github.com/unishare-oss/uniloom/commit/704baf3eae307da25b72061c7cebc6397d8f6173))
+
 # [1.8.0](https://github.com/unishare-oss/uniloom/compare/v1.7.0...v1.8.0) (2026-10-13)
 
 
