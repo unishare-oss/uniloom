@@ -1,6 +1,6 @@
 # 42: MCP document tools
 
-Status: Aligning
+Status: In Review
 
 ## Scope
 
@@ -47,24 +47,24 @@ Left out:
 
 ## Done when
 
-- [ ] `list_documents { project, kind?, query?, archived? }` returns slim rows (id, kind,
+- [x] `list_documents { project, kind?, query?, archived? }` returns slim rows (id, kind,
       title, purpose, number, status, home ticket key, archived, updatedAt) through
-      `listDocuments`, Knowledge documents only unless `ticket` is given; any member; a
-      project you're not in answers `not_found`.
-- [ ] `get_document { id }` returns the document with its Markdown body, number, status,
+      `listDocuments`, Knowledge documents only (a ticket's own are in `get_item`'s
+      `related`); any member; a project you're not in answers `not_found`.
+- [x] `get_document { id }` returns the document with its Markdown body, number, status,
       home ticket key and the ticket it was created from, through `getDocument`; any member; a non-member or unknown id answers
       `not_found`.
-- [ ] `save_document` without `id` creates from `project`, `kind`, `title`, `purpose?`,
+- [x] `save_document` without `id` creates from `project`, `kind`, `title`, `purpose?`,
       `body?` and an optional `ticket` key (through `createTicketDocument`): without
       `ticket` a Member answers `forbidden`; with it, the ticket's `editError` decides and
       a Standard project answers `guided_only`; the document shows on the Knowledge page
       or the ticket's Related section, with the person as author.
-- [ ] `save_document` with `id` updates `title`, `purpose` and `body` through
+- [x] `save_document` with `id` updates `title`, `purpose` and `body` through
       `updateDocumentById` (ticket documents by the ticket's rule, others by current
       role); `kind`, `ticket` or a status given with `id` answers `invalid_input`.
-- [ ] `INSTRUCTIONS` gets a Documents paragraph (ids, who writes where, Guided only,
+- [x] `INSTRUCTIONS` gets a Documents paragraph (ids, who writes where, Guided only,
       statuses and archiving are for people), and the `save_document` description names each kind's sections.
-- [ ] Tests for the three tools (member refused, manager creates and updates, non-member
+- [x] Tests for the three tools (member refused, manager creates and updates, non-member
       `not_found`, member writes a spec on their own ticket, member refused on someone
       else's) and seed items titled with what to try over MCP ("Create a brief over MCP
       as a member: refused", "Write a spec on your own ticket over MCP as a member:
@@ -110,4 +110,43 @@ sequenceDiagram
 
 ## Changes
 
-Filled in at the end.
+Commits: `ebba3e5` (API, tests, seed, README). Branch `feat/mcp-document-tools`.
+
+What changed:
+
+- `mcp.service.ts`: `listDocuments`, `getDocument`, `saveDocument`. They call
+  `documentService.listDocuments` / `getDocument` / `createDocument` / `updateDocumentById`
+  and `createTicketDocument`; no rule is repeated. The MCP layer only checks input shape: a
+  malformed id answers `not_found`, `kind`, `ticket` or `status` with an `id` answer
+  `invalid_input`, a `status` on create answers `invalid_input`, and with `ticket` a kind
+  other than SPEC, REFERENCE, ADR or TECH_DEBT answers `invalid_input` (the REST route
+  rejects it by its zod enum, which `createTicketDocument` itself does not check).
+- `mcp.schema.ts`: the three schemas, field limits taken from `document.schema.ts`.
+- `mcp.server.ts`: three `registerTool` calls; `save_document`'s description lists each
+  kind's sections (copied from `document-templates.ts`, TD-016).
+- `mcp.instructions.ts`: Documents paragraph.
+- `test/mcp-documents.e2e-spec.ts`: 7 tests (manager creates, lists, reads, updates; member
+  refused; non-member, missing and malformed ids `not_found`; member spec on own ticket and
+  refused on another's; ADR from a ticket; Standard `guided_only`, BRIEF with a ticket,
+  `raise_from_ticket`; input checks with `id`).
+- `scripts/seed.ts`: two items in the member project (TM) titled with what to try over MCP.
+
+Planned vs actual:
+
+- `list_documents` rows have no home ticket key: the tool lists Knowledge documents only, so
+  it would always be null. They carry `createdFrom` (the ticket key it was raised on) instead.
+- `get_document` and `save_document` answer with the service's document as is (author,
+  home ticket, created-from ticket, linked tickets, body).
+- A non-member's `get_document` says "Project not found" (the service's text), a missing id
+  "Document not found"; both are `not_found`.
+- No new tech debt.
+
+Review fixes:
+
+- With `ticket`, the ticket's key prefix must match `project` (`invalid_input`), so a wrong
+  prefix never writes a document into a project the agent didn't name.
+- `id`, `kind`, `ticket` and `status` are checked as given or not (`!== undefined`): an
+  empty `id` is a malformed id (`not_found`), not a create.
+- Tests added: `status` on create, a ticket outside the named project, an empty `id`.
+- `README.md` lists `list_documents` and `get_document` with the read tools and says the
+  server lists every tool.
