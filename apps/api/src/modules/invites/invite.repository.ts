@@ -34,6 +34,24 @@ export const revokeCurrent = (
   });
 };
 
+/**
+ * Deletes the project's links revoked before `cutoff`, with their decided requests
+ * (cascade). A link someone still waits on is kept: requests outlive their link.
+ */
+export const deleteOldRevoked = (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  cutoff: Date,
+) => {
+  return tx.invite.deleteMany({
+    where: {
+      projectId,
+      revokedAt: { lt: cutoff },
+      joinRequests: { none: { status: 'PENDING' } },
+    },
+  });
+};
+
 export const insertInvite = (
   tx: Prisma.TransactionClient,
   data: {

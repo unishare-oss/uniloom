@@ -427,6 +427,45 @@ describe('invite links (e2e)', () => {
     expect((await w.roles())[visitor.id]).toBe('MEMBER');
   });
 
+  it('deletes links revoked over 30 days ago when a new one is created, unless someone still waits on them', async () => {
+    const w = await setup();
+    const [declined, waiting] = [await person(), await person()];
+    const longAgo = new Date(Date.now() - 31 * 24 * HOUR);
+    const old = async (status: 'DECLINED' | 'PENDING', userId: string) => {
+      const invite = await prisma.invite.create({
+        data: {
+          projectId: w.id,
+          token: randomUUID(),
+          expiresAt: longAgo,
+          revokedAt: longAgo,
+        },
+      });
+      await prisma.joinRequest.create({
+        data: { projectId: w.id, userId, inviteId: invite.id, status },
+      });
+      return invite.token;
+    };
+    const decided = await old('DECLINED', declined.id);
+    const stillWaiting = await old('PENDING', waiting.id);
+    const recent = await w.link();
+
+    const current = await w.link();
+    const tokens = (
+      await prisma.invite.findMany({ where: { projectId: w.id } })
+    ).map((invite) => invite.token);
+    expect(tokens).not.toContain(decided);
+    expect(tokens.sort()).toEqual(
+      [stillWaiting, recent.token, current.token].sort(),
+    );
+    // The waiting request survived with its link; the decided one went with its link.
+    expect(
+      await prisma.joinRequest.findMany({
+        where: { projectId: w.id },
+        select: { userId: true, status: true },
+      }),
+    ).toEqual([{ userId: waiting.id, status: 'PENDING' }]);
+  });
+
   it('tells owners and managers they may invite', async () => {
     const w = await setup();
     const manager = await w.add('MANAGER');

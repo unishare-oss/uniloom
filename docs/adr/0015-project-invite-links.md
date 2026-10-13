@@ -71,8 +71,8 @@ Option 2, decided with the user on 2026-10-13.
   the link is replaced. Blocking them would be a later addition.
 - An approver only learns of a request by opening Uniloom. Email delivery would be a new
   channel on top of the same request rows (see ADR-0011 on delivery jobs).
-- `invite` rows are never deleted while their project exists. They are small, and a
-  project has few.
+- A replaced or deleted link keeps its row for 30 days, then goes with its decided
+  requests the next time the project creates a link. A link someone still waits on stays.
 
 Related plans: [43](../plans/43-invite-links.md), [44](../plans/44-join-approval.md),
 [45](../plans/45-join-request-status.md).

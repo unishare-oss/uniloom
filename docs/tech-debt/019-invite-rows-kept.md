@@ -1,6 +1,6 @@
 # TD-019: Old invite links and join requests are never deleted
 
-Status: Open
+Status: Fixed
 Found: 2026-10-13, in plans 43 to 45
 
 ## Problem
@@ -8,9 +8,6 @@ Found: 2026-10-13, in plans 43 to 45
 A replaced or deleted invite link keeps its row with `revokedAt` set, and a decided join
 request keeps its row with its status. Nothing removes them while the project exists. A
 project that replaces its link every day adds 365 `invite` rows a year.
-
-The API also has no rate limit, so nothing slows down someone who creates links or asks to
-join in a loop. A link's limit bounds the requests per link, not the links per project.
 
 ## Why it was left
 
@@ -21,6 +18,9 @@ notifications, and the two should get one retention policy.
 
 ## Fix
 
-Delete revoked links, with their decided requests, once they are older than some age (for
-example 90 days) and have no `PENDING` request. A scheduled job needs the worker that
-plan 31 added. Add a rate limit when the API gets one.
+Fixed in the same PR, after the user asked why it was left (2026-10-13). `createInvite`
+deletes the project's links that were revoked more than 30 days ago, with their decided
+requests, in the transaction that makes the new link (`deleteOldRevoked`). A link someone
+still waits on is kept. No scheduled job is needed: a project only collects old links by
+creating new ones. The missing rate limit is tracked separately in
+[TD-020](020-no-rate-limit-on-invites.md).

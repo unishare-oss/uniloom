@@ -123,4 +123,6 @@ Checked in the browser: "Waiting for approval" under the projects with two rows;
 asked first, removed the row and moved focus to the next row's button; the declined link
 showed "Ask again", which put the request back to waiting.
 
-Tech debt noted: [TD-019](../tech-debt/019-invite-rows-kept.md).
+Tech debt: [TD-019](../tech-debt/019-invite-rows-kept.md) (old links kept forever) was
+fixed in this PR; [TD-020](../tech-debt/020-no-rate-limit-on-invites.md) (no rate limit)
+is open.

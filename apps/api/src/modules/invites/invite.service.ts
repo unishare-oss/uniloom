@@ -15,6 +15,12 @@ import { EXPIRY_SECONDS } from './invite.schema.js';
 import type { InviteRow, LinkState } from './invite.types.js';
 import { newToken, view } from './invite.utils.js';
 
+/**
+ * How long a replaced or deleted link keeps its row: 30 days, the longest a link can
+ * live, so a link still in someone's chat answers "doesn't work" and remembers its slots.
+ */
+const REVOKED_KEPT_SECONDS = 30 * 24 * 3600;
+
 /** The answer for a link that lets nobody in. None of them names the project. */
 const deadLinkError = (state: Exclude<LinkState, 'live'>) => {
   if (state === 'expired')
@@ -47,6 +53,13 @@ export const createInvite = async (
     // Locked, so two people creating at once end with one live link.
     await inviteRepo.lockProject(tx, projectId);
     await inviteRepo.revokeCurrent(tx, projectId, now);
+    // Old links go here instead of in a scheduled job: a project only piles them up by
+    // creating new ones.
+    await inviteRepo.deleteOldRevoked(
+      tx,
+      projectId,
+      new Date(now.getTime() - REVOKED_KEPT_SECONDS * 1000),
+    );
     return inviteRepo.insertInvite(tx, {
       projectId,
       token: newToken(),
