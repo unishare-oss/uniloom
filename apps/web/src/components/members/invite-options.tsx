@@ -16,11 +16,12 @@ export type InviteChoices = CreateInviteBody;
 /** What a new link starts with. */
 export const DEFAULT_CHOICES: InviteChoices = {
   expiresIn: "24h",
-  maxUses: null,
+  // One person: a link that lets in more is a choice the inviter makes.
+  maxUses: 1,
   joinApproval: false,
 };
 
-/** Each request uses a slot, so a link that needs approval starts with a limit. */
+/** Each request uses a slot, so turning approval on with "No limit" picked sets this one. */
 const APPROVAL_LIMIT = 10;
 
 const expiryLabels: Record<InviteChoices["expiresIn"], string> = {

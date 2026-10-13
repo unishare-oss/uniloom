@@ -107,7 +107,7 @@ flowchart TD
 Text:
 
 - Card options: a "Expires after" select (1 hour, 24 hours, 7 days, 30 days) and a "Limit"
-  select (No limit, 1, 5, 10, 25, 50, 100 people). Defaults: 24 hours, no limit.
+  select (No limit, 1, 5, 10, 25, 50, 100 people). Defaults: 24 hours, 1 person.
 - Invite message, with the time left worked out when the button is pressed:
 
   ```text
@@ -185,6 +185,9 @@ Checked in the browser as a throwaway test person signed in through the project'
 uniAuth: sign-in and consent return to the link; the open, full, expired and unknown links;
 Join; the card; the replace and remove dialogs and where focus returns. No element
 overflows at a 320 px wide page. Not checked: the light theme, and a real screen reader.
+
+The default limit is 1 person, not "No limit" (user decision after seeing the screens,
+2026-10-13). The default is in the web form only: the API takes whatever limit is sent.
 
 Merged `dev` on 2026-10-13 after it gained ticket documents, ADR and tech-debt records.
 Those plans had taken numbers 39 to 41, ADR-0014 and TD-016, so these plans became 43 to
