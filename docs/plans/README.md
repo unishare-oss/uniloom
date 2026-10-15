@@ -45,6 +45,26 @@ Existing planned designs, decisions, documents, and MCP capabilities should be e
 rather than duplicated. Standard-mode knowledge features remain optional; the two-level
 work-item hierarchy remains the baseline.
 
+## Confirmed usability scopes
+
+The user confirmed these scopes on 2026-10-15. Both are Ready following the user’s implementation instruction; implement 46 before 47.
+
+| Plan                                                 | Scope                                                                                                              | Depends on                                     |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| [46: MCP usability](49-mcp-usability.md)             | Document links, readable assignees, website URLs, compact confirmations and instruction-duplication investigation. | Plan 42 and existing ticket-document services. |
+| [47: Rich Markdown rendering](47-markdown-polish.md) | Colored headings, callouts, code controls, heading links, document contents and expandable Mermaid.                | Existing shared renderer; follows plan 46.     |
+
+## Confirmed reliability document scopes
+
+The user confirmed two standalone document-kind slices on 2026-10-15. Both are Ready following the user’s implementation instruction. Follow plans 46–47, then implement SLO before SLA.
+
+| Plan                                               | Scope                                                                                         | Depends on                       |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------- |
+| [48: SLO Knowledge documents](48-slo-documents.md) | Project SLO kind, Markdown template, Knowledge UI, permissions, ticket links and MCP support. | Existing documents; plans 46–47. |
+| [49: SLA Knowledge documents](49-sla-documents.md) | Project SLA kind, template, supporting SLO links, Knowledge UI and MCP support.               | Plan 48.                         |
+
+Architecture proposal: [ADR-0018](../adr/0018-reliability-document-kinds.md).
+
 ## Review inbox alignment
 
 The user chose both actionable review work and notification history, standalone read
