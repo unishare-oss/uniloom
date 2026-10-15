@@ -1,6 +1,6 @@
 # 47: Rich Markdown rendering
 
-Status: Ready
+Status: In Review
 
 ## Scope
 
@@ -14,12 +14,12 @@ Implement after plan 46. The user must set this plan to Ready before code.
 
 ## Done when
 
-- [ ] H1–H6 have distinct size, weight and spacing with level-specific theme colors, readable paragraphs, nested lists and section dividers in light/dark themes; normal text meets 4.5:1 contrast and qualifying large headings meet 3:1.
-- [ ] GFM tables stay readable and scroll within their container on narrow screens; task lists, quotes, inline code and long unbroken content preserve layout in ticket descriptions, document pages and live previews.
-- [ ] Fenced code has syntax highlighting for supported languages, a language label and a keyboard-accessible copy button with success/failure feedback; unknown languages remain readable plain code and Mermaid remains a diagram.
-- [ ] GFM-style NOTE, TIP, IMPORTANT, WARNING and CAUTION blockquotes become labeled callouts using text and icons as well as theme colors; ordinary blockquotes retain their existing meaning and raw HTML is not executed.
-- [ ] Headings have stable, unique permalinks with visible keyboard focus; document pages offer a collapsible contents list when at least four H2/H3 headings exist, and contents/permalinks navigate to the correct heading even when text repeats.
-- [ ] Mermaid diagrams open in a larger accessible dialog with scrolling and close/focus restoration; malformed diagrams retain a readable fallback, and representative fixtures are checked on mobile/desktop and both themes without widening the initial Mermaid bundle load.
+- [x] H1–H6 have distinct size, weight and spacing with level-specific theme colors, readable paragraphs, nested lists and section dividers in light/dark themes; normal text meets 4.5:1 contrast and qualifying large headings meet 3:1.
+- [x] GFM tables stay readable and scroll within their container on narrow screens; task lists, quotes, inline code and long unbroken content preserve layout in ticket descriptions, document pages and live previews.
+- [x] Fenced code has syntax highlighting for supported languages, a language label and a keyboard-accessible copy button with success/failure feedback; unknown languages remain readable plain code and Mermaid remains a diagram.
+- [x] GFM-style NOTE, TIP, IMPORTANT, WARNING and CAUTION blockquotes become labeled callouts using text and icons as well as theme colors; ordinary blockquotes retain their existing meaning and raw HTML is not executed.
+- [x] Headings have stable, unique permalinks with visible keyboard focus; document pages offer a collapsible contents list when at least four H2/H3 headings exist, and contents/permalinks navigate to the correct heading even when text repeats.
+- [x] Mermaid diagrams open in a larger accessible dialog with scrolling and close/focus restoration; malformed diagrams retain a readable fallback, and representative fixtures are checked on mobile/desktop and both themes without widening the initial Mermaid bundle load.
 
 ## Design
 
@@ -87,8 +87,25 @@ gate, arbitrary embedded HTML, export format or per-document theme editor is inc
 
 ## Changes
 
-Commits: none. Planning only.
+Planning commit: `ceace35` (pushed to dev). Implementation commit: `2331c50` on `feat/mcp-markdown-reliability-documents`.
 
-Scope confirmed; implementation has not started. Planned vs actual: pending.
+Built colored H1–H6, shared spacing, constrained tables/previews, GFM callouts,
+limited-language syntax highlighting and copy feedback, stable permalinks,
+long-document contents, and an accessible expanded Mermaid dialog. Unknown code
+languages remain plain. Mermaid stays lazy/strict; suppressErrorRendering prevents
+its stray global error SVG while retaining the inline source fallback.
 
-Implementation authorized by the user on 2026-10-15: commit/push planning first, then implement on a separate branch and open a PR.
+Planned vs actual: the contents list uses native details/navigation emitted by the
+same remark AST pass instead of another React component. Callout recognition shares
+that pass; highlighting is a separate rehype pass. Lowlight uses eight explicit
+grammars from highlight.js; github-slugger handles Unicode and repeated headings.
+Added four parser/highlighter tests and included web tests in the root test command.
+
+Validation: web lint/typecheck passed; browser checks passed at 1280px and 390px in
+both actual themes (heading uniqueness, callouts, contents, clipboard, diagram
+Escape/focus restoration, no raw HTML execution, no page overflow/errors). All 14
+new text color tokens exceed 4.5:1 on their base light/dark surfaces. Temporary
+browser fixture removed; final API/web production builds passed. No new tech debt.
+
+Implementation authorized by the user on 2026-10-15. Awaiting human code review;
+ADR-0017 remains Proposed.

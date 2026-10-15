@@ -1,6 +1,6 @@
 # 48: SLO Knowledge documents
 
-Status: Ready
+Status: In Review
 
 ## Scope
 
@@ -18,12 +18,12 @@ not change the remaining MVP build order. Scope is confirmed; set Ready before c
 
 ## Done when
 
-- [ ] A migration adds `SLO` to `DocumentKind`; SLOs remain in the existing document table, have no ticket home, number or workflow status, and existing documents remain readable.
-- [ ] The API permits Owners/Managers to create, edit and archive SLO Knowledge documents in either project mode, permits all project members to read, and retains forbidden/not-found behavior for unauthorized callers; create-from-ticket cannot make an SLO.
-- [ ] Knowledge lists, kind filters, new-document forms, editors and detail pages recognize SLO, with a distinct label/icon and a starting template covering journey, SLI, target, window, measurement source, owner, exclusions and response policy.
-- [ ] Existing Guided ticket link/unlink flows accept project SLOs and return them in related documents; Standard ticket links, foreign-project links and archived links retain their existing restrictions.
-- [ ] MCP `list_documents`, `get_document` and `save_document` support SLO through the shared services, and plan 46's link tools can link it to a Guided ticket; descriptions explain project scope and do not imply approval or measurement.
-- [ ] REST/MCP checks and seed cases demonstrate owner/manager writes, member reads/write refusal, project isolation, kind filtering, archival, ticket-home refusal and Guided links; OpenAPI and generated web clients reflect the kind, and relevant lint/typecheck/test/build checks pass.
+- [x] A migration adds `SLO` to `DocumentKind`; SLOs remain in the existing document table, have no ticket home, number or workflow status, and existing documents remain readable.
+- [x] The API permits Owners/Managers to create, edit and archive SLO Knowledge documents in either project mode, permits all project members to read, and retains forbidden/not-found behavior for unauthorized callers; create-from-ticket cannot make an SLO.
+- [x] Knowledge lists, kind filters, new-document forms, editors and detail pages recognize SLO, with a distinct label/icon and a starting template covering journey, SLI, target, window, measurement source, owner, exclusions and response policy.
+- [x] Existing Guided ticket link/unlink flows accept project SLOs and return them in related documents; Standard ticket links, foreign-project links and archived links retain their existing restrictions.
+- [x] MCP `list_documents`, `get_document` and `save_document` support SLO through the shared services, and plan 46's link tools can link it to a Guided ticket; descriptions explain project scope and do not imply approval or measurement.
+- [x] REST/MCP checks and seed cases demonstrate owner/manager writes, member reads/write refusal, project isolation, kind filtering, archival, ticket-home refusal and Guided links; OpenAPI and generated web clients reflect the kind, and relevant lint/typecheck/test/build checks pass.
 
 ## Design
 
@@ -91,7 +91,27 @@ outline appearing in both web templates and MCP guidance.
 
 ## Changes
 
-Commits: none. Planning only; scope confirmed, implementation not started.
-Planned vs actual: pending. Acceptance criteria remain unchecked.
+Commits: `ceace35` (planning, pushed to dev), `2331c50` (implementation on
+`feat/mcp-markdown-reliability-documents`).
 
-Implementation authorized by the user on 2026-10-15: commit/push planning first, then implement on a separate branch and open a PR.
+Added `SLO` to the existing DocumentKind enum with its own additive migration,
+Knowledge availability, related-document schema, web label/icon/template and MCP
+guidance. Existing document and ticket-link services enforce permissions, mode,
+archive and home rules; no new REST endpoints or separate editor. OpenAPI and
+browser clients were regenerated. Seed examples cover both modes and owner,
+manager and member behavior, with draft placeholders and linked reliability records.
+
+Planned vs actual: followed the planned document-kind approach. SLO fields remain template sections; no numeric target validation or monitoring is implied.
+The combined feature commit implements both separately planned kinds, each with
+its own migration and kind-specific e2e case. SLA and existing document behavior
+remain covered by the focused regression suites.
+
+Validation: 29 document/MCP/ticket-document e2e tests passed, covering new kinds,
+roles, project isolation, filtering, archival, ticket-home/status refusal and links.
+Root lint/typecheck passed; 115 API unit tests and four Markdown tests passed;
+API/web production builds passed. Migrations applied only to the documented
+remote development database. Seed code was typechecked; the seed reset was not run.
+Existing [TD-016](../tech-debt/016-document-outlines-in-two-places.md) remains open.
+
+Implementation authorized by the user on 2026-10-15. Awaiting human code review;
+ADR-0018 remains Proposed. No production deployment.

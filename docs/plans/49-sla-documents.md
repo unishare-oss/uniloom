@@ -1,6 +1,6 @@
 # 49: SLA Knowledge documents
 
-Status: Ready
+Status: In Review
 
 ## Scope
 
@@ -15,11 +15,11 @@ record customer acceptance. Set this plan to Ready before code.
 
 ## Done when
 
-- [ ] A separate migration adds `SLA` to `DocumentKind` in the existing document table; SLA is project Knowledge, available in both modes, with null number/status/home, and SLO plus existing kinds continue to work.
-- [ ] Existing REST and MCP document tools permit Owners/Managers to create/edit SLA, members to read, and Owners/Managers to archive; project isolation, immutable kind and create-from-ticket restrictions remain enforced by API services.
-- [ ] Knowledge lists, filters, new/edit forms and detail pages recognize SLA with its own label/icon and a template covering audience, commitments, measurement, exclusions, remedies, effective dates, accountable owner, agreement state and supporting SLO links.
-- [ ] SLA templates use working ordinary document links for supporting SLOs without requiring one; existing Guided ticket link/unlink and related-document views support SLA, preserving foreign-project, archived-document and Standard-mode restrictions.
-- [ ] Seed examples and focused REST/MCP checks cover permissions, filtering, archival, linking and absent workflow status; OpenAPI/generated clients and MCP descriptions include SLA, and relevant lint/typecheck/test/build checks pass.
+- [x] A separate migration adds `SLA` to `DocumentKind` in the existing document table; SLA is project Knowledge, available in both modes, with null number/status/home, and SLO plus existing kinds continue to work.
+- [x] Existing REST and MCP document tools permit Owners/Managers to create/edit SLA, members to read, and Owners/Managers to archive; project isolation, immutable kind and create-from-ticket restrictions remain enforced by API services.
+- [x] Knowledge lists, filters, new/edit forms and detail pages recognize SLA with its own label/icon and a template covering audience, commitments, measurement, exclusions, remedies, effective dates, accountable owner, agreement state and supporting SLO links.
+- [x] SLA templates use working ordinary document links for supporting SLOs without requiring one; existing Guided ticket link/unlink and related-document views support SLA, preserving foreign-project, archived-document and Standard-mode restrictions.
+- [x] Seed examples and focused REST/MCP checks cover permissions, filtering, archival, linking and absent workflow status; OpenAPI/generated clients and MCP descriptions include SLA, and relevant lint/typecheck/test/build checks pass.
 
 ## Design
 
@@ -81,7 +81,27 @@ template guidance too.
 
 ## Changes
 
-Commits: none. Planning only; scope confirmed, implementation not started.
-Planned vs actual: pending. Acceptance criteria remain unchecked.
+Commits: `ceace35` (planning, pushed to dev), `2331c50` (implementation on
+`feat/mcp-markdown-reliability-documents`).
 
-Implementation authorized by the user on 2026-10-15: commit/push planning first, then implement on a separate branch and open a PR.
+Added `SLA` to the existing DocumentKind enum with its own additive migration,
+Knowledge availability, related-document schema, web label/icon/template and MCP
+guidance. Existing document and ticket-link services enforce permissions, mode,
+archive and home rules; no new REST endpoints or separate editor. OpenAPI and
+browser clients were regenerated. Seed examples cover both modes and owner,
+manager and member behavior, with draft placeholders and linked reliability records.
+
+Planned vs actual: followed the planned document-kind approach. Supporting SLO links remain ordinary Markdown references; no synchronization or agreement acceptance is recorded.
+The combined feature commit implements both separately planned kinds, each with
+its own migration and kind-specific e2e case. SLO and existing document behavior
+remain covered by the focused regression suites.
+
+Validation: 29 document/MCP/ticket-document e2e tests passed, covering new kinds,
+roles, project isolation, filtering, archival, ticket-home/status refusal and links.
+Root lint/typecheck passed; 115 API unit tests and four Markdown tests passed;
+API/web production builds passed. Migrations applied only to the documented
+remote development database. Seed code was typechecked; the seed reset was not run.
+Existing [TD-016](../tech-debt/016-document-outlines-in-two-places.md) remains open.
+
+Implementation authorized by the user on 2026-10-15. Awaiting human code review;
+ADR-0018 remains Proposed. No production deployment.
