@@ -6,6 +6,7 @@ import {
   addTicketDocument,
   getDocument,
   loadDocument,
+  validateSourceProposal,
 } from '@/modules/documents/document.service.js';
 import * as itemRules from './item.rules.js';
 import * as itemDocumentRepo from './item-document.repository.js';
@@ -50,11 +51,13 @@ export const createTicketDocument = async (
     title: string;
     purpose?: string;
     body?: string;
+    sourceProposalId?: string | null;
   },
 ) => {
   const item = await loadEditableItem(itemId, userId);
   const { kind } = input;
   if (kind === 'ADR' || kind === 'TECH_DEBT') {
+    await validateSourceProposal(item.projectId, kind, input.sourceProposalId);
     const record = await prisma.$transaction(async (tx) => {
       const created = await addNumberedDocument(
         tx,

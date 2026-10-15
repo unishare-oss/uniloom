@@ -28,6 +28,7 @@ import {
 import {
   createDocument,
   setDocumentStatus,
+  updateDocumentById,
 } from '../src/modules/documents/document.service.js';
 import {
   createTicketDocument,
@@ -1164,6 +1165,74 @@ const seedReliabilityDocuments = async (ownerId: string) => {
   }
 };
 
+/** Provenance examples across modes and roles, with explicit manual failure cases. */
+const seedSpecProvenance = async (ownerId: string) => {
+  const [mya] = SEED_USERS;
+  for (const prefix of ['TG', 'TS', 'TR', 'TM']) {
+    const project = await prisma.project.findUniqueOrThrow({
+      where: { keyPrefix: prefix },
+    });
+    const writer = prefix === 'TM' ? mya.id : ownerId;
+    const proposal = await createDocument(project.id, writer, {
+      kind: 'PROPOSAL',
+      title:
+        'Proposal: open → multiple derived specs link back; approval is not required',
+    });
+    const replacement = await createDocument(project.id, writer, {
+      kind: 'PROPOSAL',
+      title:
+        'Replacement: edit a spec → choose this, save → backlink moves here',
+    });
+    await createDocument(project.id, writer, {
+      kind: 'SPEC',
+      title:
+        'Independent spec: save with no proposal → allowed; ticket workflow is unchanged',
+    });
+    await createDocument(project.id, writer, {
+      kind: 'SPEC',
+      title:
+        'Derived spec A: edit → clear or replace source → allowed for Owner/Manager',
+      sourceProposalId: proposal.id,
+    });
+    await createDocument(project.id, writer, {
+      kind: 'SPEC',
+      title: 'Derived spec B: same proposal → allowed; proposal lists both',
+      sourceProposalId: proposal.id,
+    });
+    const archived = await createDocument(project.id, writer, {
+      kind: 'PROPOSAL',
+      title:
+        'Archived source: existing spec keeps link; new associations → document_archived',
+    });
+    await createDocument(project.id, writer, {
+      kind: 'SPEC',
+      title:
+        'Archived-source spec: body-only save or same source → allowed; remove → allowed',
+      sourceProposalId: archived.id,
+    });
+    await updateDocumentById(archived.id, writer, { archived: true });
+    const item = await createProjectItem(project.id, writer, {
+      kind: project.mode === 'GUIDED' ? 'FEATURE' : 'TASK',
+      assigneeId: ownerId,
+      title:
+        prefix === 'TM'
+          ? 'As assigned Member: create/edit ticket spec source → allowed; edit Knowledge spec or unassigned ticket → forbidden'
+          : 'MCP sourceProposalId: wrong kind/non-SPEC even null → invalid_source_proposal; missing/foreign project → not_found',
+    });
+    if (project.mode === 'GUIDED')
+      await createTicketDocument(item.id, writer, {
+        kind: 'SPEC',
+        title:
+          'Ticket spec: proposal backlink includes ticket; delete home ticket → backlink hidden',
+        sourceProposalId: proposal.id,
+      });
+    note(
+      item.key,
+      `Proposal ${proposal.id}; replacement ${replacement.id}; archived ${archived.id}. Standard supports Knowledge specs; ticket creation → guided_only. Relationship changes preserve ticket state and unrelated links.`,
+    );
+  }
+};
+
 const seedAdrs = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
   const guided = await prisma.project.findFirstOrThrow({
@@ -1455,6 +1524,7 @@ await seedDocuments(owner.id);
 await seedTicketDocuments(owner.id);
 await seedMcpLinks(owner.id);
 await seedReliabilityDocuments(owner.id);
+await seedSpecProvenance(owner.id);
 await seedAdrs(owner.id);
 await seedTechDebt(owner.id);
 await seedInvites(owner.id);

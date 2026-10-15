@@ -65,6 +65,16 @@ The user confirmed two standalone document-kind slices on 2026-10-15. Both are I
 
 Architecture proposal: [ADR-0018](../adr/0018-reliability-document-kinds.md).
 
+## Confirmed proposal-to-spec scope
+
+The user confirmed optional proposal-to-spec provenance on 2026-10-15. One proposal
+may support many specs, and independent specs remain valid. The user set the design
+Ready with “start”; implementation is In Review on its own branch.
+
+| Plan                                                                       | Scope                                                                               | Depends on                                                    |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [50: Optional proposal-to-spec provenance](50-proposal-spec-provenance.md) | Typed optional source, API/MCP create/edit/read, web picker and forward/back links. | Existing documents and ticket-owned specs; Proposed ADR-0019. |
+
 ## Review inbox alignment
 
 The user chose both actionable review work and notification history, standalone read

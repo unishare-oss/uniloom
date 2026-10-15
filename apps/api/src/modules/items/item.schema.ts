@@ -35,6 +35,7 @@ export const createTicketDocumentSchema = z.object({
   title: z.string().trim().min(1).max(200),
   purpose: z.string().trim().max(300).optional(),
   body: z.string().max(100_000).optional(),
+  sourceProposalId: z.uuid().nullable().optional(),
 });
 
 const kind = z.enum(['TASK', 'SUBTASK', 'FEATURE', 'SLICE']);

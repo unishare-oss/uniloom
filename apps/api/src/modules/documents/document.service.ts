@@ -15,7 +15,7 @@ import {
 } from '@/modules/items/item.rules.js';
 import { requireMember } from '@/modules/projects/project.service.js';
 import * as documentRepo from './document.repository.js';
-import { nextStatusError } from './document.rules.js';
+import { nextStatusError, sourceProposalError } from './document.rules.js';
 import { toDocument, toDocumentSummary } from './document.utils.js';
 
 /** The document, or 404 when it doesn't exist. */
@@ -25,6 +25,36 @@ export const loadDocument = async (id: string) => {
   if (!document || document.homeItem?.deletedAt)
     throw apiError(404, 'not_found', 'Document not found');
   return document;
+};
+
+/** Called after authorizing the destination document or ticket write. */
+export const validateSourceProposal = async (
+  projectId: string,
+  kind: DocumentKind,
+  sourceId: string | null | undefined,
+  currentSourceId?: string | null,
+) => {
+  const source =
+    kind === 'SPEC' && sourceId
+      ? await documentRepo.findDocument(sourceId)
+      : null;
+  const code = sourceProposalError(
+    kind,
+    sourceId,
+    source,
+    projectId,
+    currentSourceId,
+  );
+  if (code)
+    throw apiError(
+      code === 'not_found' ? 404 : 409,
+      code,
+      code === 'not_found'
+        ? 'Proposal not found'
+        : code === 'document_archived'
+          ? 'Choose an active proposal'
+          : 'Only a spec may name a Knowledge proposal as its source',
+    );
 };
 
 /**
@@ -61,9 +91,16 @@ export const addNumberedDocument = async (
 export const createDocument = async (
   projectId: string,
   userId: string,
-  input: { kind: DocumentKind; title: string; purpose?: string; body?: string },
+  input: {
+    kind: DocumentKind;
+    title: string;
+    purpose?: string;
+    body?: string;
+    sourceProposalId?: string | null;
+  },
 ) => {
   await requireRole(projectId, userId, CREATORS);
+  await validateSourceProposal(projectId, input.kind, input.sourceProposalId);
   if (input.kind === 'TECH_DEBT')
     throw apiError(
       409,
@@ -92,8 +129,15 @@ export const addTicketDocument = async (
   projectId: string,
   userId: string,
   itemId: string,
-  input: { kind: DocumentKind; title: string; purpose?: string; body?: string },
+  input: {
+    kind: DocumentKind;
+    title: string;
+    purpose?: string;
+    body?: string;
+    sourceProposalId?: string | null;
+  },
 ) => {
+  await validateSourceProposal(projectId, input.kind, input.sourceProposalId);
   const document = await documentRepo.insertDocument({
     projectId,
     authorId: userId,
@@ -156,6 +200,7 @@ export const updateDocumentById = async (
     purpose?: string;
     body?: string;
     archived?: boolean;
+    sourceProposalId?: string | null;
   },
 ) => {
   const document = await loadDocument(id);
@@ -166,6 +211,12 @@ export const updateDocumentById = async (
   } else {
     await requireRole(document.projectId, userId, CREATORS);
   }
+  await validateSourceProposal(
+    document.projectId,
+    document.kind,
+    input.sourceProposalId,
+    document.sourceProposalId,
+  );
   const { archived, ...fields } = input;
   if (archived && document.kind === 'ADR')
     throw apiError(

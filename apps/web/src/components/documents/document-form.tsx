@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  SourceProposalPicker,
+  type SourceProposal,
+} from "@/components/documents/source-proposal-picker";
 import { DOCUMENT_TEMPLATES } from "@/components/documents/document-templates";
 import { type DocumentKind } from "@/components/documents/document-meta";
 import { KindPicker } from "@/components/documents/kind-picker";
@@ -37,6 +41,7 @@ export const DocumentForm = ({
     title: string;
     purpose: string;
     body: string;
+    sourceProposal?: SourceProposal | null;
   };
 }) => {
   const router = useRouter();
@@ -48,6 +53,9 @@ export const DocumentForm = ({
   const [title, setTitle] = useState(initial.title);
   const [purpose, setPurpose] = useState(initial.purpose);
   const [body, setBody] = useState(initial.body);
+  const [sourceProposal, setSourceProposal] = useState(
+    initial.sourceProposal ?? null,
+  );
 
   const afterSave = async (id: string) => {
     await Promise.all([
@@ -55,6 +63,13 @@ export const DocumentForm = ({
         queryKey: getListDocumentsQueryKey(projectId),
       }),
       queryClient.invalidateQueries({ queryKey: getGetDocumentQueryKey(id) }),
+      ...[initial.sourceProposal?.id, sourceProposal?.id]
+        .filter((id): id is string => !!id)
+        .map((id) =>
+          queryClient.invalidateQueries({
+            queryKey: getGetDocumentQueryKey(id),
+          }),
+        ),
     ]);
     router.push(`/p/${projectId}/docs/${id}`);
   };
@@ -79,9 +94,14 @@ export const DocumentForm = ({
     setKind(next);
   };
   const save = () => {
-    if (documentId)
-      update.mutate({ id: documentId, data: { title, purpose, body } });
-    else create.mutate({ projectId, data: { kind, title, purpose, body } });
+    const fields = {
+      title,
+      purpose,
+      body,
+      ...(kind === "SPEC" && { sourceProposalId: sourceProposal?.id ?? null }),
+    };
+    if (documentId) update.mutate({ id: documentId, data: fields });
+    else create.mutate({ projectId, data: { kind, ...fields } });
   };
 
   return (
@@ -121,6 +141,13 @@ export const DocumentForm = ({
           />
         </div>
       </div>
+      {kind === "SPEC" && (
+        <SourceProposalPicker
+          projectId={projectId}
+          value={sourceProposal}
+          onChange={setSourceProposal}
+        />
+      )}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor="document-body">Markdown</Label>
@@ -145,6 +172,7 @@ export const DocumentForm = ({
         </Button>
         <Button
           variant="outline"
+          nativeButton={false}
           render={
             <Link
               href={

@@ -12,6 +12,7 @@ export const createDocumentSchema = z.object({
   title,
   purpose: purpose.optional(),
   body: body.optional(),
+  sourceProposalId: z.uuid().nullable().optional(),
 });
 
 /** Every field optional; `archived` sets or clears `archivedAt`. The kind never changes. */
@@ -19,6 +20,7 @@ export const updateDocumentSchema = z.object({
   title: title.optional(),
   purpose: purpose.optional(),
   body: body.optional(),
+  sourceProposalId: z.uuid().nullable().optional(),
   archived: z.boolean().optional(),
 });
 
@@ -63,6 +65,14 @@ export const documentSummarySchema = z.object({
   archivedAt: z.iso.datetime().nullable(),
   /** Set: the document belongs to that ticket (a feature's spec), not to Knowledge. */
   homeItemId: z.uuid().nullable(),
+  sourceProposalId: z.uuid().nullable(),
+  sourceProposal: z
+    .object({
+      id: z.uuid(),
+      title: z.string(),
+      archivedAt: z.iso.datetime().nullable(),
+    })
+    .nullable(),
   canEdit: z.boolean(),
   /** The ticket it was raised on (a deleted ticket reads as null). */
   createdFrom: z.object({ id: z.uuid(), key: z.string() }).nullable(),
@@ -74,6 +84,13 @@ export const documentSummarySchema = z.object({
 
 export const documentSchema = documentSummarySchema.extend({
   body: z.string(),
+  derivedSpecs: z.array(
+    z.object({
+      id: z.uuid(),
+      title: z.string(),
+      homeItem: z.object({ id: z.uuid(), key: z.string() }).nullable(),
+    }),
+  ),
   /** The newer ADR that replaced this one. */
   supersededBy: z
     .object({

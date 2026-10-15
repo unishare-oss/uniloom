@@ -15,6 +15,7 @@ export const toDocumentConfirmation = (
   title: document.title,
   number: document.number,
   status: document.status,
+  sourceProposalId: document.sourceProposalId,
   url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
 });
 

@@ -31,6 +31,8 @@ export const toDocumentSummary = (row: SummaryRow, canEdit: boolean) => {
     author: row.author,
     archivedAt: row.archivedAt,
     homeItemId: row.homeItemId,
+    sourceProposalId: row.sourceProposalId,
+    sourceProposal: row.sourceProposal,
     canEdit,
     createdFrom: ticketRef(row.createdFromItem),
     fixedBy: ticketRef(row.fixedByItem),
@@ -44,6 +46,11 @@ export const toDocument = (row: DocumentRow, canEdit: boolean) => {
   return {
     ...toDocumentSummary(row, canEdit),
     body: row.body,
+    derivedSpecs: row.derivedSpecs.map((spec) => ({
+      id: spec.id,
+      title: spec.title,
+      homeItem: ticketRef(spec.homeItem),
+    })),
     supersededBy: row.supersededBy,
     homeItem: row.homeItem && {
       id: row.homeItem.id,
