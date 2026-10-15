@@ -1,3 +1,28 @@
+# [1.10.0](https://github.com/unishare-oss/uniloom/compare/v1.9.0...v1.10.0) (2026-10-15)
+
+
+### Bug Fixes
+
+* address review findings on invite links ([aa64927](https://github.com/unishare-oss/uniloom/commit/aa64927388ebe034bda57722481beb77f73b2468))
+* **api:** reword invite link and join request messages ([1341159](https://github.com/unishare-oss/uniloom/commit/13411597df8abc8f7045ea648ce535136ec90011))
+* **ci:** isolate feature image tags ([5ba7f1c](https://github.com/unishare-oss/uniloom/commit/5ba7f1c77ef02a55bdf35c5051361b8121ffb70f))
+* **web:** mark the join page's link buttons as links ([4bfa4f8](https://github.com/unishare-oss/uniloom/commit/4bfa4f898aee4a2fa04c8b8b1e5ceacffc3b83fb))
+
+
+### Features
+
+* **api:** add join requests for invite links that need approval ([e9f6c08](https://github.com/unishare-oss/uniloom/commit/e9f6c0835d5dffc8561e14a04293cc0b9b85123a))
+* **api:** add project invite links ([41eab32](https://github.com/unishare-oss/uniloom/commit/41eab32b166ad10ea164e9e2d81c423a9e793276))
+* **api:** delete invite links revoked over 30 days ago ([b4f2d3e](https://github.com/unishare-oss/uniloom/commit/b4f2d3e6f395a366bdcf1264df76eb86d091fde3))
+* **api:** let people see and cancel their join requests ([2ef43c5](https://github.com/unishare-oss/uniloom/commit/2ef43c57dda67548a066b2500ea7f1979403f137))
+* **api:** trace requests and outgoing fetch calls ([0d98f6f](https://github.com/unishare-oss/uniloom/commit/0d98f6f00436b7b2c105256a82dcf8e35be173dc))
+* improve MCP usability and knowledge documents ([2331c50](https://github.com/unishare-oss/uniloom/commit/2331c509dfb0fe6a4cda3809bf3c2c5716c5340c))
+* **web:** add the join page and invite link card ([fc1d7cc](https://github.com/unishare-oss/uniloom/commit/fc1d7cc5c68cf10e1f59fc578188294421d899a3))
+* **web:** add the join requests card and sidebar count ([20ff4e6](https://github.com/unishare-oss/uniloom/commit/20ff4e6156b4ca568612a08283ce8d424e5efc7f))
+* **web:** default a new invite link to one person ([d9541de](https://github.com/unishare-oss/uniloom/commit/d9541de0146b287c36ea8787d2356247b2ae420d))
+* **web:** show waiting join requests on the home page ([67c328c](https://github.com/unishare-oss/uniloom/commit/67c328caf9940abd5b4bdfde32fc2106936dc985))
+* **web:** show when the invite link was created and expires ([2650df9](https://github.com/unishare-oss/uniloom/commit/2650df9fecd9b792ebc47c1b60fdff3274e93cd6))
+
 # [1.9.0](https://github.com/unishare-oss/uniloom/compare/v1.8.0...v1.9.0) (2026-10-13)
 
 
