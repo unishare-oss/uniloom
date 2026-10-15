@@ -1,5 +1,6 @@
 import { app } from './app.js';
 import { auth, UNIAUTH_ISSUER } from '@/auth/auth.js';
+import { telemetry } from '@/telemetry.js';
 
 // Better Auth reads uniAuth's discovery document once, when it starts. If uniAuth can't be
 // reached then, sign-in stays broken until a restart, so refuse to start instead.
@@ -12,7 +13,13 @@ if (!discovery?.ok)
   );
 await auth.$context;
 
-export default {
+const server = Bun.serve({
   port: Number(process.env.PORT ?? 3011),
   fetch: app.fetch,
-};
+});
+
+process.once('SIGTERM', async () => {
+  await server.stop(false);
+  await telemetry?.shutdown();
+  process.exit(0);
+});
