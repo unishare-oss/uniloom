@@ -34,17 +34,15 @@ describe('spec provenance (e2e)', () => {
     const manager = await api.signInReady();
     const member = await api.signInReady();
     const outsider = await api.signInReady();
-    const project = (await read(
-      await api.send('POST', '/api/projects', owner.cookie, {
-        name: 'Provenance',
-        keyPrefix: randomUUID()
-          .replaceAll('-', '')
-          .replace(/\d/g, 'X')
-          .slice(0, 5)
-          .toUpperCase(),
-        mode,
-      }),
-    )) as { id: string };
+    const created = await api.send('POST', '/api/projects', owner.cookie, {
+      name: 'Provenance',
+      keyPrefix: Array.from({ length: 5 }, () =>
+        String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+      ).join(''),
+      mode,
+    });
+    expect(created.status).toBe(201);
+    const project = (await read(created)) as { id: string };
     for (const [person, role] of [
       [manager, 'MANAGER'],
       [member, 'MEMBER'],
