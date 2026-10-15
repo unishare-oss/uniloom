@@ -40,10 +40,23 @@ const withOrigin = {
   },
 };
 
+const withSourceProposal = {
+  sourceProposal: { select: { id: true, title: true, archivedAt: true } },
+};
+
 /** One document in full: author, home ticket, the ticket it was created from, linking tickets. */
 const documentView = {
   ...withAuthor,
   ...withHomeItem,
+  ...withSourceProposal,
+  derivedSpecs: {
+    where: {
+      kind: 'SPEC',
+      OR: [{ homeItemId: null }, { homeItem: { deletedAt: null } }],
+    },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, title: true, ...withHomeItem },
+  },
   supersededBy: { select: { id: true, number: true, title: true } },
   ...withOrigin,
   links: {
@@ -61,7 +74,7 @@ const documentView = {
       },
     },
   },
-} as const;
+} satisfies Prisma.DocumentInclude;
 
 /**
  * Newest edit first, at most 200, archived ones only when asked, ticket documents only
@@ -89,7 +102,12 @@ export const findDocuments = (
         : { homeItemId: null }),
     },
     omit: { body: true },
-    include: { ...withAuthor, ...withHomeItem, ...withOrigin },
+    include: {
+      ...withAuthor,
+      ...withHomeItem,
+      ...withOrigin,
+      ...withSourceProposal,
+    },
     orderBy: { updatedAt: 'desc' },
     take: 200,
   });
@@ -107,6 +125,7 @@ export const insertDocument = (
     title: string;
     purpose?: string;
     body?: string;
+    sourceProposalId?: string | null;
     homeItemId?: string;
     createdFromItemId?: string;
     number?: number;
@@ -175,6 +194,7 @@ export const updateDocument = (
     title?: string;
     purpose?: string;
     body?: string;
+    sourceProposalId?: string | null;
     archivedAt?: Date | null;
     status?: DocumentStatus;
     supersededById?: string | null;

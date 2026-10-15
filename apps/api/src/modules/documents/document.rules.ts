@@ -35,3 +35,28 @@ export const nextStatusError = (
 export const isArchivable = (kind: DocumentKind) => {
   return kind !== 'ADR' && kind !== 'TECH_DEBT';
 };
+
+/** Provenance is optional; only specs can name an active Knowledge proposal. */
+export const sourceProposalError = (
+  kind: DocumentKind,
+  sourceId: string | null | undefined,
+  source: {
+    id: string;
+    projectId: string;
+    kind: DocumentKind;
+    homeItemId: string | null;
+    archivedAt: Date | null;
+  } | null,
+  projectId: string,
+  currentSourceId?: string | null,
+) => {
+  if (sourceId === undefined) return null;
+  if (kind !== 'SPEC') return 'invalid_source_proposal';
+  if (sourceId === null) return null;
+  if (!source || source.projectId !== projectId) return 'not_found';
+  if (source.kind !== 'PROPOSAL' || source.homeItemId)
+    return 'invalid_source_proposal';
+  if (source.archivedAt && source.id !== currentSourceId)
+    return 'document_archived';
+  return null;
+};

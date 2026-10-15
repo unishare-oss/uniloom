@@ -5,6 +5,11 @@ import { FilePlus, Scale, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  SourceProposalPicker,
+  type SourceProposal,
+} from "@/components/documents/source-proposal-picker";
+import { getGetDocumentQueryKey } from "@/lib/api/generated/documents/documents";
 import { DOCUMENT_TEMPLATES } from "@/components/documents/document-templates";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,16 +73,24 @@ export const NewTicketDocumentDialog = ({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState(template);
+  const [sourceProposal, setSourceProposal] = useState<SourceProposal | null>(
+    null,
+  );
   const create = useCreateTicketDocument({
     mutation: {
       onSuccess: async (res) => {
         await queryClient.invalidateQueries({
           queryKey: getGetItemQueryKey(itemId),
         });
+        if (sourceProposal)
+          await queryClient.invalidateQueries({
+            queryKey: getGetDocumentQueryKey(sourceProposal.id),
+          });
         toast.success(successMessage(res));
         setOpen(false);
         setTitle("");
         setBody(template);
+        setSourceProposal(null);
         router.push(`/p/${projectId}/docs/${res.data.id}`);
       },
       onError: (err) => toast.error(err.message),
@@ -101,7 +114,14 @@ export const NewTicketDocumentDialog = ({
             event.preventDefault();
             create.mutate({
               id: itemId,
-              data: { kind, title: title.trim(), body },
+              data: {
+                kind,
+                title: title.trim(),
+                body,
+                ...(kind === "SPEC" && {
+                  sourceProposalId: sourceProposal?.id ?? null,
+                }),
+              },
             });
           }}
         >
@@ -119,6 +139,13 @@ export const NewTicketDocumentDialog = ({
               onChange={(event) => setTitle(event.target.value)}
             />
           </div>
+          {kind === "SPEC" && (
+            <SourceProposalPicker
+              projectId={projectId}
+              value={sourceProposal}
+              onChange={setSourceProposal}
+            />
+          )}
           <div className="flex flex-col gap-2">
             <Label htmlFor="ticket-document-body">{name} · Markdown</Label>
             <Textarea

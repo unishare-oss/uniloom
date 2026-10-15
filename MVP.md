@@ -237,6 +237,7 @@ ADRs record **choices that outlive one slice**, such as "Postgres over SQLite" o
   - Types: `change`, `feature`, `reference`, `overview`. ADRs are their own type (§7).
   - Tech debt is its own type too: `TD-n`, linked to the ticket it was raised on and to the ticket that fixed it (Guided only).
   - Markdown with **Mermaid rendered** on the website.
+  - A spec may optionally be **based on one same-project Knowledge proposal**; a proposal may support many specs. Both pages link to each other. This records provenance without requiring proposal approval or changing ticket workflow. Archived sources stay readable, but cannot be newly selected. Knowledge specs work in both modes; ticket-owned specs remain Guided only.
 - **Finishing a slice** (Guided): link the commit, set the branch and PR, write the change document ("what changed and how", with a diagram for backend flows), move to In Review.
 
 ---
