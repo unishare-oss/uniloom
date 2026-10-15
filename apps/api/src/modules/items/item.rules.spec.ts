@@ -1,5 +1,8 @@
 import {
   checklistError,
+  documentKindsFor,
+  creatableDocumentKindsFor,
+  ticketDocumentKindsFor,
   featureDone,
   guidedOnlyError,
   kindError,
@@ -309,4 +312,24 @@ describe('guidedOnlyError', () => {
   it('refuses a Standard project with a message', () => {
     expect(guidedOnlyError({ mode: 'STANDARD' })).toEqual(expect.any(String));
   });
+});
+
+describe('reliability document kinds', () => {
+  it.each(['GUIDED', 'STANDARD'] as const)(
+    '%s exposes SLO and SLA only as Knowledge',
+    (mode) => {
+      expect(documentKindsFor({ mode })).toEqual(
+        expect.arrayContaining(['SLO', 'SLA']),
+      );
+      expect(creatableDocumentKindsFor({ mode })).toEqual(
+        expect.arrayContaining(['SLO', 'SLA']),
+      );
+      expect(ticketDocumentKindsFor({ mode })).not.toEqual(
+        expect.arrayContaining(['SLO']),
+      );
+      expect(ticketDocumentKindsFor({ mode })).not.toEqual(
+        expect.arrayContaining(['SLA']),
+      );
+    },
+  );
 });

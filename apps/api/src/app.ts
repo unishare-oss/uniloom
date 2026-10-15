@@ -1,3 +1,6 @@
+import '@/telemetry.js';
+import { httpInstrumentationMiddleware } from '@hono/otel';
+import { context, isSpanContextValid, trace } from '@opentelemetry/api';
 import { Scalar } from '@scalar/hono-api-reference';
 import { Hono } from 'hono';
 import { openAPIRouteHandler } from 'hono-openapi';
@@ -11,6 +14,30 @@ import { apiRoutes } from '@/routes/index.js';
 
 /** The API. Everything under /api except health is in routes/index.ts. */
 export const app = new Hono();
+const httpTelemetry = httpInstrumentationMiddleware({
+  serviceName: 'uniloom-api',
+});
+app.use('*', async (c, next) => {
+  if (c.req.path === '/health' || c.req.path === '/api/health') return next();
+  return httpTelemetry(c, next);
+});
+app.use('*', async (c, next) => {
+  const started = performance.now();
+  await next();
+  const span = trace.getSpan(context.active())?.spanContext();
+  if (span && isSpanContextValid(span))
+    console.log(
+      JSON.stringify({
+        event: 'http.request.completed',
+        service: 'uniloom-api',
+        method: c.req.method,
+        status_code: c.res.status,
+        duration_ms: Math.round(performance.now() - started),
+        trace_id: span.traceId,
+        span_id: span.spanId,
+      }),
+    );
+});
 
 // Health checks, for the cluster and through the web app's /api proxy.
 app.route('/health', healthRoutes);

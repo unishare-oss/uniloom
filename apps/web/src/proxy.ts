@@ -1,7 +1,8 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED = ["/profile", "/consent", "/p", "/reviews", "/guide"];
+// "/join": a new person signs in, accepts the terms and comes back to the invite link.
+const PROTECTED = ["/profile", "/consent", "/p", "/reviews", "/guide", "/join"];
 
 /**
  * Sends signed-out visitors from `/` to the landing page at `/welcome`, and from protected pages

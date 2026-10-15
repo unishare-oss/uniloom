@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { INSTRUCTIONS } from './mcp.instructions.js';
 import {
   checkCriterionSchema,
+  documentLinkSchema,
   getDocumentSchema,
   itemSchema,
   listDocumentsSchema,
@@ -122,7 +123,7 @@ export const buildServer = (agent: Agent) => {
     'save_item',
     {
       description:
-        'Create an item (no key: needs project, kind and title) or update one (key). Set state to move it; Ready and Done are refused with people_only. assignee is me, none or a member email.',
+        'Returns a compact confirmation; get_item has full detail. Create an item (no key: needs project, kind and title) or update one (key). Set state to move it; Ready and Done are refused with people_only. assignee is me, none or a member email.',
       inputSchema: saveItemSchema,
     },
     async (input) => {
@@ -220,12 +221,43 @@ export const buildServer = (agent: Agent) => {
     'save_document',
     {
       description:
-        'Create a document (no id: needs project, kind and title; give ticket to write it from that ticket) or edit title, purpose and body of one (id). Body is Markdown; sections by kind: BRIEF: Problem, Goal, Users, Out of scope. PROPOSAL: Summary, Motivation, Options, Recommendation, Open questions. SPEC: Overview, Behaviour, Edge cases, Acceptance. REFERENCE: Overview, Details, Links. TECH_DEBT: What, Why it matters, Suggested fix. ADR: Context, Options, Decision, Consequences. With ticket the kind is SPEC, REFERENCE, ADR or TECH_DEBT.',
+        'Returns a compact confirmation; get_document has the body. Create a document (no id: needs project, kind and title; give ticket to write it from that ticket) or edit title, purpose and body of one (id). Body is Markdown; sections by kind: BRIEF: Problem, Goal, Users, Out of scope. PROPOSAL: Summary, Motivation, Options, Recommendation, Open questions. SPEC: Overview, Behaviour, Edge cases, Acceptance. REFERENCE: Overview, Details, Links. TECH_DEBT: What, Why it matters, Suggested fix. ADR: Context, Options, Decision, Consequences. SLO: Service/journey, Indicator (SLI), Target and window, Measurement source, Owner, Exclusions, Response policy, Related documents. SLA: Audience/customer, Service commitments, Measurement terms, Exclusions, Remedies, Effective dates, Accountable owner, Agreement state, Supporting SLOs. SLO and SLA are project Knowledge documents with no workflow status; saving an SLA records no acceptance. With ticket the kind is SPEC, REFERENCE, ADR or TECH_DEBT.',
       inputSchema: saveDocumentSchema,
     },
     async (input) => {
       try {
         return reply(await mcpService.saveDocument(agent, input));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'link_document',
+    {
+      description:
+        'Link an existing Knowledge document to a Guided ticket. Takes ticket key and document id; follows ticket edit permissions. Repeating a link is harmless.',
+      inputSchema: documentLinkSchema,
+    },
+    async ({ key, id }) => {
+      try {
+        return reply(await mcpService.linkDocument(agent, key, id));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+  server.registerTool(
+    'unlink_document',
+    {
+      description:
+        'Remove a Knowledge document link from a Guided ticket, preserving the document. Follows ticket edit permissions.',
+      inputSchema: documentLinkSchema,
+    },
+    async ({ key, id }) => {
+      try {
+        return reply(await mcpService.unlinkDocument(agent, key, id));
       } catch (error) {
         return toToolError(error);
       }

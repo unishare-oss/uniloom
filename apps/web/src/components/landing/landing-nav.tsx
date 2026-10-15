@@ -1,4 +1,4 @@
-import { ArrowRight, Github, Menu } from "lucide-react";
+import { ArrowRight, ExternalLink, Menu } from "lucide-react";
 import Link from "next/link";
 import { LogoMark } from "@/components/shell/logo";
 import { GITHUB_URL } from "./links";
@@ -40,7 +40,7 @@ export const LandingNav = () => {
               Self-host
             </a>
             <a href={GITHUB_URL} className={linkClass}>
-              <Github className="size-4" />
+              <ExternalLink className="size-4" aria-hidden="true" />
               GitHub
             </a>
           </nav>
@@ -67,7 +67,7 @@ export const LandingNav = () => {
                 Self-host
               </a>
               <a href={GITHUB_URL} className={linkClass}>
-                <Github className="size-4" />
+                <ExternalLink className="size-4" aria-hidden="true" />
                 GitHub
               </a>
             </nav>

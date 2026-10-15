@@ -61,6 +61,11 @@ export const isMember = (projectId: string, userId: string) => {
     .then((count) => count > 0);
 };
 
+/** How many people wait to be let in through an invite link that needs approval. */
+export const countJoinRequests = (projectId: string) => {
+  return prisma.joinRequest.count({ where: { projectId, status: 'PENDING' } });
+};
+
 /** The project with its states in board order, if `userId` is one of its members. */
 export const findProjectDetailForMember = (
   projectId: string,

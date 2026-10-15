@@ -1,34 +1,113 @@
+"use client";
+
+import { useId } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Mermaid } from "@/components/markdown/mermaid";
+import { MarkdownHeading } from "./markdown-heading";
+import { MarkdownCallout } from "./markdown-callout";
+import { MarkdownCodeBlock } from "./markdown-code-block";
+import { remarkMarkdownHeadings } from "./markdown-headings";
+import { rehypeMarkdownHighlight } from "./markdown-highlight";
 
 const components: Components = {
-  // A ```mermaid code block becomes a diagram; any other code block stays code.
-  pre({ node, ...props }) {
+  h1: ({ node, ...props }) => (
+    <MarkdownHeading
+      level={1}
+      {...props}
+      id={node?.properties.id ? String(node.properties.id) : undefined}
+    />
+  ),
+  h2: ({ node, ...props }) => (
+    <MarkdownHeading
+      level={2}
+      {...props}
+      id={node?.properties.id ? String(node.properties.id) : undefined}
+    />
+  ),
+  h3: ({ node, ...props }) => (
+    <MarkdownHeading
+      level={3}
+      {...props}
+      id={node?.properties.id ? String(node.properties.id) : undefined}
+    />
+  ),
+  h4: ({ node, ...props }) => (
+    <MarkdownHeading
+      level={4}
+      {...props}
+      id={node?.properties.id ? String(node.properties.id) : undefined}
+    />
+  ),
+  h5: ({ node, ...props }) => (
+    <MarkdownHeading
+      level={5}
+      {...props}
+      id={node?.properties.id ? String(node.properties.id) : undefined}
+    />
+  ),
+  h6: ({ node, ...props }) => (
+    <MarkdownHeading
+      level={6}
+      {...props}
+      id={node?.properties.id ? String(node.properties.id) : undefined}
+    />
+  ),
+  aside: ({ node, ...props }) => (
+    <MarkdownCallout
+      kind={String(node?.properties["data-callout"] ?? "note")}
+      {...props}
+    />
+  ),
+  pre: ({ node, ...props }) => {
     const code = node?.children[0];
-    if (
-      code?.type === "element" &&
-      code.tagName === "code" &&
-      Array.isArray(code.properties.className) &&
-      code.properties.className.includes("language-mermaid")
-    ) {
-      const chart = code.children
-        .map((child) => (child.type === "text" ? child.value : ""))
-        .join("");
-      return <Mermaid chart={chart} />;
-    }
-    return <pre {...props} />;
+    if (code?.type !== "element" || code.tagName !== "code")
+      return <pre {...props} />;
+    const classes = code.properties.className;
+    const language = Array.isArray(classes)
+      ? String(
+          classes.find((name) => String(name).startsWith("language-")) ?? "",
+        ).slice(9)
+      : "";
+    const source = String(code.data?.rawCode ?? "");
+    if (language === "mermaid") return <Mermaid chart={source} />;
+    return (
+      <MarkdownCodeBlock key={source} code={source} language={language}>
+        {props.children}
+      </MarkdownCodeBlock>
+    );
   },
 };
 
-/**
- * Markdown with GitHub's extras (tables, task lists, strikethrough) and Mermaid diagrams.
- * Raw HTML in the text is shown as text, never run.
- */
-export const Markdown = ({ children }: { children: string }) => {
+/** GFM, callouts and diagrams; raw HTML stays text, never executable markup. */
+export const Markdown = ({
+  children,
+  contents = false,
+  headingPrefix,
+}: {
+  children: string;
+  contents?: boolean;
+  headingPrefix?: string;
+}) => {
+  const instance = useId();
   return (
     <div className="markdown">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[
+          remarkGfm,
+          [
+            remarkMarkdownHeadings,
+            {
+              prefix:
+                headingPrefix ??
+                `md-${instance.replace(/[^a-zA-Z0-9_-]/g, "")}`,
+              contents,
+            },
+          ],
+        ]}
+        rehypePlugins={[rehypeMarkdownHighlight]}
+        components={components}
+      >
         {children}
       </ReactMarkdown>
     </div>

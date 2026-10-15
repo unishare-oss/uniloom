@@ -3,8 +3,8 @@
 //
 // SEED_OWNER_EMAIL picks your account (default: the first user who signed in). It may list
 // several, comma-separated: the first is "you" in the items, and the others get the same
-// role in every seed project. Reruns replace the seed projects (keys TG, TS, TR, TM, TC,
-// TL, TX, TI) and never touch any other project.
+// role in every seed project. Reruns replace the seed projects (every key in SEED_PROJECTS)
+// and never touch any other project.
 //
 // A plan that adds a rule adds its cases here: a function per project, item titles that
 // say what to try and what should happen.
@@ -34,6 +34,14 @@ import {
   linkDocument,
 } from '../src/modules/items/item-document.service.js';
 import {
+  createInvite,
+  joinByInvite,
+} from '../src/modules/invites/invite.service.js';
+import {
+  decideJoinRequest,
+  listJoinRequests,
+} from '../src/modules/invites/request.service.js';
+import {
   createProject,
   updateProject,
 } from '../src/modules/projects/project.service.js';
@@ -47,6 +55,14 @@ const SEED_PROJECTS = {
   TL: 'Seed · Lowered limits',
   TX: 'Seed · Not a member',
   TI: 'Seed · Review inbox',
+  TV: 'Seed · Invite link',
+  TO: 'Seed · Open invite',
+  TF: 'Seed · Full invite',
+  TE: 'Seed · Expired invite',
+  TA: 'Seed · Join requests',
+  TQ: 'Seed · Ask to join',
+  TW: 'Seed · Waiting',
+  TD: 'Seed · Declined',
 };
 
 /** Fake people, so there are assignees, authors and an owner who isn't you. */
@@ -1065,6 +1081,89 @@ const seedTicketDocuments = async (ownerId: string) => {
   note(theirs.key, 'as a member: New spec and Link hidden; direct POST → 403');
 };
 
+/** MCP links: try as the seeded Member, whose own ticket permits linking. */
+const seedMcpLinks = async (ownerId: string) => {
+  const [mya] = SEED_USERS;
+  const project = await prisma.project.findUniqueOrThrow({
+    where: { keyPrefix: 'TM' },
+  });
+  const own = await createProjectItem(project.id, mya.id, {
+    kind: 'FEATURE',
+    assigneeId: ownerId,
+    title:
+      'MCP link_document on your assigned ticket → allowed; repeat → one link; unlink_document → document remains',
+  });
+  const proposal = await createDocument(project.id, mya.id, {
+    kind: 'PROPOSAL',
+    title: 'MCP proposal to link to your ticket',
+    body: '## Summary\nTry link_document with the ticket key and this document id.',
+  });
+  const retired = await createDocument(project.id, mya.id, {
+    kind: 'REFERENCE',
+    title: 'Archived reference: MCP link_document → document_archived',
+  });
+  await prisma.document.update({
+    where: { id: retired.id },
+    data: { archivedAt: new Date() },
+  });
+  await createProjectItem(project.id, mya.id, {
+    kind: 'FEATURE',
+    assigneeId: mya.id,
+    title:
+      'MCP link_document or unlink_document on Mya’s ticket → forbidden; linking another project’s document → not_found',
+  });
+  note(
+    own.key,
+    `link_document { key: "${own.key}", id: "${proposal.id}" } → one link; ${retired.id} → document_archived`,
+  );
+  note(
+    'TS',
+    'MCP link_document/unlink_document on a Standard task → guided_only',
+  );
+};
+
+/** SLO/SLA are shared Knowledge; seed both modes and current-role permissions. */
+const seedReliabilityDocuments = async (ownerId: string) => {
+  const [mya] = SEED_USERS;
+  for (const prefix of ['TG', 'TS', 'TR', 'TM']) {
+    const project = await prisma.project.findUniqueOrThrow({
+      where: { keyPrefix: prefix },
+    });
+    const writer = prefix === 'TM' ? mya.id : ownerId;
+    const slo = await createDocument(project.id, writer, {
+      kind: 'SLO',
+      title:
+        'Draft SLO: open Knowledge → target and measurement source are placeholders',
+      purpose: 'A reliability objective, not an observed production guarantee.',
+      body: '## Service / journey\nSave a work item.\n\n## Indicator (SLI)\nSuccessful valid saves / eligible save attempts.\n\n## Target and window\nTBD after a baseline.\n\n## Measurement source\nVerify instrumentation before adopting this objective.\n\n## Owner\nTBD.\n\n## Exclusions\nTBD.\n\n## Response policy\nInvestigate user impact and prioritize reliability fixes.',
+    });
+    const sla = await createDocument(project.id, writer, {
+      kind: 'SLA',
+      title:
+        'Draft SLA: open Knowledge → supporting SLO link works; no acceptance or service guarantee is recorded',
+      body: `## Audience / customer\nTBD.\n\n## Service commitments\nDraft placeholders only.\n\n## Measurement terms\nTBD.\n\n## Exclusions\nTBD.\n\n## Remedies\nTBD.\n\n## Effective dates\nTBD.\n\n## Accountable owner\nTBD.\n\n## Agreement state\nDraft; no acceptance recorded by Uniloom.\n\n## Supporting SLOs\n[Draft SLO](/p/${project.id}/docs/${slo.id})`,
+    });
+    const own = await createProjectItem(project.id, writer, {
+      kind: project.mode === 'GUIDED' ? 'FEATURE' : 'TASK',
+      assigneeId: ownerId,
+      title:
+        prefix === 'TM'
+          ? 'As Member: read SLO/SLA → allowed; edit or archive → forbidden; linking to this assigned Guided ticket → allowed'
+          : project.mode === 'GUIDED'
+            ? 'Link SLO/SLA → allowed; creating either as a ticket document → invalid_input; accepting either as ADR → refused'
+            : 'Create/edit/archive SLO/SLA in Standard Knowledge → allowed; linking to a Standard task → guided_only',
+    });
+    if (project.mode === 'GUIDED') {
+      await linkDocument(own.id, writer, slo.id);
+      await linkDocument(own.id, writer, sla.id);
+    }
+    note(
+      own.key,
+      `SLO ${slo.id}; SLA ${sla.id}: project Knowledge with no number/status; ${prefix === 'TR' ? 'you write as Manager' : prefix === 'TM' ? 'you read as Member' : 'you write as Owner'}`,
+    );
+  }
+};
+
 const seedAdrs = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
   const guided = await prisma.project.findFirstOrThrow({
@@ -1226,6 +1325,116 @@ const seedTechDebt = async (ownerId: string) => {
   note('Knowledge → Tech debt', 'Open, Fixed and refused-to-fix debts');
 };
 
+/**
+ * Invite links (plan 43): one you manage, and three to projects you're not in. Open each
+ * printed path on the web app's origin.
+ */
+const seedInvites = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const day = {
+    expiresIn: '24h' as const,
+    maxUses: null,
+    joinApproval: false,
+  };
+
+  const { project: yours } = await seedProject('TV', 'STANDARD', ownerId, []);
+  const live = await createInvite(yours.id, ownerId, {
+    expiresIn: '7d',
+    maxUses: 10,
+    joinApproval: false,
+  });
+  await joinByInvite(live.token, mya.id);
+  await joinByInvite(live.token, ko.id);
+  note(
+    'TV',
+    'Members: the Invite link card shows the link, "2 of 10 people joined", who created it and the exact expiry and when it expires; Copy link and Copy invite message work; Create new link and Delete link ask first; Remove on Mya asks and offers to delete the link too',
+  );
+
+  const { project: open } = await seedProject('TO', 'STANDARD', ko.id, []);
+  const openLink = await createInvite(open.id, ko.id, day);
+  note(
+    'TO',
+    `/join/${openLink.token} → "Join Seed · Open invite", invited by Ko; Join project → its board, you are a Member; open the link again → straight to the board`,
+  );
+
+  const { project: full } = await seedProject('TF', 'STANDARD', ko.id, []);
+  const fullLink = await createInvite(full.id, ko.id, {
+    expiresIn: '24h',
+    maxUses: 1,
+    joinApproval: false,
+  });
+  await joinByInvite(fullLink.token, mya.id);
+  note(
+    'TF',
+    `/join/${fullLink.token} → "This invite link has reached its limit", no project name, no Join button`,
+  );
+
+  const { project: expired } = await seedProject('TE', 'STANDARD', ko.id, []);
+  const expiredLink = await createInvite(expired.id, ko.id, day);
+  await prisma.invite.update({
+    where: { token: expiredLink.token },
+    data: { expiresAt: new Date(Date.now() - 60_000) },
+  });
+  note(
+    'TE',
+    `/join/${expiredLink.token} → "This invite link has expired"; /join/not-a-link → "This invite link doesn't work"`,
+  );
+};
+
+/** Links that need approval (plan 44): requests waiting for you, and a link to ask through. */
+const seedJoinRequests = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const approval = {
+    expiresIn: '7d' as const,
+    maxUses: 10,
+    joinApproval: true,
+  };
+
+  const { project: yours } = await seedProject('TA', 'STANDARD', ownerId, []);
+  const link = await createInvite(yours.id, ownerId, approval);
+  await joinByInvite(link.token, mya.id);
+  await joinByInvite(link.token, ko.id);
+  note(
+    'TA',
+    'Members: "Join requests" lists Mya and Ko above the members and the sidebar shows 2; Approve Mya → she moves to the member list; Decline Ko → he leaves the list; the link still says "2 of 10 requests"; Create new link keeps waiting requests',
+  );
+
+  const { project: theirs } = await seedProject('TQ', 'STANDARD', ko.id, []);
+  const ask = await createInvite(theirs.id, ko.id, approval);
+  note(
+    'TQ',
+    `/join/${ask.token} → "Ask to join", then "Request sent"; the project is not in your list and its board answers not found until someone approves`,
+  );
+};
+
+/** Your own requests (plan 45): one that waits, and one Ko declined. */
+const seedMyRequests = async (ownerId: string) => {
+  const [, ko] = SEED_USERS;
+  const approval = {
+    expiresIn: '7d' as const,
+    maxUses: 10,
+    joinApproval: true,
+  };
+
+  const { project: waiting } = await seedProject('TW', 'STANDARD', ko.id, []);
+  const waitLink = await createInvite(waiting.id, ko.id, approval);
+  await joinByInvite(waitLink.token, ownerId);
+  note(
+    'TW',
+    `Projects: "Waiting for approval" lists Seed · Waiting with Cancel request; /join/${waitLink.token} → "waiting for an owner or manager" with Cancel request; cancel → the row is gone and the link offers Ask again`,
+  );
+
+  const { project: declined } = await seedProject('TD', 'STANDARD', ko.id, []);
+  const declinedLink = await createInvite(declined.id, ko.id, approval);
+  await joinByInvite(declinedLink.token, ownerId);
+  const [request] = await listJoinRequests(declined.id, ko.id);
+  await decideJoinRequest(declined.id, ko.id, request!.id, false);
+  note(
+    'TD',
+    `not under "Waiting for approval"; /join/${declinedLink.token} → "Your request to join Seed · Declined was declined" with Ask again → it waits again`,
+  );
+};
+
 const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -1244,8 +1453,13 @@ await seedOutsider();
 await seedReviewInbox(owner.id);
 await seedDocuments(owner.id);
 await seedTicketDocuments(owner.id);
+await seedMcpLinks(owner.id);
+await seedReliabilityDocuments(owner.id);
 await seedAdrs(owner.id);
 await seedTechDebt(owner.id);
+await seedInvites(owner.id);
+await seedJoinRequests(owner.id);
+await seedMyRequests(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

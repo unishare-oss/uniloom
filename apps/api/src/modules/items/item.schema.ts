@@ -102,7 +102,16 @@ export const itemSchema = z.object({
 /** A document on the item page, without its body. */
 export const relatedDocumentSchema = z.object({
   id: z.uuid(),
-  kind: z.enum(['BRIEF', 'PROPOSAL', 'SPEC', 'REFERENCE', 'ADR', 'TECH_DEBT']),
+  kind: z.enum([
+    'BRIEF',
+    'PROPOSAL',
+    'SPEC',
+    'REFERENCE',
+    'ADR',
+    'TECH_DEBT',
+    'SLO',
+    'SLA',
+  ]),
   /** ADR-7: per project and kind; null for kinds without a number. */
   number: z.number().int().nullable(),
   status: z.enum(DocumentStatus).nullable(),

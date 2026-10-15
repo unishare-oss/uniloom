@@ -42,15 +42,18 @@ export const listProjects = (userId: string) => {
  */
 export const getProject = async (projectId: string, userId: string) => {
   const { role } = await requireRole(projectId, userId, ROLES);
-  const project = await projectRepo.findProjectDetailForMember(
-    projectId,
-    userId,
-  );
+  const canInvite = CREATORS.includes(role);
+  const [project, joinRequestCount] = await Promise.all([
+    projectRepo.findProjectDetailForMember(projectId, userId),
+    canInvite ? projectRepo.countJoinRequests(projectId) : 0,
+  ]);
   if (!project) throw apiError(404, 'not_found', 'Project not found');
   return {
     ...project,
     role,
     canManageMembers: role === 'OWNER',
+    canInvite,
+    joinRequestCount,
     canCreateItems: CREATORS.includes(role),
     canAssignOthers: CREATORS.includes(role),
     canEditSettings: role === 'OWNER',

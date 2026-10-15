@@ -55,6 +55,10 @@ export const projectDetailSchema = projectSchema.extend({
   role: z.enum(Role),
   /** Whether the caller may add, change or remove members (owners). */
   canManageMembers: z.boolean(),
+  /** Whether the caller may create and delete the invite link (owners, managers). */
+  canInvite: z.boolean(),
+  /** People waiting to be let in; always 0 for a Member, who can't see them. */
+  joinRequestCount: z.number().int(),
   /** Whether the caller may create, delete and restore items (owners, managers). */
   canCreateItems: z.boolean(),
   /** Whether the caller may set anyone as a ticket's assignee (owners, managers). */

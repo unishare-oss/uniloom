@@ -163,15 +163,24 @@ describe('mcp (e2e)', () => {
       expect(result.instructions).toContain('people_only');
 
       const list = await rpc(w.token, 'tools/list');
-      const names = (
-        (await list.json()) as { result: { tools: { name: string }[] } }
-      ).result.tools.map((t) => t.name);
+      const tools = (
+        (await list.json()) as {
+          result: { tools: { name: string; description: string }[] };
+        }
+      ).result.tools;
+      expect(
+        tools.every(
+          (tool) => !tool.description.includes('Uniloom is a project tracker'),
+        ),
+      ).toBe(true);
+      const names = tools.map((t) => t.name);
       expect(names.sort()).toEqual([
         'check_criterion',
         'delete_item',
         'get_criteria',
         'get_document',
         'get_item',
+        'link_document',
         'list_documents',
         'list_items',
         'list_labels',
@@ -180,6 +189,7 @@ describe('mcp (e2e)', () => {
         'save_document',
         'save_item',
         'set_criteria',
+        'unlink_document',
       ]);
     });
   });
