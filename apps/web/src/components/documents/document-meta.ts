@@ -5,11 +5,20 @@ import {
   Lightbulb,
   ScrollText,
   Wrench,
+  Gauge,
+  Handshake,
   type LucideIcon,
 } from "lucide-react";
 
 export type DocumentKind =
-  "BRIEF" | "PROPOSAL" | "SPEC" | "REFERENCE" | "ADR" | "TECH_DEBT";
+  | "BRIEF"
+  | "PROPOSAL"
+  | "SPEC"
+  | "REFERENCE"
+  | "ADR"
+  | "TECH_DEBT"
+  | "SLO"
+  | "SLA";
 
 export const DOCUMENT_KINDS: DocumentKind[] = [
   "BRIEF",
@@ -18,6 +27,8 @@ export const DOCUMENT_KINDS: DocumentKind[] = [
   "REFERENCE",
   "ADR",
   "TECH_DEBT",
+  "SLO",
+  "SLA",
 ];
 
 /** How a numbered record is named: ADR-7, TD-3. Other kinds have no number. */
@@ -32,6 +43,20 @@ export const DOCUMENT_KIND: Record<
   DocumentKind,
   { label: string; hint: string; icon: LucideIcon; text: string; bg: string }
 > = {
+  SLO: {
+    label: "SLO",
+    hint: "A service reliability target and how it is measured.",
+    icon: Gauge,
+    text: "text-label-green",
+    bg: "bg-label-green/10",
+  },
+  SLA: {
+    label: "SLA",
+    hint: "Service commitments, terms and supporting objectives.",
+    icon: Handshake,
+    text: "text-label-blue",
+    bg: "bg-label-blue/10",
+  },
   BRIEF: {
     label: "Brief",
     hint: "What we build and why, in a page.",

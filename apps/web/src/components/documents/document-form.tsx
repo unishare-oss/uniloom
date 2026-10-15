@@ -100,7 +100,7 @@ export const DocumentForm = ({
         />
       )}
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor="document-title">Title</Label>
           <Input
             id="document-title"
@@ -110,7 +110,7 @@ export const DocumentForm = ({
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor="document-purpose">Purpose</Label>
           <Input
             id="document-purpose"
@@ -122,7 +122,7 @@ export const DocumentForm = ({
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor="document-body">Markdown</Label>
           <Textarea
             id="document-body"
@@ -132,7 +132,7 @@ export const DocumentForm = ({
             className="min-h-96 font-mono"
           />
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <span className="text-sm font-medium">Preview</span>
           <div className="min-h-96 rounded-lg border bg-card p-4">
             <Markdown>{body}</Markdown>

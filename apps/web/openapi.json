@@ -561,7 +561,9 @@
                           "SPEC",
                           "REFERENCE",
                           "ADR",
-                          "TECH_DEBT"
+                          "TECH_DEBT",
+                          "SLO",
+                          "SLA"
                         ]
                       }
                     },
@@ -575,7 +577,9 @@
                           "SPEC",
                           "REFERENCE",
                           "ADR",
-                          "TECH_DEBT"
+                          "TECH_DEBT",
+                          "SLO",
+                          "SLA"
                         ]
                       }
                     },
@@ -1690,7 +1694,9 @@
                               "SPEC",
                               "REFERENCE",
                               "ADR",
-                              "TECH_DEBT"
+                              "TECH_DEBT",
+                              "SLO",
+                              "SLA"
                             ]
                           },
                           "number": {
@@ -3024,7 +3030,9 @@
                         "SPEC",
                         "REFERENCE",
                         "ADR",
-                        "TECH_DEBT"
+                        "TECH_DEBT",
+                        "SLO",
+                        "SLA"
                       ]
                     },
                     "number": {
@@ -3593,7 +3601,9 @@
                               "SPEC",
                               "REFERENCE",
                               "ADR",
-                              "TECH_DEBT"
+                              "TECH_DEBT",
+                              "SLO",
+                              "SLA"
                             ]
                           },
                           "number": {
@@ -6531,7 +6541,9 @@
                 "SPEC",
                 "REFERENCE",
                 "ADR",
-                "TECH_DEBT"
+                "TECH_DEBT",
+                "SLO",
+                "SLA"
               ]
             }
           },
@@ -6600,7 +6612,9 @@
                           "SPEC",
                           "REFERENCE",
                           "ADR",
-                          "TECH_DEBT"
+                          "TECH_DEBT",
+                          "SLO",
+                          "SLA"
                         ]
                       },
                       "number": {
@@ -6811,7 +6825,9 @@
                       "SPEC",
                       "REFERENCE",
                       "ADR",
-                      "TECH_DEBT"
+                      "TECH_DEBT",
+                      "SLO",
+                      "SLA"
                     ]
                   },
                   "title": {
@@ -6862,7 +6878,9 @@
                         "SPEC",
                         "REFERENCE",
                         "ADR",
-                        "TECH_DEBT"
+                        "TECH_DEBT",
+                        "SLO",
+                        "SLA"
                       ]
                     },
                     "number": {
@@ -7208,7 +7226,9 @@
                         "SPEC",
                         "REFERENCE",
                         "ADR",
-                        "TECH_DEBT"
+                        "TECH_DEBT",
+                        "SLO",
+                        "SLA"
                       ]
                     },
                     "number": {
@@ -7580,7 +7600,9 @@
                         "SPEC",
                         "REFERENCE",
                         "ADR",
-                        "TECH_DEBT"
+                        "TECH_DEBT",
+                        "SLO",
+                        "SLA"
                       ]
                     },
                     "number": {
@@ -7963,7 +7985,9 @@
                         "SPEC",
                         "REFERENCE",
                         "ADR",
-                        "TECH_DEBT"
+                        "TECH_DEBT",
+                        "SLO",
+                        "SLA"
                       ]
                     },
                     "number": {

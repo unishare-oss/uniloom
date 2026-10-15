@@ -401,6 +401,8 @@ enum DocumentKind {
   REFERENCE
   ADR
   TECH_DEBT
+  SLO
+  SLA
 }
 
 /// ADR: PROPOSED, ACCEPTED, REJECTED, SUPERSEDED. Tech debt (plan 41): OPEN, FIXED, WONT_FIX.

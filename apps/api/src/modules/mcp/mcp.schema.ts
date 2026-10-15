@@ -81,6 +81,8 @@ export const listDocumentsSchema = z.object({
 
 export const getDocumentSchema = z.object({ id: documentId });
 
+export const documentLinkSchema = z.object({ key: itemKey, id: documentId });
+
 // Text limits are the website's (documents/document.schema.ts).
 export const saveDocumentSchema = z.object({
   id: documentId

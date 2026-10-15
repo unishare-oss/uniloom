@@ -1081,6 +1081,89 @@ const seedTicketDocuments = async (ownerId: string) => {
   note(theirs.key, 'as a member: New spec and Link hidden; direct POST → 403');
 };
 
+/** MCP links: try as the seeded Member, whose own ticket permits linking. */
+const seedMcpLinks = async (ownerId: string) => {
+  const [mya] = SEED_USERS;
+  const project = await prisma.project.findUniqueOrThrow({
+    where: { keyPrefix: 'TM' },
+  });
+  const own = await createProjectItem(project.id, mya.id, {
+    kind: 'FEATURE',
+    assigneeId: ownerId,
+    title:
+      'MCP link_document on your assigned ticket → allowed; repeat → one link; unlink_document → document remains',
+  });
+  const proposal = await createDocument(project.id, mya.id, {
+    kind: 'PROPOSAL',
+    title: 'MCP proposal to link to your ticket',
+    body: '## Summary\nTry link_document with the ticket key and this document id.',
+  });
+  const retired = await createDocument(project.id, mya.id, {
+    kind: 'REFERENCE',
+    title: 'Archived reference: MCP link_document → document_archived',
+  });
+  await prisma.document.update({
+    where: { id: retired.id },
+    data: { archivedAt: new Date() },
+  });
+  await createProjectItem(project.id, mya.id, {
+    kind: 'FEATURE',
+    assigneeId: mya.id,
+    title:
+      'MCP link_document or unlink_document on Mya’s ticket → forbidden; linking another project’s document → not_found',
+  });
+  note(
+    own.key,
+    `link_document { key: "${own.key}", id: "${proposal.id}" } → one link; ${retired.id} → document_archived`,
+  );
+  note(
+    'TS',
+    'MCP link_document/unlink_document on a Standard task → guided_only',
+  );
+};
+
+/** SLO/SLA are shared Knowledge; seed both modes and current-role permissions. */
+const seedReliabilityDocuments = async (ownerId: string) => {
+  const [mya] = SEED_USERS;
+  for (const prefix of ['TG', 'TS', 'TR', 'TM']) {
+    const project = await prisma.project.findUniqueOrThrow({
+      where: { keyPrefix: prefix },
+    });
+    const writer = prefix === 'TM' ? mya.id : ownerId;
+    const slo = await createDocument(project.id, writer, {
+      kind: 'SLO',
+      title:
+        'Draft SLO: open Knowledge → target and measurement source are placeholders',
+      purpose: 'A reliability objective, not an observed production guarantee.',
+      body: '## Service / journey\nSave a work item.\n\n## Indicator (SLI)\nSuccessful valid saves / eligible save attempts.\n\n## Target and window\nTBD after a baseline.\n\n## Measurement source\nVerify instrumentation before adopting this objective.\n\n## Owner\nTBD.\n\n## Exclusions\nTBD.\n\n## Response policy\nInvestigate user impact and prioritize reliability fixes.',
+    });
+    const sla = await createDocument(project.id, writer, {
+      kind: 'SLA',
+      title:
+        'Draft SLA: open Knowledge → supporting SLO link works; no acceptance or service guarantee is recorded',
+      body: `## Audience / customer\nTBD.\n\n## Service commitments\nDraft placeholders only.\n\n## Measurement terms\nTBD.\n\n## Exclusions\nTBD.\n\n## Remedies\nTBD.\n\n## Effective dates\nTBD.\n\n## Accountable owner\nTBD.\n\n## Agreement state\nDraft; no acceptance recorded by Uniloom.\n\n## Supporting SLOs\n[Draft SLO](/p/${project.id}/docs/${slo.id})`,
+    });
+    const own = await createProjectItem(project.id, writer, {
+      kind: project.mode === 'GUIDED' ? 'FEATURE' : 'TASK',
+      assigneeId: ownerId,
+      title:
+        prefix === 'TM'
+          ? 'As Member: read SLO/SLA → allowed; edit or archive → forbidden; linking to this assigned Guided ticket → allowed'
+          : project.mode === 'GUIDED'
+            ? 'Link SLO/SLA → allowed; creating either as a ticket document → invalid_input; accepting either as ADR → refused'
+            : 'Create/edit/archive SLO/SLA in Standard Knowledge → allowed; linking to a Standard task → guided_only',
+    });
+    if (project.mode === 'GUIDED') {
+      await linkDocument(own.id, writer, slo.id);
+      await linkDocument(own.id, writer, sla.id);
+    }
+    note(
+      own.key,
+      `SLO ${slo.id}; SLA ${sla.id}: project Knowledge with no number/status; ${prefix === 'TR' ? 'you write as Manager' : prefix === 'TM' ? 'you read as Member' : 'you write as Owner'}`,
+    );
+  }
+};
+
 const seedAdrs = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
   const guided = await prisma.project.findFirstOrThrow({
@@ -1370,6 +1453,8 @@ await seedOutsider();
 await seedReviewInbox(owner.id);
 await seedDocuments(owner.id);
 await seedTicketDocuments(owner.id);
+await seedMcpLinks(owner.id);
+await seedReliabilityDocuments(owner.id);
 await seedAdrs(owner.id);
 await seedTechDebt(owner.id);
 await seedInvites(owner.id);
