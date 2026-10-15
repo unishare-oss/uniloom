@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/unishare-oss/uniloom/compare/v1.10.0...v1.11.0) (2026-10-15)
+
+
+### Features
+
+* **documents:** link specs to source proposals ([0a51174](https://github.com/unishare-oss/uniloom/commit/0a51174451a9ccdbe64d76a737f8800fc096a860))
+
 # [1.10.0](https://github.com/unishare-oss/uniloom/compare/v1.9.0...v1.10.0) (2026-10-15)
 
 
