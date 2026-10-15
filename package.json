@@ -30,8 +30,8 @@
     "@commitlint/config-conventional": "^21.2.3",
     "@semantic-release/changelog": "^7.0.0",
     "@semantic-release/git": "^11.0.1",
-    "lint-staged": "^16.2.0",
-    "prettier": "^3.4.2",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
     "semantic-release": "^25.0.9",
     "simple-git-hooks": "^2.13.1"
   },
