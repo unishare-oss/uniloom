@@ -133,7 +133,7 @@ describe('mcp document tools (e2e)', () => {
     expect(created).toMatchObject({
       kind: 'BRIEF',
       title: 'Brief',
-      author: { name: w.owner.profile.name },
+      url: `http://127.0.0.1:3013/p/${w.id}/docs/${created.id}`,
     });
 
     const rows = await ok(w.memberToken, 'list_documents', {
@@ -159,9 +159,11 @@ describe('mcp document tools (e2e)', () => {
     });
     expect(updated).toMatchObject({
       title: 'Renamed',
-      body: 'New',
-      purpose: 'Why',
     });
+    expect(updated.body).toBeUndefined();
+    expect(
+      await ok(w.ownerToken, 'get_document', { id: created.id }),
+    ).toMatchObject({ body: 'New', purpose: 'Why' });
   });
 
   it('refuses a Member to create or edit a Knowledge document', async () => {
@@ -223,7 +225,9 @@ describe('mcp document tools (e2e)', () => {
       title: 'Spec',
       ticket: w.mine.key,
     });
-    expect(spec).toMatchObject({
+    expect(
+      await ok(w.memberToken, 'get_document', { id: spec.id }),
+    ).toMatchObject({
       kind: 'SPEC',
       homeItem: { key: w.mine.key },
       createdFrom: { key: w.mine.key },
@@ -235,6 +239,9 @@ describe('mcp document tools (e2e)', () => {
     ).toEqual([]);
     expect(
       await ok(w.memberToken, 'save_document', { id: spec.id, body: 'Edited' }),
+    ).toMatchObject({ id: spec.id });
+    expect(
+      await ok(w.memberToken, 'get_document', { id: spec.id }),
     ).toMatchObject({ body: 'Edited' });
     const item = await ok(w.memberToken, 'get_item', { key: w.mine.key });
     expect(item.related).toMatchObject([{ id: spec.id, home: 'ticket' }]);
@@ -260,7 +267,9 @@ describe('mcp document tools (e2e)', () => {
       title: 'Decision',
       ticket: w.mine.key,
     });
-    expect(adr).toMatchObject({
+    expect(
+      await ok(w.memberToken, 'get_document', { id: adr.id }),
+    ).toMatchObject({
       kind: 'ADR',
       number: 1,
       status: 'PROPOSED',
@@ -382,4 +391,306 @@ describe('mcp document tools (e2e)', () => {
     });
     expect(long.isError).toBe(true);
   });
+  it('links/unlinks proposals idempotently and enforces existing ticket permissions', async () => {
+    const w = await withTickets();
+    const proposal = await ok(w.ownerToken, 'save_document', {
+      project: w.keyPrefix,
+      kind: 'PROPOSAL',
+      title: 'Proposal',
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(
+        await ok(w.memberToken, 'link_document', {
+          key: w.mine.key,
+          id: proposal.id,
+        }),
+      ).toMatchObject({
+        key: w.mine.key,
+        documentId: proposal.id,
+        linked: true,
+      });
+    }
+    const item = await ok(w.memberToken, 'get_item', { key: w.mine.key });
+    expect(item.related).toHaveLength(1);
+    expect(item.related[0].url).toBe(
+      `http://127.0.0.1:3013/p/${w.id}/docs/${proposal.id}`,
+    );
+    expect(item.assignee).toEqual({
+      name: w.member.profile.name,
+      email: w.member.profile.email,
+    });
+    expect(item.url).toBe(`http://127.0.0.1:3013/p/${w.id}/items/${item.id}`);
+    expect(
+      (
+        await tool(w.memberToken, 'link_document', {
+          key: w.theirs.key,
+          id: proposal.id,
+        })
+      ).text,
+    ).toMatch(/^forbidden:/);
+    expect(
+      (
+        await tool(w.memberToken, 'unlink_document', {
+          key: w.theirs.key,
+          id: proposal.id,
+        })
+      ).text,
+    ).toMatch(/^forbidden:/);
+    const other = await withTickets();
+    expect(
+      (
+        await tool(other.ownerToken, 'link_document', {
+          key: other.mine.key,
+          id: proposal.id,
+        })
+      ).text,
+    ).toMatch(/^not_found:/);
+    const spec = await ok(w.memberToken, 'save_document', {
+      project: w.keyPrefix,
+      kind: 'SPEC',
+      title: 'Spec',
+      ticket: w.mine.key,
+    });
+    expect(
+      (
+        await tool(w.memberToken, 'link_document', {
+          key: w.mine.key,
+          id: spec.id,
+        })
+      ).text,
+    ).toMatch(/^not_found:/);
+    expect(
+      (
+        await tool(w.memberToken, 'link_document', {
+          key: w.mine.key,
+          id: 'bad',
+        })
+      ).text,
+    ).toMatch(/^not_found:/);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(
+        await ok(w.memberToken, 'unlink_document', {
+          key: w.mine.key,
+          id: proposal.id,
+        }),
+      ).toMatchObject({ linked: false });
+    }
+    expect(
+      (await ok(w.memberToken, 'get_document', { id: proposal.id })).title,
+    ).toBe('Proposal');
+    await api.send('PATCH', `/api/documents/${proposal.id}`, w.owner.cookie, {
+      archived: true,
+    });
+    expect(
+      (
+        await tool(w.ownerToken, 'link_document', {
+          key: w.mine.key,
+          id: proposal.id,
+        })
+      ).text,
+    ).toMatch(/^document_archived:/);
+    const standard = await read(
+      await api.send('POST', '/api/projects', w.owner.cookie, {
+        name: 'S',
+        keyPrefix: freshPrefix(),
+        mode: 'STANDARD',
+      }),
+    );
+    const task = await ok(w.ownerToken, 'save_item', {
+      project: standard.keyPrefix,
+      kind: 'TASK',
+      title: 'Task',
+    });
+    const reference = await ok(w.ownerToken, 'save_document', {
+      project: standard.keyPrefix,
+      kind: 'REFERENCE',
+      title: 'Notes',
+    });
+    for (const name of ['link_document', 'unlink_document']) {
+      expect(
+        (await tool(w.ownerToken, name, { key: task.key, id: reference.id }))
+          .text,
+      ).toMatch(/^guided_only:/);
+    }
+  });
+
+  it.each(['SLO', 'SLA'] as const)(
+    '%s is project Knowledge through REST and MCP, without ticket ownership or status',
+    async (kind) => {
+      const w = await withTickets();
+      const doc = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind,
+        title: `${kind} draft`,
+        body: '## Draft\nTargets and terms pending.',
+      });
+      expect(doc).toMatchObject({ kind, number: null, status: null });
+      expect(doc.body).toBeUndefined();
+      expect(
+        (
+          await ok(w.memberToken, 'list_documents', {
+            project: w.keyPrefix,
+            kind,
+          })
+        ).map((d: { id: string }) => d.id),
+      ).toEqual([doc.id]);
+      expect(
+        await ok(w.memberToken, 'get_document', { id: doc.id }),
+      ).toMatchObject({
+        homeItemId: null,
+        canArchive: true,
+        body: expect.stringContaining('Draft'),
+      });
+      expect(
+        (
+          await tool(w.memberToken, 'save_document', {
+            project: w.keyPrefix,
+            kind,
+            title: 'Member write',
+          })
+        ).text,
+      ).toMatch(/^forbidden:/);
+      expect(
+        (
+          await tool(w.memberToken, 'save_document', {
+            id: doc.id,
+            title: 'Member edit',
+          })
+        ).text,
+      ).toMatch(/^forbidden:/);
+      expect(
+        (
+          await tool(w.ownerToken, 'save_document', {
+            project: w.keyPrefix,
+            kind,
+            title: 'Ticket home',
+            ticket: w.mine.key,
+          })
+        ).text,
+      ).toMatch(/^invalid_input:/);
+      expect(
+        (
+          await api.send(
+            'POST',
+            `/api/items/${(await ok(w.ownerToken, 'get_item', { key: w.mine.key })).id}/documents/new`,
+            w.owner.cookie,
+            { kind, title: 'Ticket home' },
+          )
+        ).status,
+      ).toBe(400);
+      await ok(w.memberToken, 'link_document', { key: w.mine.key, id: doc.id });
+      expect(
+        (await ok(w.memberToken, 'get_item', { key: w.mine.key })).related,
+      ).toMatchObject([{ id: doc.id, kind, home: 'project' }]);
+      await ok(w.memberToken, 'unlink_document', {
+        key: w.mine.key,
+        id: doc.id,
+      });
+      expect(
+        (
+          await api.send(
+            'POST',
+            `/api/documents/${doc.id}/status`,
+            w.owner.cookie,
+            { status: 'ACCEPTED' },
+          )
+        ).status,
+      ).toBe(409);
+      expect(
+        (
+          await api.send('PATCH', `/api/documents/${doc.id}`, w.member.cookie, {
+            archived: true,
+          })
+        ).status,
+      ).toBe(403);
+      expect(
+        (
+          await api.send('PATCH', `/api/documents/${doc.id}`, w.owner.cookie, {
+            archived: true,
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        await ok(w.memberToken, 'list_documents', {
+          project: w.keyPrefix,
+          kind,
+        }),
+      ).toEqual([]);
+      expect(
+        await ok(w.memberToken, 'list_documents', {
+          project: w.keyPrefix,
+          kind,
+          archived: true,
+        }),
+      ).toMatchObject([{ id: doc.id, archived: true }]);
+      const other = await setup();
+      expect(
+        (await tool(other.ownerToken, 'get_document', { id: doc.id })).text,
+      ).toMatch(/^not_found:/);
+      const keyPrefix = freshPrefix();
+      const standard = await read(
+        await api.send('POST', '/api/projects', w.owner.cookie, {
+          name: 'Service',
+          keyPrefix,
+          mode: 'STANDARD',
+        }),
+      );
+      const manager = await api.signInReady();
+      expect(
+        (
+          await api.send(
+            'POST',
+            `/api/projects/${standard.id}/members`,
+            w.owner.cookie,
+            { email: manager.profile.email, role: 'MANAGER' },
+          )
+        ).status,
+      ).toBe(201);
+      const created = await api.send(
+        'POST',
+        `/api/projects/${standard.id}/documents`,
+        manager.cookie,
+        { kind, title: 'Standard objective or agreement' },
+      );
+      expect(created.status).toBe(201);
+      const standardDoc = await read(created);
+      expect(standardDoc).toMatchObject({
+        kind,
+        homeItemId: null,
+        status: null,
+        number: null,
+      });
+      expect(
+        (
+          await read(
+            await api.send(
+              'GET',
+              `/api/projects/${standard.id}`,
+              manager.cookie,
+            ),
+          )
+        ).documentKinds,
+      ).toContain(kind);
+      expect(
+        (
+          await api.send(
+            'PATCH',
+            `/api/documents/${standardDoc.id}`,
+            manager.cookie,
+            { body: 'Edited by manager' },
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await api.send(
+            'GET',
+            `/api/projects/${standard.id}/documents?kind=${kind}`,
+            manager.cookie,
+          )
+        ).status,
+      ).toBe(200);
+    },
+    60_000,
+  );
 });

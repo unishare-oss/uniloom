@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { apiError } from '@/http.js';
 import * as documentService from '@/modules/documents/document.service.js';
 import * as checklistService from '@/modules/items/checklist.service.js';
-import { createTicketDocument } from '@/modules/items/item-document.service.js';
+import * as itemDocumentService from '@/modules/items/item-document.service.js';
 import { createTicketDocumentSchema } from '@/modules/items/item.schema.js';
 import * as itemService from '@/modules/items/item.service.js';
 import type {
@@ -17,7 +17,11 @@ import * as projectService from '@/modules/projects/project.service.js';
 import * as mcpRepo from './mcp.repository.js';
 import { isPeopleOnlyTarget } from './mcp.rules.js';
 import type { Agent } from './mcp.types.js';
-import { toCriteria } from './mcp.utils.js';
+import {
+  toCriteria,
+  toDocumentConfirmation,
+  toWebsiteUrl,
+} from './mcp.utils.js';
 
 /** A project's id from its key prefix, or the same 404 a non-member gets. */
 const findProjectId = async (key: string) => {
@@ -80,6 +84,7 @@ export const listProjects = async (userId: string) => {
     projects.map(async (project) => {
       const detail = await projectService.getProject(project.id, userId);
       return {
+        url: toWebsiteUrl(`/p/${project.id}`),
         key: project.keyPrefix,
         name: project.name,
         mode: project.mode,
@@ -119,11 +124,35 @@ export const listItems = async (
     const assigneeId = await findAssigneeId(projectId, input.assignee, userId);
     items = items.filter((item) => item.assigneeId === assigneeId);
   }
-  return items;
+  const profiles = await mcpRepo.findAssigneeProfiles([
+    ...new Set(
+      items.flatMap((item) => (item.assigneeId ? [item.assigneeId] : [])),
+    ),
+  ]);
+  return items.map((item) => {
+    const profile = profiles.find((person) => person.id === item.assigneeId);
+    return {
+      ...item,
+      assignee: profile ? { name: profile.name, email: profile.email } : null,
+      url: toWebsiteUrl(`/p/${projectId}/items/${item.id}`),
+    };
+  });
 };
 
 export const getItem = async (userId: string, key: string) => {
-  return itemService.getItem(await findItemId(key), userId);
+  const item = await itemService.getItem(await findItemId(key), userId);
+  const [profile] = await mcpRepo.findAssigneeProfiles(
+    item.assigneeId ? [item.assigneeId] : [],
+  );
+  return {
+    ...item,
+    assignee: profile ? { name: profile.name, email: profile.email } : null,
+    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
+    related: item.related.map((document) => ({
+      ...document,
+      url: toWebsiteUrl(`/p/${item.projectId}/docs/${document.id}`),
+    })),
+  };
 };
 
 /** A project's states in board order. */
@@ -231,7 +260,22 @@ export const saveItem = async (
       );
     }
   }
-  return itemService.getItem(id, userId);
+  const item = await itemService.getItem(id, userId);
+  const [profile] = await mcpRepo.findAssigneeProfiles(
+    item.assigneeId ? [item.assigneeId] : [],
+  );
+  const parent = item.parentId
+    ? await itemService.getItem(item.parentId, userId)
+    : null;
+  return {
+    key: item.key,
+    title: item.title,
+    state: item.state.name,
+    priority: item.priority,
+    assignee: profile ? { name: profile.name, email: profile.email } : null,
+    parent: parent?.key ?? null,
+    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
+  };
 };
 
 export const deleteItem = async (agent: Agent, key: string) => {
@@ -304,6 +348,7 @@ export const listDocuments = async (
   );
   return documents.map((document) => ({
     id: document.id,
+    url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
     kind: document.kind,
     title: document.title,
     purpose: document.purpose,
@@ -319,7 +364,11 @@ export const listDocuments = async (
 export const getDocument = async (userId: string, id: string) => {
   if (!z.uuid().safeParse(id).success)
     throw apiError(404, 'not_found', 'Document not found');
-  return documentService.getDocument(id, userId);
+  const document = await documentService.getDocument(id, userId);
+  return {
+    ...document,
+    url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
+  };
 };
 
 /**
@@ -353,11 +402,13 @@ export const saveDocument = async (
       );
     if (!z.uuid().safeParse(input.id).success)
       throw apiError(404, 'not_found', 'Document not found');
-    return documentService.updateDocumentById(input.id, userId, {
-      title: input.title,
-      purpose: input.purpose,
-      body: input.body,
-    });
+    return toDocumentConfirmation(
+      await documentService.updateDocumentById(input.id, userId, {
+        title: input.title,
+        purpose: input.purpose,
+        body: input.body,
+      }),
+    );
   }
   if (input.status !== undefined)
     throw apiError(
@@ -377,10 +428,12 @@ export const saveDocument = async (
     body: input.body,
   };
   if (!input.ticket)
-    return documentService.createDocument(
-      await findProjectId(input.project),
-      userId,
-      { ...fields, kind: input.kind },
+    return toDocumentConfirmation(
+      await documentService.createDocument(
+        await findProjectId(input.project),
+        userId,
+        { ...fields, kind: input.kind },
+      ),
     );
   if (
     input.ticket.trim().split('-')[0].toUpperCase() !==
@@ -398,8 +451,45 @@ export const saveDocument = async (
       'invalid_input',
       'From a ticket the kind is SPEC, REFERENCE, ADR or TECH_DEBT',
     );
-  return createTicketDocument(await findItemId(input.ticket), userId, {
-    ...fields,
-    kind: kind.data,
-  });
+  return toDocumentConfirmation(
+    await itemDocumentService.createTicketDocument(
+      await findItemId(input.ticket),
+      userId,
+      {
+        ...fields,
+        kind: kind.data,
+      },
+    ),
+  );
+};
+
+/** Link an existing Knowledge document using the website's ticket edit rules. */
+export const linkDocument = async (agent: Agent, key: string, id: string) => {
+  if (!z.uuid().safeParse(id).success)
+    throw apiError(404, 'not_found', 'Document not found');
+  const item = await itemDocumentService.linkDocument(
+    await findItemId(key),
+    agent.userId,
+    id,
+  );
+  return {
+    key: item.key,
+    documentId: id,
+    linked: true,
+    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
+  };
+};
+
+export const unlinkDocument = async (agent: Agent, key: string, id: string) => {
+  if (!z.uuid().safeParse(id).success)
+    throw apiError(404, 'not_found', 'Document not found');
+  const itemId = await findItemId(key);
+  await itemDocumentService.unlinkDocument(itemId, agent.userId, id);
+  const item = await itemService.getItem(itemId, agent.userId);
+  return {
+    key: item.key,
+    documentId: id,
+    linked: false,
+    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
+  };
 };

@@ -1,5 +1,22 @@
 import { HTTPException } from 'hono/http-exception';
 import type { toEntry } from '@/modules/items/item.utils.js';
+import type { getDocument } from '@/modules/documents/document.service.js';
+
+/** BETTER_AUTH_URL is the configured website origin, not the incoming API host. */
+export const toWebsiteUrl = (path: string) =>
+  new URL(path, process.env.BETTER_AUTH_URL).href;
+
+/** Saves confirm identity; get_document remains the source of full document detail. */
+export const toDocumentConfirmation = (
+  document: Awaited<ReturnType<typeof getDocument>>,
+) => ({
+  id: document.id,
+  kind: document.kind,
+  title: document.title,
+  number: document.number,
+  status: document.status,
+  url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
+});
 
 /** A tool answer: the data as JSON text. */
 export const reply = (data: unknown) => {

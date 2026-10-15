@@ -167,9 +167,11 @@ export const DocumentView = ({
           )}
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <article>
+            <article className="min-w-0">
               {document.body.trim() ? (
-                <Markdown>{document.body}</Markdown>
+                <Markdown contents headingPrefix={`doc-${document.id}`}>
+                  {document.body}
+                </Markdown>
               ) : (
                 <p className="text-muted-foreground">This document is empty.</p>
               )}

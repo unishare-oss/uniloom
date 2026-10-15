@@ -1,6 +1,6 @@
 # 46: MCP usability
 
-Status: Ready
+Status: In Review
 
 ## Scope
 
@@ -17,12 +17,12 @@ scope question. This plan links Knowledge documents to tickets, not specs to pro
 
 ## Done when
 
-- [ ] `link_document` and `unlink_document` link an existing Knowledge document to a ticket by ticket key and document id, using the existing service permissions; repeated linking is harmless and archived, foreign-project, ticket-owned and Standard-mode cases retain their existing errors.
-- [ ] `list_items`, `get_item` and `save_item` include the assignee's name and email, or null when unassigned, so an agent can confirm assignment without interpreting a user id.
-- [ ] Project, item and document list/detail/save responses include absolute website URLs using the configured web origin and existing routes; ticket-owned documents link to their existing document page too.
-- [ ] `save_item`, `save_document` and document-link mutations return compact confirmations; full bodies, related records and checklists remain available through reads, and a failed move still reports any preceding successful write.
-- [ ] MCP initialize and tools/list output are captured to establish where repeated shared instructions originate; source descriptions stay focused, shared rules stay in server instructions, and any client-side expansion outside repository control is recorded with evidence rather than claimed fixed.
-- [ ] Focused MCP tests cover the new response contract, links, permissions, URLs and partial-write errors; seed cases explain what to try and expect, and README documents the tools and response change.
+- [x] `link_document` and `unlink_document` link an existing Knowledge document to a ticket by ticket key and document id, using the existing service permissions; repeated linking is harmless and archived, foreign-project, ticket-owned and Standard-mode cases retain their existing errors.
+- [x] `list_items`, `get_item` and `save_item` include the assignee's name and email, or null when unassigned, so an agent can confirm assignment without interpreting a user id.
+- [x] Project, item and document list/detail/save responses include absolute website URLs using the configured web origin and existing routes; ticket-owned documents link to their existing document page too.
+- [x] `save_item`, `save_document` and document-link mutations return compact confirmations; full bodies, related records and checklists remain available through reads, and a failed move still reports any preceding successful write.
+- [x] MCP initialize and tools/list output are captured to establish where repeated shared instructions originate; source descriptions stay focused, shared rules stay in server instructions, and any client-side expansion outside repository control is recorded with evidence rather than claimed fixed.
+- [x] Focused MCP tests cover the new response contract, links, permissions, URLs and partial-write errors; seed cases explain what to try and expect, and README documents the tools and response change.
 
 ## Design
 
@@ -92,8 +92,27 @@ specific limitation in tech debt with the captured protocol evidence.
 
 ## Changes
 
-Commits: none. Planning only.
+Commits: `ceace35` (planning, pushed to dev), `2331c50` (implementation on
+`feat/mcp-markdown-reliability-documents`).
 
-Scope confirmed; implementation has not started. Planned vs actual: pending.
+Added link/unlink tools through the existing item-document service, batched
+assignee profiles, configured-origin website links and compact item/document save
+confirmations. README describes the response compatibility change. Seed cases show
+member linking, repeated linking, archive refusal, foreign-project isolation and
+Standard-mode refusal. Partial-save errors retain the existing saved-write message.
 
-Implementation authorized by the user on 2026-10-15: commit/push planning first, then implement on a separate branch and open a PR.
+Planned vs actual: raw initialize/tools-list discovery already separates shared
+instructions from tool descriptions, so no duplicate repository block was removed.
+The connected client's expansion is recorded in
+[TD-021](../tech-debt/021-mcp-client-instruction-expansion.md). Document template
+outline duplication remains [TD-016](../tech-debt/016-document-outlines-in-two-places.md).
+
+Validation: all focused MCP read/write/document cases passed, including new link
+and SLO/SLA cases added by plans 48–49. Root lint, typecheck, tests and API/web
+production builds passed. Initial e2e failures came from missing baseline join
+migrations; the documented development database was brought up to current migrations.
+Hono CLI discovery was attempted but its bundler rejected a dynamic util require;
+behavior was verified through the repository's Hono-backed e2e harness.
+
+Implementation authorized by the user on 2026-10-15. Awaiting human code review;
+ADRs remain Proposed. No production deployment.

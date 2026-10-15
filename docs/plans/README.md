@@ -47,16 +47,16 @@ work-item hierarchy remains the baseline.
 
 ## Confirmed usability scopes
 
-The user confirmed these scopes on 2026-10-15. Both are Ready following the user’s implementation instruction; implement 46 before 47.
+The user confirmed these scopes on 2026-10-15. Both are In Review following implementation; implement 46 before 47.
 
 | Plan                                                 | Scope                                                                                                              | Depends on                                     |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
-| [46: MCP usability](49-mcp-usability.md)             | Document links, readable assignees, website URLs, compact confirmations and instruction-duplication investigation. | Plan 42 and existing ticket-document services. |
+| [46: MCP usability](46-mcp-usability.md)             | Document links, readable assignees, website URLs, compact confirmations and instruction-duplication investigation. | Plan 42 and existing ticket-document services. |
 | [47: Rich Markdown rendering](47-markdown-polish.md) | Colored headings, callouts, code controls, heading links, document contents and expandable Mermaid.                | Existing shared renderer; follows plan 46.     |
 
 ## Confirmed reliability document scopes
 
-The user confirmed two standalone document-kind slices on 2026-10-15. Both are Ready following the user’s implementation instruction. Follow plans 46–47, then implement SLO before SLA.
+The user confirmed two standalone document-kind slices on 2026-10-15. Both are In Review following implementation. Follow plans 46–47, then implement SLO before SLA.
 
 | Plan                                               | Scope                                                                                         | Depends on                       |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------- |

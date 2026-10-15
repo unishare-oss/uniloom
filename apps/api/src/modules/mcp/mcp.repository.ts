@@ -1,6 +1,13 @@
 import { UNIAUTH_PROVIDER_ID } from '@/auth/auth.js';
 import { prisma } from '@/db/prisma.js';
 
+/** Profiles for already-authorized item assignees, fetched together for lists. */
+export const findAssigneeProfiles = (ids: string[]) =>
+  prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true, email: true },
+  });
+
 /** The Uniloom user behind a uniAuth sub (through the account row, never by email). */
 export const findUserBySub = async (sub: string) => {
   const account = await prisma.account.findUnique({

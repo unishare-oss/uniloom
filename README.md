@@ -134,6 +134,16 @@ This adds test projects with a case for every rule built so far and prints what 
 | TX  | A project you're not in                                |
 | TI  | Review inbox: submission, return/resubmission, history |
 
+### Reliability documents
+
+Knowledge supports SLO (service objectives) and SLA (service agreements) alongside
+briefs, proposals, specs, references, ADRs and tech debt. Owners and Managers create,
+edit and archive SLO/SLA documents; members can read them in either project mode.
+They are project Markdown documents with templates, not numbered workflow records.
+Link them to Guided tickets through the existing related-document controls or MCP.
+SLA bodies may link supporting SLOs; no monitoring, contractual acceptance, breach
+tracking or automatic propagation is implied. Targets and terms start as placeholders.
+
 ### Connect an agent (MCP)
 
 Agents such as Claude Code connect to Uniloom's `/mcp` on the web origin and sign in through uniAuth (ADR-0012). Uniloom stores no tokens; it checks the access token uniAuth issues, and the agent gets exactly its person's project role. Set `MCP_RESOURCE="http://127.0.0.1:3013/mcp"` (the web origin plus `/mcp`) in `apps/api/.env`, then:
@@ -142,7 +152,7 @@ Agents such as Claude Code connect to Uniloom's `/mcp` on the web origin and sig
 claude mcp add --transport http uniloom http://127.0.0.1:3013/mcp
 ```
 
-Run `/mcp` in Claude Code to sign in. This needs uniAuth to accept Uniloom's `/mcp` as an MCP resource (a second token audience next to Unishare's); until it does, sign-in fails even though the e2e tests pass. The read tools include `list_projects`, `list_items`, `get_item`, `list_states`, `list_labels`, `get_criteria`, `list_documents` and `get_document`; the server lists every tool, including the write tools such as `save_item` and `save_document`. Projects and items are addressed by key (`TG`, `TG-12`), documents by id.
+Run `/mcp` in Claude Code to sign in. This needs uniAuth to accept Uniloom's `/mcp` as an MCP resource (a second token audience next to Unishare's); until it does, sign-in fails even though the e2e tests pass. The read tools include `list_projects`, `list_items`, `get_item`, `list_states`, `list_labels`, `get_criteria`, `list_documents` and `get_document`; the server lists every tool, including the write tools such as `save_item` and `save_document`. Projects and items are addressed by key (`TG`, `TG-12`), documents by id. `link_document` and `unlink_document` take `{ key, id }` to link existing Knowledge documents (including proposals) to Guided tickets using the ticket edit permissions. Item responses include readable assignees, and project/item/document responses include website URLs. `save_item` and `save_document` return compact confirmations; call `get_item` or `get_document` for bodies, checklists and related records. Shared rules are sent in server instructions, not repeated in individual tool descriptions.
 
 ### Run everything in Docker
 

@@ -118,7 +118,14 @@ export const guidedOnlyError = (project: { mode: ProjectMode }) => {
 export const documentKindsFor = (project: {
   mode: ProjectMode;
 }): DocumentKind[] => {
-  const common: DocumentKind[] = ['BRIEF', 'PROPOSAL', 'SPEC', 'REFERENCE'];
+  const common: DocumentKind[] = [
+    'BRIEF',
+    'PROPOSAL',
+    'SPEC',
+    'REFERENCE',
+    'SLO',
+    'SLA',
+  ];
   return guidedOnlyError(project) ? common : [...common, 'ADR', 'TECH_DEBT'];
 };
 

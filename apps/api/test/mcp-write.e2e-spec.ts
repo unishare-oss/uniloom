@@ -131,10 +131,9 @@ describe('mcp write tools (e2e)', () => {
       });
       expect(feature).toMatchObject({
         title: 'Feature',
-        description: 'Why',
         priority: 'HIGH',
-        assigneeId: null,
-        state: { name: 'Triage' },
+        assignee: null,
+        state: 'Triage',
       });
 
       const updated = await ok(w.ownerToken, 'save_item', {
@@ -144,8 +143,11 @@ describe('mcp write tools (e2e)', () => {
       expect(updated).toMatchObject({
         key: feature.key,
         title: 'Renamed',
-        description: 'Why',
       });
+      expect(updated.description).toBeUndefined();
+      expect(
+        await ok(w.ownerToken, 'get_item', { key: feature.key }),
+      ).toMatchObject({ description: 'Why' });
 
       expect(
         await ok(w.ownerToken, 'delete_item', { key: feature.key }),
@@ -223,19 +225,19 @@ describe('mcp write tools (e2e)', () => {
         key: w.slice.key,
         assignee: 'me',
       });
-      expect(mine.assigneeId).toBe(
-        (
-          await prisma.user.findUniqueOrThrow({
-            where: { email: w.owner.profile.email },
-          })
-        ).id,
-      );
+      expect(mine.assignee).toEqual({
+        name: w.owner.profile.name,
+        email: w.owner.profile.email,
+      });
 
       const theirs = await ok(w.ownerToken, 'save_item', {
         key: w.slice.key,
         assignee: w.member.profile.email.toUpperCase(),
       });
-      expect(theirs.assigneeId).not.toBe(mine.assigneeId);
+      expect(theirs.assignee).toEqual({
+        name: w.member.profile.name,
+        email: w.member.profile.email,
+      });
 
       const byEmail = await ok(w.ownerToken, 'list_items', {
         project: w.keyPrefix,
@@ -285,7 +287,7 @@ describe('mcp write tools (e2e)', () => {
         key: w.slice.key,
         state: 'in progress',
       });
-      expect(moved.state.name).toBe('In Progress');
+      expect(moved.state).toBe('In Progress');
       const bad = await tool(w.ownerToken, 'save_item', {
         key: w.slice.key,
         state: 'Nowhere',
@@ -344,7 +346,7 @@ describe('mcp write tools (e2e)', () => {
         key: w.slice.key,
         state: 'In Review',
       });
-      expect(moved.state.name).toBe('In Review');
+      expect(moved.state).toBe('In Review');
       const locked = await tool(w.memberToken, 'save_item', {
         key: w.slice.key,
         state: 'In Progress',
@@ -502,7 +504,10 @@ describe('mcp write tools (e2e)', () => {
         assignee: 'me',
         title: 'Mine',
       });
-      expect(claimed).toMatchObject({ title: 'Mine', canEdit: true });
+      expect(claimed).toMatchObject({ title: 'Mine' });
+      expect(
+        await ok(w.memberToken, 'get_item', { key: w.slice.key }),
+      ).toMatchObject({ canEdit: true });
       const ticked = await ok(w.memberToken, 'check_criterion', {
         key: w.slice.key,
         which: 1,
@@ -563,6 +568,7 @@ describe('mcp write tools (e2e)', () => {
           role: 'OWNER',
           checklistMin: 3,
           checklistMax: 6,
+          url: `http://127.0.0.1:3013/p/${w.id}`,
         },
       ]);
       const asMember = await ok(w.memberToken, 'list_projects');

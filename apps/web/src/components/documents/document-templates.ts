@@ -2,6 +2,64 @@ import type { DocumentKind } from "@/components/documents/document-meta";
 
 /** Starting text per kind: a suggestion the writer replaces, not a rule. */
 export const DOCUMENT_TEMPLATES: Record<DocumentKind, string> = {
+  SLO: `## Service / journey
+
+Which user journey or service does this objective cover?
+
+## Indicator (SLI)
+
+Define good events and eligible events, or another measurable indicator.
+
+## Target and window
+
+Target: TBD after a representative baseline. Measurement window: TBD.
+
+## Measurement source
+
+Where are measurements collected? Verify instrumentation exists.
+
+## Owner
+
+Name the accountable service owner (not necessarily this document's author).
+
+## Exclusions
+
+## Response policy
+
+What happens when the objective is missed?
+
+## Related documents
+
+Link relevant specs, proposals and ADRs.
+`,
+  SLA: `## Audience / customer
+
+## Service commitments
+
+Draft commitments: TBD; no guarantee is implied by this template.
+
+## Measurement terms
+
+## Exclusions
+
+## Remedies
+
+TBD by the agreement's parties.
+
+## Effective dates
+
+TBD.
+
+## Accountable owner
+
+## Agreement state
+
+Draft; no acceptance recorded by Uniloom.
+
+## Supporting SLOs
+
+Link existing project SLO documents using their website URLs. Updating an SLO does not update this agreement.
+`,
   BRIEF: `## Problem
 
 What hurts today, and for whom?
