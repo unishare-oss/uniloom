@@ -119,8 +119,11 @@ not redesign all document write authorization.
 
 ## Changes
 
-Implementation branch: `feat/proposal-spec-provenance`; implementation commit and PR
-will be recorded below after publication.
+Implementation branch: `feat/proposal-spec-provenance`. Implementation commit:
+`0a51174` (`feat(documents): link specs to source proposals`), pushed.
+Review: [PR #56](https://github.com/unishare-oss/uniloom/pull/56), targeting `dev`.
+This follow-up documentation commit records the publication; CI results remain
+available on the PR. No merge or production release was performed.
 
 Planned vs actual: all six done-when items are met. The optional FK, shared pure rule
 and service validation, existing REST/MCP contract extensions, proposal picker and
