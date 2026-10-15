@@ -187,3 +187,15 @@ reference only until this feature is implemented. Final smoke-test results will
 be recorded separately so existing deployed behavior is not confused with provenance.
 
 Live verification report: [Testing TS-4 report](https://loom.psstee.me/p/01a10b79-d9ff-769a-8f7a-51d1d6fff239/docs/01a1405f-37bf-76fb-99a5-60b4461b1052).
+
+### Production promotion follow-up
+
+The user authorized merge and production promotion on 2026-10-15. PR #56 merged
+into dev and [PR #57](https://github.com/unishare-oss/uniloom/pull/57) promoted it to
+main at `46e8dce`. All promotion PR checks passed. The main CI rerun then caught
+a test-fixture prefix collision before feature assertions: replacing UUID digits
+with X biased 5-character prefixes heavily toward duplicates. The follow-up uses
+the existing uniformly random A–Z pattern and asserts project creation before adding
+members, so a fixture failure is reported at its origin. No runtime behavior or
+design changes. Production rollout/migration results are tracked on the promotion
+workflow; this plan remains In Review.
