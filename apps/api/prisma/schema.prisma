@@ -439,6 +439,10 @@ model Document {
   /// The ticket it was created from, set once: "from TG-21".
   createdFromItemId String?         @db.Uuid
   createdFromItem   Item?           @relation("DocumentCreatedFrom", fields: [createdFromItemId], references: [id], onDelete: SetNull)
+  /// Optional provenance for a spec; one proposal may support many specs.
+  sourceProposalId  String?         @db.Uuid
+  sourceProposal    Document?       @relation("SpecSourceProposal", fields: [sourceProposalId], references: [id], onDelete: SetNull)
+  derivedSpecs      Document[]      @relation("SpecSourceProposal")
   links             ItemDocument[]
   /// ADR-7: per project and kind. Null for kinds without a number.
   number            Int?
@@ -454,6 +458,7 @@ model Document {
   @@unique([projectId, kind, number])
   @@index([projectId, updatedAt])
   @@index([homeItemId])
+  @@index([sourceProposalId])
   @@map("document")
 }
 

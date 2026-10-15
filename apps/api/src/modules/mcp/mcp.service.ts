@@ -352,6 +352,13 @@ export const listDocuments = async (
     kind: document.kind,
     title: document.title,
     purpose: document.purpose,
+    sourceProposalId: document.sourceProposalId,
+    sourceProposal: document.sourceProposal && {
+      ...document.sourceProposal,
+      url: toWebsiteUrl(
+        `/p/${document.projectId}/docs/${document.sourceProposal.id}`,
+      ),
+    },
     number: document.number,
     status: document.status,
     createdFrom: document.createdFrom?.key ?? null,
@@ -367,6 +374,16 @@ export const getDocument = async (userId: string, id: string) => {
   const document = await documentService.getDocument(id, userId);
   return {
     ...document,
+    sourceProposal: document.sourceProposal && {
+      ...document.sourceProposal,
+      url: toWebsiteUrl(
+        `/p/${document.projectId}/docs/${document.sourceProposal.id}`,
+      ),
+    },
+    derivedSpecs: document.derivedSpecs.map((spec) => ({
+      ...spec,
+      url: toWebsiteUrl(`/p/${document.projectId}/docs/${spec.id}`),
+    })),
     url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
   };
 };
@@ -384,6 +401,7 @@ export const saveDocument = async (
     title?: string;
     purpose?: string;
     body?: string;
+    sourceProposalId?: string | null;
     ticket?: string;
     status?: string;
   },
@@ -398,7 +416,7 @@ export const saveDocument = async (
       throw apiError(
         400,
         'invalid_input',
-        'An existing document only takes title, purpose and body: its kind, ticket and status cannot be set',
+        'An existing document only takes title, purpose, body and sourceProposalId: its kind, ticket and status cannot be set',
       );
     if (!z.uuid().safeParse(input.id).success)
       throw apiError(404, 'not_found', 'Document not found');
@@ -407,6 +425,7 @@ export const saveDocument = async (
         title: input.title,
         purpose: input.purpose,
         body: input.body,
+        sourceProposalId: input.sourceProposalId,
       }),
     );
   }
@@ -426,6 +445,7 @@ export const saveDocument = async (
     title: input.title,
     purpose: input.purpose,
     body: input.body,
+    sourceProposalId: input.sourceProposalId,
   };
   if (!input.ticket)
     return toDocumentConfirmation(

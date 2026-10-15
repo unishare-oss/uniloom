@@ -5,6 +5,7 @@ import { Archive, ArchiveRestore, ChevronRight, Pencil } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AdrStatusActions } from "@/components/documents/adr-status-actions";
+import { DocumentProvenance } from "@/components/documents/document-provenance";
 import { CreatedBy } from "@/components/documents/created-by";
 import { documentKey } from "@/components/documents/document-meta";
 import { KindBadge } from "@/components/documents/kind-badge";
@@ -122,6 +123,7 @@ export const DocumentView = ({
               <div className="flex gap-2">
                 <Button
                   variant="outline"
+                  nativeButton={false}
                   render={
                     <Link href={`/p/${projectId}/docs/${document.id}/edit`} />
                   }
@@ -186,6 +188,7 @@ export const DocumentView = ({
                 </h2>
                 <p>{document.purpose || "No purpose written."}</p>
               </div>
+              <DocumentProvenance projectId={projectId} document={document} />
               <LinkedTickets projectId={projectId} document={document} />
               <div>
                 <h2 className="text-xs font-semibold text-muted-foreground">

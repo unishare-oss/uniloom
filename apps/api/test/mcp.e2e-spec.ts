@@ -87,6 +87,142 @@ describe('mcp (e2e)', () => {
     return { projectId: id, keyPrefix, feature, slice, token, owner };
   };
 
+  it('creates, reads, replaces and clears spec provenance through MCP', async () => {
+    const w = await setup();
+    const proposal = JSON.parse(
+      (
+        await tool(w.token, 'save_document', {
+          project: w.keyPrefix,
+          kind: 'PROPOSAL',
+          title: 'Source',
+        })
+      ).text,
+    ) as { id: string };
+    const spec = JSON.parse(
+      (
+        await tool(w.token, 'save_document', {
+          project: w.keyPrefix,
+          ticket: w.feature.key,
+          kind: 'SPEC',
+          title: 'Derived',
+          sourceProposalId: proposal.id,
+        })
+      ).text,
+    ) as { id: string; sourceProposalId: string | null };
+    expect(spec.sourceProposalId).toBe(proposal.id);
+    const detail = JSON.parse(
+      (await tool(w.token, 'get_document', { id: spec.id })).text,
+    ) as { sourceProposal: { url: string } };
+    expect(detail.sourceProposal.url).toContain(`/docs/${proposal.id}`);
+    const inverse = JSON.parse(
+      (await tool(w.token, 'get_document', { id: proposal.id })).text,
+    ) as { derivedSpecs: { id: string; url: string }[] };
+    expect(inverse.derivedSpecs[0].id).toBe(spec.id);
+    expect(inverse.derivedSpecs[0].url).toContain(`/docs/${spec.id}`);
+    expect(
+      JSON.parse(
+        (
+          await tool(w.token, 'save_document', {
+            id: spec.id,
+            body: 'Preserve',
+          })
+        ).text,
+      ).sourceProposalId,
+    ).toBe(proposal.id);
+    const replacement = JSON.parse(
+      (
+        await tool(w.token, 'save_document', {
+          project: w.keyPrefix,
+          kind: 'PROPOSAL',
+          title: 'Replacement',
+        })
+      ).text,
+    ) as { id: string };
+    expect(
+      JSON.parse(
+        (
+          await tool(w.token, 'save_document', {
+            id: spec.id,
+            sourceProposalId: replacement.id,
+          })
+        ).text,
+      ).sourceProposalId,
+    ).toBe(replacement.id);
+    expect(
+      JSON.parse(
+        (
+          await tool(w.token, 'save_document', {
+            id: spec.id,
+            sourceProposalId: null,
+          })
+        ).text,
+      ).sourceProposalId,
+    ).toBeNull();
+    expect(
+      (
+        await tool(w.token, 'save_document', {
+          id: proposal.id,
+          sourceProposalId: null,
+        })
+      ).text,
+    ).toContain('invalid_source_proposal');
+    expect(
+      (
+        await tool(w.token, 'save_document', {
+          id: spec.id,
+          sourceProposalId: spec.id,
+        })
+      ).text,
+    ).toContain('invalid_source_proposal');
+    expect(
+      (
+        await tool(w.token, 'save_document', {
+          id: spec.id,
+          sourceProposalId: '00000000-0000-7000-8000-000000000000',
+        })
+      ).text,
+    ).toContain('not_found');
+    await api.send('PATCH', `/api/documents/${proposal.id}`, w.owner.cookie, {
+      archived: true,
+    });
+    expect(
+      (
+        await tool(w.token, 'save_document', {
+          id: spec.id,
+          sourceProposalId: proposal.id,
+        })
+      ).text,
+    ).toContain('document_archived');
+    const standalone = JSON.parse(
+      (
+        await tool(w.token, 'save_document', {
+          project: w.keyPrefix,
+          kind: 'SPEC',
+          title: 'Knowledge',
+          sourceProposalId: replacement.id,
+        })
+      ).text,
+    ) as { id: string };
+    const listed = JSON.parse(
+      (
+        await tool(w.token, 'list_documents', {
+          project: w.keyPrefix,
+          kind: 'SPEC',
+        })
+      ).text,
+    ) as {
+      id: string;
+      sourceProposalId: string;
+      sourceProposal: { url: string };
+    }[];
+    expect(listed.find((d) => d.id === standalone.id)?.sourceProposalId).toBe(
+      replacement.id,
+    );
+    expect(
+      listed.find((d) => d.id === standalone.id)?.sourceProposal.url,
+    ).toContain(replacement.id);
+  });
+
   describe('discovery and auth', () => {
     it('publishes the protected-resource metadata at both paths', async () => {
       for (const path of [

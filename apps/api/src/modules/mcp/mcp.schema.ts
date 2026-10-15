@@ -101,6 +101,9 @@ export const saveDocumentSchema = z.object({
     'One line: what it is for',
   ),
   body: createDocumentSchema.shape.body.describe('Markdown'),
+  sourceProposalId: createDocumentSchema.shape.sourceProposalId.describe(
+    'SPEC only: optional same-project active Knowledge proposal id. Omit to preserve on edit; null clears. Provenance does not imply approval.',
+  ),
   ticket: itemKey
     .optional()
     .describe(
