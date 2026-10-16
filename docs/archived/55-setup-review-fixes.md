@@ -1,11 +1,11 @@
 # 55: Setup review fixes
 
-Status: In Review
+Status: Done
 
 ## Phases
 
 - **Phase 1 — Docs and decisions** (no logic changes): SETUP heading,
-  anchor regression test, AGENTS.md wording, ADR-0021, delete snippet dumps.
+  anchor regression test, AGENTS.md wording, ADR-0023, delete snippet dumps.
 - **Phase 2 — Script logic, TDD**: `setup:uniauth` temp-server wait +
   preflight, `wait-for-ready` exit code, kept tests, `test:scripts` wiring.
 - **Phase 3 — DX polish and ship**: `kill-port` devDependency, SETUP
@@ -38,7 +38,7 @@ uniAuth repo itself.
       follows `SETUP.md`
 - [x] `bun run stop` works from a clean install, and SETUP states which
       processes keep running plus how to find non-Docker port conflicts
-- [x] ADR-0021 (Proposed) records the loopback/port/local-first decisions;
+- [x] ADR-0023 (Proposed) records the loopback/port/local-first decisions;
       `bun run lint`, `typecheck`, `test`, `build` pass; PR checklist ticked
 
 ## Design
@@ -55,7 +55,7 @@ uniAuth repo itself.
 | (none — docs edit)                  | `AGENTS.md`                                                  | qualify the database bullet: team day-to-day = Oracle over Tailscale; fresh setup = `SETUP.md` local DB                                      | ends the contradiction with the PR for human and agent readers                                                                                                |
 | `kill-port` devDependency           | `package.json`                                               | add `kill-port`, `stop` becomes `bunx --bun kill-port …` or plain `kill-port`                                                                | `stop` must work on a clean offline install, not download on first use                                                                                        |
 | (none — docs edits)                 | `SETUP.md`                                                   | "stop leaves the databases running" line; `lsof`/`ss` port-conflict row; restart-`dev:local` note in step 6's success path                   | each answers a question the current text leaves open at the exact moment it arises                                                                            |
-| ADR-0021                            | `docs/adr/0021-local-setup-loopback.md` (new)                | Context/Options/Decision/Consequences for 127.0.0.1-vs-localhost, the port map, local-first setup                                            | choice outlives the slice; repo rules ask for a Proposed ADR                                                                                                  |
+| ADR-0023                            | `docs/adr/0023-local-setup-loopback.md` (new)                | Context/Options/Decision/Consequences for 127.0.0.1-vs-localhost, the port map, local-first setup                                            | choice outlives the slice; repo rules ask for a Proposed ADR                                                                                                  |
 | (none — deletions)                  | `docs/javascript-snippets.md`, `docs/typescript-snippets.md` | delete                                                                                                                                       | untracked, referenced nowhere, Pages-router era                                                                                                               |
 
 ```mermaid

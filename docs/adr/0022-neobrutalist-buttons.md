@@ -1,6 +1,6 @@
 # ADR-0022: Neobrutalist buttons in the app
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-16
 
 ## Context

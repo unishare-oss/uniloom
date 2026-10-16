@@ -1,6 +1,6 @@
 # ADR-0020: Projects are soft-deleted, hidden by the membership lookup
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-16
 
 ## Context

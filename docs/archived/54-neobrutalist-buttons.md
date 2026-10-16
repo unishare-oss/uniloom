@@ -1,6 +1,6 @@
 # 54: Neobrutalist buttons
 
-Status: Blocked
+Status: Done
 
 Blocked: the browser check (last done-when item) was not done. The implementing agent had no browser, and the app needs a Uniauth sign-in to reach the pages. Everything else is done; the user (or an agent with a browser) must look at the listed pages in light and dark.
 
@@ -42,7 +42,7 @@ styled); a dark-mode-only shadow token; new button sizes.
 
 ## Design
 
-See [ADR-0022](../adr/0022-neobrutalist-buttons.md), Proposed.
+See [ADR-0022](../adr/0022-neobrutalist-buttons.md), Accepted.
 
 | Function / component                     | File                                          | What                                                                                                                                                                                                                                                                                                                                                                                                                                 | Why                                                                                       |
 | ---------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
@@ -89,3 +89,6 @@ Planned vs actual:
 - The comment buttons are now `h-8 px-2.5` (the default size) instead of the hand-set `px-4`, so they are slightly narrower. Not seen in a browser.
 - Browser check not done (see Blocked above).
 - Checks: `bun run --cwd apps/web lint`, `typecheck`, `build` and `test` pass. The built CSS contains the `hover:-translate-px` and `active:translate-0.5` rules.
+
+Set to Done by the user on 2026-10-16 with the browser check item still open: the light and
+dark pass was not done before release.
