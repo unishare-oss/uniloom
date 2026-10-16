@@ -86,7 +86,7 @@ const Login = () => {
                 returnTo: `${window.location.origin}${next}`,
               });
             }}
-            className="h-12 gap-2 rounded-xl border-2 border-ink text-base font-bold shadow-hard"
+            className="h-12 gap-2 rounded-xl text-base"
           >
             {redirecting ? (
               "Redirecting…"

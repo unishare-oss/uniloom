@@ -18,6 +18,7 @@ uniloom/
 ├── .github/workflows/   # CI, image builds, release (see README.md)
 ├── docker-compose.yml   # Docker: PostgreSQL, migrations, API and web
 ├── MVP.md               # Product spec and build order
+├── SETUP.md             # Local setup from scratch (Windows, macOS, Linux)
 └── AGENTS.md            # Repository-wide instructions
 ```
 
@@ -52,9 +53,11 @@ contracts only when both workspaces actually need them.
   forward.
 - The API owns Uniloom data, authorization and the workflow rules. The website and the
   MCP server call the same rule checks; never duplicate a rule in the web app.
-- For database work, follow `README.md`: PostgreSQL runs in Docker on the Oracle VM
-  and is reached over Tailscale (`oracle.tailcb9a25.ts.net:5434`). Do not start a local
-  database by default.
+- For database work, follow `README.md`: day-to-day team work uses PostgreSQL in
+  Docker on the Oracle VM, reached over Tailscale
+  (`oracle.tailcb9a25.ts.net:5434`). A fresh setup instead follows `SETUP.md`,
+  which runs both databases locally. Do not start a local database by default
+  outside `SETUP.md`.
 
 ## Independent review
 

@@ -1,6 +1,6 @@
 # 44: Require approval and join requests
 
-Status: In Review
+Status: Done
 
 ## Scope
 

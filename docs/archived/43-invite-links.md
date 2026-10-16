@@ -1,6 +1,6 @@
 # 43: Invite links
 
-Status: In Review
+Status: Done
 
 ## Scope
 

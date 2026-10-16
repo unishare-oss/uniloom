@@ -113,7 +113,9 @@ Responses, errors and input, from `src/http.ts` (the same shape as Unishare's AP
 ## Data and Verification
 
 - Items are soft-deleted (`deletedAt`). Their repository filters deleted rows out of every
-  lookup; keep it that way when adding queries. Other rows are hard-deleted.
+  lookup; keep it that way when adding queries. Projects are soft-deleted too (ADR-0020): new
+  queries must go through `findMember`/`requireRole` or filter `project.deletedAt`. Other
+  rows are hard-deleted.
 - Change `prisma/schema.prisma` and add a migration for schema changes. Regenerate
   the Prisma client; never edit `src/generated/prisma` or an applied migration.
 - Keep tests close to behavior under `src/` (`*.spec.ts`); use `test/` for end-to-end

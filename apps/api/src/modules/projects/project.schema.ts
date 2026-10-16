@@ -65,6 +65,7 @@ export const projectDetailSchema = projectSchema.extend({
   canAssignOthers: z.boolean(),
   /** Whether the caller may change the project's name, switches and limits (owners). */
   canEditSettings: z.boolean(),
+  canDeleteProject: z.boolean(),
   /** Whether the caller may add labels and change their name and colour (owners, managers). */
   canCreateLabels: z.boolean(),
   /** Whether the caller may write knowledge documents (owners, managers). */

@@ -1,6 +1,6 @@
 # 47: Rich Markdown rendering
 
-Status: In Review
+Status: Done
 
 ## Scope
 

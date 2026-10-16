@@ -35,6 +35,12 @@ import {
   linkDocument,
 } from '../src/modules/items/item-document.service.js';
 import {
+  createDocumentComment,
+  createItemComment,
+  deleteComment,
+  updateComment,
+} from '../src/modules/comments/comment.service.js';
+import {
   createInvite,
   joinByInvite,
 } from '../src/modules/invites/invite.service.js';
@@ -64,6 +70,9 @@ const SEED_PROJECTS = {
   TQ: 'Seed · Ask to join',
   TW: 'Seed · Waiting',
   TD: 'Seed · Declined',
+  TZ: 'Seed · Delete me',
+  TU: 'Seed · Delete as manager',
+  TK: 'Seed · Already deleted',
 };
 
 /** Fake people, so there are assignees, authors and an owner who isn't you. */
@@ -1394,6 +1403,103 @@ const seedTechDebt = async (ownerId: string) => {
   note('Knowledge → Tech debt', 'Open, Fixed and refused-to-fix debts');
 };
 
+/** Comments (plan 52): one ticket with a nested thread, an edited and a deleted comment. */
+const seedComments = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const guided = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TG' },
+  });
+  // In TG you own the project, Mya is a Manager and Ko a Member.
+  const ticket = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Comments: open it → a thread below History; you (owner) see Delete on every comment but Edit only on yours; Mya (manager) can delete too, Ko (member) only her own',
+  });
+  const first = await createItemComment(ticket.id, ko.id, {
+    body: 'Can we ship this before the demo? See https://example.com/demo for the plan.',
+  });
+  const reply = await createItemComment(ticket.id, ownerId, {
+    body: 'You wrote the first comment, you have the Author badge on this one: yes, if the checklist is ticked.',
+    parentId: first.id,
+  });
+  const deep = await createItemComment(ticket.id, ko.id, {
+    body: 'Level 3. Click the coloured bar on the left → the thread collapses to "Show replies (n)".',
+    parentId: reply.id,
+  });
+  await createItemComment(ticket.id, mya.id, {
+    body: 'Level 4, and the bar changes colour at each depth.',
+    parentId: deep.id,
+  });
+
+  const edited = await createItemComment(ticket.id, ownerId, {
+    body: 'This says "(edited)" next to the time. Use Edit → only your own comments have it.',
+  });
+  await updateComment(edited.id, ownerId, {
+    body: 'This one was edited: it says "(edited)" next to the time. Edit it again → still one "(edited)".',
+  });
+
+  const gone = await createItemComment(ticket.id, ko.id, {
+    body: 'Ko deleted this comment.',
+  });
+  await createItemComment(ticket.id, mya.id, {
+    body: 'A live reply under a deleted comment: the parent reads "This comment was deleted." by "Deleted user", this stays. Reply to the parent is not offered.',
+    parentId: gone.id,
+  });
+  await deleteComment(gone.id, ko.id);
+  note(
+    'TG',
+    'ticket "Comments: open it ..." → the thread: Author badge, nested replies with collapse, an "(edited)" comment, a deleted comment keeping its reply; Shift+Enter in the composer posts',
+  );
+};
+
+const seedDocumentComments = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const guided = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TG' },
+  });
+
+  // A Knowledge document you wrote: your comments carry the Author badge.
+  const knowledge = await createDocument(guided.id, ownerId, {
+    kind: 'REFERENCE',
+    title:
+      'Reference with comments: open it → a thread under the article; your comments have the Author badge; Reply to Ko → it nests',
+    purpose: 'Shows comments on a Knowledge document.',
+    body: '## Reference\n\nComment on this page.\n',
+  });
+  const question = await createDocumentComment(knowledge.id, ko.id, {
+    body: 'Is this still current? Ko asks from the Member role.',
+  });
+  await createDocumentComment(knowledge.id, ownerId, {
+    body: 'Yes. You wrote this document, so this reply has the Author badge.',
+    parentId: question.id,
+  });
+
+  // A spec owned by a ticket: its comments follow the ticket, and vanish if it is deleted.
+  const ticket = await createProjectItem(guided.id, ownerId, {
+    kind: 'FEATURE',
+    title:
+      'Ticket with a spec that has comments: open its spec → a thread under it; delete this ticket → the spec and its comments answer not found',
+  });
+  const spec = await createTicketDocument(ticket.id, ownerId, {
+    kind: 'SPEC',
+    title:
+      'Spec with comments: reply to Mya, then delete your reply → a placeholder',
+    purpose: 'Shows comments on a ticket-owned document.',
+    body: '## Spec\n\nComment on this spec.\n',
+  });
+  const first = await createDocumentComment(spec.id, mya.id, {
+    body: 'Mya (manager) comments on the spec.',
+  });
+  await createDocumentComment(spec.id, ko.id, {
+    body: 'Ko (member) replies in the same thread.',
+    parentId: first.id,
+  });
+  note(
+    'TG',
+    'documents "Reference with comments" and "Spec with comments" → each shows a thread with an Author badge on the document author',
+  );
+};
+
 /**
  * Invite links (plan 43): one you manage, and three to projects you're not in. Open each
  * printed path on the web app's origin.
@@ -1504,6 +1610,65 @@ const seedMyRequests = async (ownerId: string) => {
   );
 };
 
+/** Deleting a project (plan 51): you own one, manage one, and an old link points at a deleted one. */
+const seedDeleteProject = async (ownerId: string) => {
+  const [mya, ko] = SEED_USERS;
+  const { item } = await seedProject('TZ', 'STANDARD', ownerId, [
+    { userId: mya.id, role: 'MANAGER' },
+    { userId: ko.id, role: 'MEMBER' },
+  ]);
+  await item({
+    kind: 'TASK',
+    title:
+      'Task. Settings → Delete project, type "Seed · Delete me", Delete → back on the project list, this project is gone and its link answers 404',
+  });
+  await item({
+    kind: 'TASK',
+    title:
+      'Task. In Delete project, type a wrong name → the Delete button stays disabled',
+  });
+  note(
+    'TZ',
+    'you are the OWNER: Settings shows "Delete project"; after deleting, /p/<id> and its items answer not found',
+  );
+
+  const { project: managed, item: managedItem } = await seedProject(
+    'TU',
+    'STANDARD',
+    mya.id,
+    [
+      { userId: ownerId, role: 'MANAGER' },
+      { userId: ko.id, role: 'MEMBER' },
+    ],
+  );
+  await managedItem({
+    kind: 'TASK',
+    title:
+      'Task. Open Settings → no "Delete project" section, you are a manager; DELETE /api/projects/<id> → 403 forbidden',
+  });
+  await createInvite(managed.id, mya.id, {
+    expiresIn: '7d',
+    maxUses: null,
+    joinApproval: false,
+  });
+  note('TU', 'you are a MANAGER: Settings has no "Delete project" section');
+
+  const { project: gone } = await seedProject('TK', 'STANDARD', ko.id, []);
+  const oldLink = await createInvite(gone.id, ko.id, {
+    expiresIn: '7d',
+    maxUses: null,
+    joinApproval: false,
+  });
+  await prisma.project.update({
+    where: { id: gone.id },
+    data: { deletedAt: new Date() },
+  });
+  note(
+    'TK',
+    `deleted project: /join/${oldLink.token} → "This invite link doesn't work"; it is not on your project list; its key TK stays reserved (TD-022)`,
+  );
+};
+
 const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -1527,9 +1692,12 @@ await seedReliabilityDocuments(owner.id);
 await seedSpecProvenance(owner.id);
 await seedAdrs(owner.id);
 await seedTechDebt(owner.id);
+await seedComments(owner.id);
+await seedDocumentComments(owner.id);
 await seedInvites(owner.id);
 await seedJoinRequests(owner.id);
 await seedMyRequests(owner.id);
+await seedDeleteProject(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import { ActivityRow } from "@/components/items/activity-row";
 import type { StateCategory } from "@/components/items/item-meta";
 import { useListItemActivity } from "@/lib/api/generated/items/items";
@@ -26,16 +26,7 @@ export const ItemActivity = ({
   const shown = all ? rows : rows.slice(0, SHOWN);
 
   return (
-    <details open className="group">
-      <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-        <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 ease-out group-open:rotate-90" />
-        <h2 id="activity" className="font-semibold">
-          Activity
-        </h2>
-        <span className="text-xs font-semibold text-muted-foreground">
-          {rows.length}
-        </span>
-      </summary>
+    <CollapsibleSection id="activity" title="Activity" count={rows.length}>
       {rows.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No activity yet.</p>
       ) : (
@@ -62,6 +53,6 @@ export const ItemActivity = ({
           )}
         </>
       )}
-    </details>
+    </CollapsibleSection>
   );
 };

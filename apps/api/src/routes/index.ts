@@ -1,3 +1,4 @@
+import { commentRoutes } from '@/modules/comments/comment.routes.js';
 import { reviewRoutes } from '@/modules/reviews/review.routes.js';
 import { notificationRoutes } from '@/modules/notifications/notification.routes.js';
 import { Hono } from 'hono';
@@ -34,3 +35,4 @@ apiRoutes.route('/', notificationRoutes);
 apiRoutes.route('/', labelRoutes);
 apiRoutes.route('/', documentRoutes);
 apiRoutes.route('/', inviteRoutes);
+apiRoutes.route('/', commentRoutes);

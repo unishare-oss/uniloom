@@ -74,5 +74,5 @@ Option 2, decided with the user on 2026-10-13.
 - A replaced or deleted link keeps its row for 30 days, then goes with its decided
   requests the next time the project creates a link. A link someone still waits on stays.
 
-Related plans: [43](../plans/43-invite-links.md), [44](../plans/44-join-approval.md),
-[45](../plans/45-join-request-status.md).
+Related plans: [43](../archived/43-invite-links.md), [44](../archived/44-join-approval.md),
+[45](../archived/45-join-request-status.md).

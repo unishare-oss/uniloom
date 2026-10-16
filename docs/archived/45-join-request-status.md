@@ -1,6 +1,6 @@
 # 45: The requester's view of a join request
 
-Status: In Review
+Status: Done
 
 ## Scope
 

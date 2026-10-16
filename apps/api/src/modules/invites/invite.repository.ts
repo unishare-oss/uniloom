@@ -14,10 +14,10 @@ export const findCurrent = (projectId: string) => {
   });
 };
 
-/** Any link with this token, revoked or not, with its project's name. */
+/** Any link with this token, revoked or not, with its project's name; none if the project is deleted. */
 export const findByToken = (token: string) => {
-  return prisma.invite.findUnique({
-    where: { token },
+  return prisma.invite.findFirst({
+    where: { token, project: { deletedAt: null } },
     include: { ...withCreator, project: { select: { name: true } } },
   });
 };
