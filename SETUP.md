@@ -26,16 +26,12 @@ After step 3, every command is the same on Windows, macOS and Linux.
 
 ## Before you start
 
-**Open a terminal.** Every command in this guide is typed into a terminal and run with
-Enter.
+Every command in this guide is typed into a terminal (PowerShell on Windows, Terminal on
+macOS and Linux) and run with Enter. Wait for a command to finish before typing the next
+one, unless the step says to leave it running.
 
-- Windows: open the Start menu, type `PowerShell`, and open **Windows PowerShell**. Not
-  "Command Prompt".
-- macOS: press `Cmd+Space`, type `Terminal`, press Enter.
-- Linux: press `Ctrl+Alt+T`, or open "Terminal" from your apps.
-
-**Step 1 has a block for each system.** Run only the one for yours. Every other step is the
-same everywhere.
+**Step 1 has a separate part for Windows, macOS and Linux.** Do only yours. Every step after
+it is the same on every system.
 
 ## For AI agents following this guide
 
@@ -55,78 +51,161 @@ same everywhere.
 
 ## Step 1. Install the tools
 
-You need Git, Bun (1.4.2 or newer), Node.js (22.18 or newer), Docker, and the GitHub CLI
-(`gh`). Install them for your system:
+You need Git, Bun, Node.js, Docker and the GitHub CLI (`gh`). **Do only the part for your
+system below, then go to Step 2.** From Step 2 on, everything is the same on every system.
 
-**Windows:**
+- [Windows](#step-1-on-windows)
+- [macOS](#step-1-on-macos)
+- [Linux](#step-1-on-linux)
 
-```powershell
-winget install --id Git.Git -e
-winget install --id OpenJS.NodeJS.LTS -e
-winget install --id GitHub.cli -e
-winget install --id Docker.DockerDesktop -e
-powershell -c "irm bun.sh/install.ps1 | iex"
-git config --global core.longpaths true
-```
+### Step 1 on Windows
 
-Run these one at a time, and wait for each to finish before the next. While they run:
+1. Open **Windows PowerShell** (Start menu, type `PowerShell`). Not "Command Prompt".
+2. Run each of these, one at a time. Wait for each to finish before the next. If one
+   asks you to agree to terms, type `Y` and press Enter. If Windows asks "Do you want to
+   allow this app to make changes?", click **Yes**.
 
-- If it asks you to agree to terms, type `Y` and press Enter.
-- If Windows asks "Do you want to allow this app to make changes?", click **Yes**.
-- Docker Desktop is big and takes a few minutes. It needs WSL 2: if it asks to turn that
-  on or to restart the computer, **Person**: do that, then open PowerShell again and carry
-  on with the next command.
+   ```powershell
+   winget install --id Git.Git -e
+   ```
 
-**macOS:** install [Homebrew](https://brew.sh) first if `brew --version` doesn't work.
+   ```powershell
+   winget install --id OpenJS.NodeJS.LTS -e
+   ```
 
-```sh
-brew install git gh node
-brew install --cask docker-desktop
-curl -fsSL https://bun.sh/install | bash
-```
+   ```powershell
+   winget install --id GitHub.cli -e
+   ```
 
-**Linux** (Ubuntu or Debian. On other distros, install the same tools with your package
-manager.) The `nodesource` line adds a newer Node before `apt install nodejs`. Without it,
-apt installs Ubuntu's own Node, which is too old.
+   ```powershell
+   winget install --id Docker.DockerDesktop -e
+   ```
 
-```sh
-sudo apt update
-sudo apt install -y git curl unzip lsof gh
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt install -y nodejs
-curl -fsSL https://bun.sh/install | bash
-```
+   Docker Desktop is big and takes a few minutes. If it asks to turn on WSL 2 or to
+   restart the computer, do that, then open PowerShell again and carry on.
 
-If `docker --version` doesn't print a version, Docker isn't installed yet. Install it
-with:
+   ```powershell
+   powershell -c "irm bun.sh/install.ps1 | iex"
+   ```
 
-```sh
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker $USER
-```
+   ```powershell
+   git config --global core.longpaths true
+   ```
 
-then log out and back in (skip that if you are logged in as `root`).
+3. **Close PowerShell and open a new one**, so it finds the new tools.
+4. **Person:** open **Docker Desktop** from the Start menu. Wait until it says the engine is
+   running. If it asks you to sign in, you can skip that. Leave it running.
+5. **Check:** in the new PowerShell, run
 
-**Then, on every system:**
+   ```sh
+   git --version
+   bun --version
+   node --version
+   gh --version
+   docker compose version
+   ```
 
-1. Close the terminal and open a new one, so it finds the new tools.
-2. Windows and macOS, **Person**: open **Docker Desktop** from your apps and wait until it
-   says the engine is running. If it asks you to sign in, you can skip that. Leave it
-   running.
+   Each prints a version. Bun must be `1.4.2` or higher (if not, run `bun upgrade`), and
+   Node `v22.18.0` or higher.
 
-**Check:** run these:
+**Windows is done. Go to [Step 2](#step-2-log-in-to-github).**
 
-```sh
-git --version
-bun --version
-node --version
-gh --version
-docker compose version
-```
+### Step 1 on macOS
 
-Each prints a version. The Bun version is `1.4.2` or higher and the Node version is
-`v22.18.0` or higher. If Bun is too old, run `bun upgrade`. If Node is too old, install it
-again with the commands above.
+1. Open **Terminal** (press `Cmd+Space`, type `Terminal`, press Enter).
+2. If `brew --version` doesn't print a version, install [Homebrew](https://brew.sh) first
+   (copy the one command from its home page and wait for it to finish).
+3. Run each of these, one at a time. Wait for each to finish before the next:
+
+   ```sh
+   brew install git gh node
+   ```
+
+   ```sh
+   brew install --cask docker-desktop
+   ```
+
+   ```sh
+   curl -fsSL https://bun.sh/install | bash
+   ```
+
+4. **Close Terminal and open a new one**, so it finds the new tools.
+5. **Person:** open **Docker** from Applications. Wait until it says the engine is running.
+   If it asks you to sign in, you can skip that. Leave it running.
+6. **Check:** in the new Terminal, run
+
+   ```sh
+   git --version
+   bun --version
+   node --version
+   gh --version
+   docker compose version
+   ```
+
+   Each prints a version. Bun must be `1.4.2` or higher (if not, run `bun upgrade`), and
+   Node `v22.18.0` or higher.
+
+**macOS is done. Go to [Step 2](#step-2-log-in-to-github).**
+
+### Step 1 on Linux
+
+These commands are for Ubuntu and Debian. On other distros, install the same tools with
+your package manager.
+
+1. Open a terminal (`Ctrl+Alt+T`, or "Terminal" from your apps).
+2. Run each of these, one at a time. Wait for each to finish before the next. Type your
+   password if `sudo` asks for it.
+
+   ```sh
+   sudo apt update
+   ```
+
+   ```sh
+   sudo apt install -y git curl unzip lsof gh
+   ```
+
+   ```sh
+   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+   ```
+
+   ```sh
+   sudo apt install -y nodejs
+   ```
+
+   (The `nodesource` line first adds a newer Node. Without it, apt installs Ubuntu's own
+   Node, which is too old.)
+
+   ```sh
+   curl -fsSL https://bun.sh/install | bash
+   ```
+
+3. Run `docker --version`. If it prints a version, skip to the next item. If not, install
+   Docker with these two commands, then log out of your computer and back in (skip the
+   log out if you are logged in as `root`):
+
+   ```sh
+   curl -fsSL https://get.docker.com | sudo sh
+   ```
+
+   ```sh
+   sudo usermod -aG docker $USER
+   ```
+
+4. **Close the terminal and open a new one**, so it finds the new tools.
+5. **Check:** in the new terminal, run
+
+   ```sh
+   git --version
+   bun --version
+   node --version
+   gh --version
+   docker compose version
+   ```
+
+   Each prints a version. Bun must be `1.4.2` or higher (if not, run `bun upgrade`), and
+   Node `v22.18.0` or higher.
+
+**Linux is done. Go to [Step 2](#step-2-log-in-to-github).**
 
 ## Step 2. Log in to GitHub
 
