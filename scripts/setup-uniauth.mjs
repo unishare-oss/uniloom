@@ -15,118 +15,180 @@ const root = resolve(import.meta.dir, "..");
 const apiEnvPath = resolve(root, "apps/api/.env");
 const uniauthServer = resolve(root, "../uniAuth/apps/server");
 
+// Stops a uniAuth started for the moment, and waits until its port is free,
+// so the next `bun run dev:local` doesn't hit EADDRINUSE.
+export const stopTempServer = async (proc) => {
+  try {
+    proc.kill();
+  } catch {
+    // Already exited: nothing to stop.
+  }
+  await proc.exited;
+};
+
+// The uniAuth layout these scripts expect. Everything exists today; if uniAuth
+// moves a file or renames a script, this reports it in one plain sentence
+// instead of a cryptic cd/spawn failure.
+export const checkUniauthContract = (uniauthRoot) => {
+  const problems = [];
+  const needFile = (path, hint) => {
+    if (!existsSync(resolve(uniauthRoot, path)))
+      problems.push(`${path} (${hint})`);
+  };
+  const scriptsOf = (pkgPath) => {
+    try {
+      return (
+        JSON.parse(readFileSync(resolve(uniauthRoot, pkgPath), "utf8"))
+          .scripts ?? {}
+      );
+    } catch {
+      return {};
+    }
+  };
+  needFile("apps/server/src/index.ts", "uniAuth's server entry");
+  needFile(
+    "apps/server/scripts/create-client.ts",
+    "registers Uniloom as a client",
+  );
+  if (!scriptsOf("package.json").dev)
+    problems.push('package.json script "dev" (starts uniAuth)');
+  if (!scriptsOf("apps/server/package.json")["db:migrate"])
+    problems.push(
+      'apps/server/package.json script "db:migrate" (migrates uniAuth)',
+    );
+  return problems;
+};
+
 let tempUniauth = null;
-const finish = (code, message) => {
+const finish = async (code, message) => {
   if (message) console.log(message);
-  tempUniauth?.kill();
+  if (tempUniauth) await stopTempServer(tempUniauth);
   process.exit(code);
 };
 
-if (!existsSync(apiEnvPath) || !existsSync(resolve(uniauthServer, ".env")))
-  finish(
-    1,
-    "The .env files are missing. Run bun run setup first (SETUP.md step 5).",
-  );
-
-const discovery = `${UNIAUTH}/api/auth/.well-known/openid-configuration`;
-if (!(await fetch(discovery).catch(() => null))?.ok) {
-  console.log("Starting uniAuth for a moment...");
-  tempUniauth = Bun.spawn([process.execPath, "src/index.ts"], {
-    cwd: uniauthServer,
-    stdout: "ignore",
-    stderr: "ignore",
-  });
-  for (let second = 0; second < 60; second++) {
-    if ((await fetch(discovery).catch(() => null))?.ok) break;
-    await Bun.sleep(1000);
-  }
-  if (!(await fetch(discovery).catch(() => null))?.ok)
-    finish(
+const main = async () => {
+  if (!existsSync(apiEnvPath) || !existsSync(resolve(uniauthServer, ".env")))
+    await finish(
       1,
-      "uniAuth didn't start. Run bun run uniauth:dev to see its error.",
+      "The .env files are missing. Run bun run setup first (SETUP.md step 5).",
     );
-}
 
-console.log("Use the email and password you want for signing in to Uniloom.");
-console.log(
-  "(Local only: the email isn't checked. The password shows as you type.)",
-);
-const email = process.env.UNIAUTH_ADMIN_EMAIL || prompt("Email:");
-const password =
-  process.env.UNIAUTH_ADMIN_PASSWORD ||
-  prompt("Password (8 or more characters):");
-if (!email || !password) finish(1, "An email and a password are both needed.");
+  const missing = checkUniauthContract(resolve(root, "../uniAuth"));
+  if (missing.length > 0)
+    await finish(
+      1,
+      `uniAuth next door doesn't look like the version these scripts expect. Missing: ${missing.join("; ")}. Pull the latest uniAuth (SETUP.md step 3), or ask the uniAuth maintainer what moved.`,
+    );
 
-const post = (path, body) =>
-  fetch(`${UNIAUTH}/api/auth${path}`, {
-    method: "POST",
-    headers: { "content-type": "application/json", origin: UNIAUTH },
-    body: JSON.stringify(body),
-  });
+  const discovery = `${UNIAUTH}/api/auth/.well-known/openid-configuration`;
+  if (!(await fetch(discovery).catch(() => null))?.ok) {
+    console.log("Starting uniAuth for a moment...");
+    tempUniauth = Bun.spawn([process.execPath, "src/index.ts"], {
+      cwd: uniauthServer,
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    for (let second = 0; second < 60; second++) {
+      if ((await fetch(discovery).catch(() => null))?.ok) break;
+      await Bun.sleep(1000);
+    }
+    if (!(await fetch(discovery).catch(() => null))?.ok)
+      await finish(
+        1,
+        "uniAuth didn't start. Run bun run uniauth:dev to see its error.",
+      );
+  }
 
-let account = await post("/sign-in/email", { email, password });
-if (account.status === 401) {
-  console.log(`Creating a uniAuth account for ${email}.`);
-  const name =
-    process.env.UNIAUTH_ADMIN_NAME || prompt("Your name (shown in Uniloom):");
-  if (!name) finish(1, "A name is needed to create the account.");
-  account = await post("/sign-up/email", { email, password, name });
-}
-const accountBody = await account.json().catch(() => ({}));
-if (!account.ok && accountBody.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL")
-  finish(
-    1,
-    `${email} already has a uniAuth account, with a different password. Run this again with that password.`,
+  console.log("Use the email and password you want for signing in to Uniloom.");
+  console.log(
+    "(Local only: the email isn't checked. The password shows as you type.)",
   );
-if (!account.ok || !accountBody.user?.id)
-  finish(1, `uniAuth refused: ${accountBody.message ?? account.status}`);
+  const email = process.env.UNIAUTH_ADMIN_EMAIL || prompt("Email:");
+  const password =
+    process.env.UNIAUTH_ADMIN_PASSWORD ||
+    prompt("Password (8 or more characters):");
+  if (!email || !password)
+    await finish(1, "An email and a password are both needed.");
 
-// uniAuth only lets admins create clients. Passing the id here makes this account one,
-// for this command only; uniAuth's .env stays as it is.
-const create = Bun.spawnSync(
-  [
-    process.execPath,
-    "scripts/create-client.ts",
-    "--name",
-    "Uniloom",
-    "--origin",
-    "http://127.0.0.1:3013",
-    "--local",
-  ],
-  {
-    cwd: uniauthServer,
-    env: {
-      ...process.env,
-      UNIAUTH_ADMIN_EMAIL: email,
-      UNIAUTH_ADMIN_PASSWORD: password,
-      UNIAUTH_ADMIN_USER_IDS: accountBody.user.id,
+  const post = (path, body) =>
+    fetch(`${UNIAUTH}/api/auth${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: UNIAUTH },
+      body: JSON.stringify(body),
+    });
+
+  let account = await post("/sign-in/email", { email, password });
+  if (account.status === 401) {
+    console.log(`Creating a uniAuth account for ${email}.`);
+    const name =
+      process.env.UNIAUTH_ADMIN_NAME || prompt("Your name (shown in Uniloom):");
+    if (!name) await finish(1, "A name is needed to create the account.");
+    account = await post("/sign-up/email", { email, password, name });
+  }
+  const accountBody = await account.json().catch(() => ({}));
+  if (
+    !account.ok &&
+    accountBody.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
+  )
+    await finish(
+      1,
+      `${email} already has a uniAuth account, with a different password. Run this again with that password.`,
+    );
+  if (!account.ok || !accountBody.user?.id)
+    await finish(
+      1,
+      `uniAuth refused: ${accountBody.message ?? account.status}`,
+    );
+
+  // uniAuth only lets admins create clients. Passing the id here makes this account one,
+  // for this command only; uniAuth's .env stays as it is.
+  const create = Bun.spawnSync(
+    [
+      process.execPath,
+      "scripts/create-client.ts",
+      "--name",
+      "Uniloom",
+      "--origin",
+      "http://127.0.0.1:3013",
+      "--local",
+    ],
+    {
+      cwd: uniauthServer,
+      env: {
+        ...process.env,
+        UNIAUTH_ADMIN_EMAIL: email,
+        UNIAUTH_ADMIN_PASSWORD: password,
+        UNIAUTH_ADMIN_USER_IDS: accountBody.user.id,
+      },
     },
-  },
-);
-const client = JSON.parse(
-  create.stdout.toString().match(/\{[\s\S]*\}/)?.[0] ?? "{}",
-);
-if (create.exitCode !== 0 || !client.client_id || !client.client_secret)
-  finish(
-    1,
-    `uniAuth couldn't create the client:\n${create.stderr.toString()}${create.stdout.toString()}`,
   );
+  const client = JSON.parse(
+    create.stdout.toString().match(/\{[\s\S]*\}/)?.[0] ?? "{}",
+  );
+  if (create.exitCode !== 0 || !client.client_id || !client.client_secret)
+    await finish(
+      1,
+      `uniAuth couldn't create the client:\n${create.stderr.toString()}${create.stdout.toString()}`,
+    );
 
-let apiEnv = readFileSync(apiEnvPath, "utf8");
-for (const [key, value] of [
-  ["UNIAUTH_CLIENT_ID", client.client_id],
-  ["UNIAUTH_CLIENT_SECRET", client.client_secret],
-]) {
-  const line = `${key}="${value}"`;
-  const pattern = new RegExp(`^${key}=.*$`, "m");
-  apiEnv = pattern.test(apiEnv)
-    ? apiEnv.replace(pattern, line)
-    : `${apiEnv.trimEnd()}\n${line}\n`;
-}
-writeFileSync(apiEnvPath, apiEnv);
+  let apiEnv = readFileSync(apiEnvPath, "utf8");
+  for (const [key, value] of [
+    ["UNIAUTH_CLIENT_ID", client.client_id],
+    ["UNIAUTH_CLIENT_SECRET", client.client_secret],
+  ]) {
+    const line = `${key}="${value}"`;
+    const pattern = new RegExp(`^${key}=.*$`, "m");
+    apiEnv = pattern.test(apiEnv)
+      ? apiEnv.replace(pattern, line)
+      : `${apiEnv.trimEnd()}\n${line}\n`;
+  }
+  writeFileSync(apiEnvPath, apiEnv);
 
-finish(
-  0,
-  `Done. Uniloom is registered with uniAuth, and apps/api/.env has its client id and secret.
+  await finish(
+    0,
+    `Done. Uniloom is registered with uniAuth, and apps/api/.env has its client id and secret.
 Sign in to Uniloom later with ${email} and the password you just typed.`,
-);
+  );
+};
+
+if (import.meta.main) await main();
