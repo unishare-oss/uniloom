@@ -69,8 +69,13 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 git config --global core.longpaths true
 ```
 
-Docker Desktop needs WSL 2. If the installer asks to turn it on or to restart the
-computer, **Person**: do that.
+Run these one at a time, and wait for each to finish before the next. While they run:
+
+- If it asks you to agree to terms, type `Y` and press Enter.
+- If Windows asks "Do you want to allow this app to make changes?", click **Yes**.
+- Docker Desktop is big and takes a few minutes. It needs WSL 2: if it asks to turn that
+  on or to restart the computer, **Person**: do that, then open PowerShell again and carry
+  on with the next command.
 
 **macOS:** install [Homebrew](https://brew.sh) first if `brew --version` doesn't work.
 
@@ -105,7 +110,8 @@ then log out and back in (skip that if you are logged in as `root`).
 **Then, on every system:**
 
 1. Close the terminal and open a new one, so it finds the new tools.
-2. Windows and macOS, **Person**: start **Docker Desktop** and wait until it says it is
+2. Windows and macOS, **Person**: open **Docker Desktop** from your apps and wait until it
+   says the engine is running. If it asks you to sign in, you can skip that. Leave it
    running.
 
 **Check:** run these:
@@ -216,18 +222,23 @@ If it shows an `Update available` box from Prisma, ignore it: don't run the comm
 bun run setup:uniauth
 ```
 
-It asks for an email and a password. If there's no account with that email yet, it also
-asks for your name and creates the account. Use any email: it isn't checked. The password
-needs 8 or more characters, and it shows on screen as you type (this is a local test
-account only). You'll sign in to Uniloom with this email and password.
+It asks three questions. Type the answer to each and press Enter:
 
-It then connects Uniloom to uniAuth and saves what Uniloom needs in its settings file.
+1. `Email:` any email, like `me@test.com`. It isn't checked.
+2. `Password (8 or more characters):` a password you'll remember. It shows on screen as
+   you type, which is fine: this is a local test account.
+3. `Your name (shown in Uniloom):` your name. (It only asks this the first time, when it
+   creates the account.)
+
+Then wait a few seconds while it connects Uniloom to uniAuth. You'll sign in to Uniloom
+with this email and password in step 8.
 
 **Check:** it ends with `Done. Uniloom is registered with uniAuth`.
 
 ## Step 7. Start Uniloom
 
-Open a **new terminal**, go to the folder, and start everything. Leave it running.
+Open a **new terminal**, go to the folder, and start everything. Leave this terminal open:
+closing it stops Uniloom.
 
 ```sh
 cd ~/dev/unicorp/uniloom
