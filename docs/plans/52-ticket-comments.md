@@ -111,7 +111,7 @@ after the routes exist.
 
 ## Changes
 
-No commits yet (left uncommitted on `feat/ticket-comments`).
+Commit `91c65dd` (feat(comments): threaded comments on tickets and documents) on `feat/comments`, together with plan 53.
 
 API:
 

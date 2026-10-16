@@ -49,7 +49,7 @@ sequenceDiagram
 
 ## Changes
 
-No commits yet (left uncommitted on `feat/ticket-comments`, on top of plan 52).
+Commit `91c65dd` (feat(comments): threaded comments on tickets and documents) on `feat/comments`, together with plan 52.
 
 API (`apps/api/src/modules/comments/`):
 
