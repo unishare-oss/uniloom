@@ -18,6 +18,7 @@ uniloom/
 ├── .github/workflows/   # CI, image builds, release (see README.md)
 ├── docker-compose.yml   # Docker: PostgreSQL, migrations, API and web
 ├── MVP.md               # Product spec and build order
+├── SETUP.md             # Local setup from scratch (Windows, macOS, Linux)
 └── AGENTS.md            # Repository-wide instructions
 ```
 
