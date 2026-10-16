@@ -1,6 +1,6 @@
 # ADR-0021: One Comment table for tickets and documents
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-16
 
 ## Context

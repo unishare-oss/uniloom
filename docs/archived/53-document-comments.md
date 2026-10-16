@@ -1,6 +1,6 @@
 # 53: Comments on documents
 
-Status: In Review
+Status: Done
 
 ## Scope
 
@@ -25,7 +25,7 @@ documents behave like any other (still readable and commentable).
 
 ## Design
 
-See [ADR-0021](../adr/0021-one-comment-table.md), Proposed.
+See [ADR-0021](../adr/0021-one-comment-table.md), Accepted.
 
 | Function / component    | File                                                  | What                                                                                                                                                        | Why                                                                                             |
 | ----------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |

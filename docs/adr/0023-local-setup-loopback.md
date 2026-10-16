@@ -1,6 +1,6 @@
-# ADR-0021: Local-first setup with loopback addresses
+# ADR-0023: Local-first setup with loopback addresses
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-16
 
 ## Context
