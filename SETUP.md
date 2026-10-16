@@ -185,8 +185,8 @@ bun install
 The first installs uniAuth's packages, the second Uniloom's. `bun install` also sets up
 Git hooks: when you commit, they format your changes and run lint and typecheck.
 
-**Check:** both end without an error, with a line like `306 packages installed` (uniAuth)
-and `1313 packages installed` (Uniloom). The numbers may differ.
+**Check:** both end without an error, with a line like `306 packages installed`. (The
+numbers change over time.)
 
 ## Step 5. Set everything up
 
@@ -206,6 +206,7 @@ This does the whole setup:
 
 **Check:** it ends with `All migrations have been successfully applied.` (or
 `No pending migrations to apply.` if you run it again), and shows no error before that.
+If it shows an `Update available` box from Prisma, ignore it: don't run the command in it.
 
 ## Step 6. Create your account and connect uniAuth
 
@@ -282,7 +283,8 @@ bun run db:seed
 It adds test projects (keys like `TG`, `TS`, `TR`) and two test accounts,
 `seed-mya@example.com` and `seed-ko@example.com`. You get a different role in different
 projects (owner, manager, member, or not a member), so you can try each rule. It prints
-what to try in each project. Running it again replaces only the test projects.
+what to try in each project. Running it again replaces only the test projects. A
+`DeprecationWarning` line in its output is harmless.
 
 ## Every day after this
 
@@ -291,7 +293,8 @@ what to try in each project. Running it again replaces only the test projects.
 3. Open `http://127.0.0.1:3013`.
 
 To stop, press `Ctrl+C` in the `dev:local` terminal. If it runs in the background or you
-can't find its terminal, run `bun run stop`.
+can't find its terminal, run `bun run stop`. It
+stops uniAuth, the API and the web app, and `dev:local` then stops the worker too.
 
 After you pull new code (in either repo): `bun run uniauth:install`, `bun install`, then
 `bun run setup`.
