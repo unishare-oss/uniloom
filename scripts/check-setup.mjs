@@ -20,7 +20,9 @@ const request = (url, init = {}) =>
   );
 
 const discovery = await request(`${ISSUER}/.well-known/openid-configuration`);
-const issuer = discovery?.ok ? (await discovery.json()).issuer : undefined;
+const issuer = discovery?.ok
+  ? (await discovery.json().catch(() => null))?.issuer
+  : undefined;
 if (!discovery)
   fail(
     "uniAuth",

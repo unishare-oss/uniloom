@@ -23,6 +23,16 @@ export const stopTempServer = async (proc) => {
   } catch {
     // Already exited: nothing to stop.
   }
+  await Promise.race([
+    proc.exited,
+    Bun.sleep(5000).then(() => {
+      try {
+        proc.kill(9);
+      } catch {
+        // Exited between the SIGTERM and the escalation: nothing to stop.
+      }
+    }),
+  ]);
   await proc.exited;
 };
 
@@ -88,7 +98,14 @@ const main = async () => {
       stdout: "ignore",
       stderr: "ignore",
     });
+    const stopOnSignal = async () => {
+      if (tempUniauth) await stopTempServer(tempUniauth);
+      process.exit(130);
+    };
+    process.once("SIGINT", stopOnSignal);
+    process.once("SIGTERM", stopOnSignal);
     for (let second = 0; second < 60; second++) {
+      if (tempUniauth.exitCode !== null) break;
       if ((await fetch(discovery).catch(() => null))?.ok) break;
       await Bun.sleep(1000);
     }
@@ -117,13 +134,22 @@ const main = async () => {
       body: JSON.stringify(body),
     });
 
-  let account = await post("/sign-in/email", { email, password });
-  if (account.status === 401) {
-    console.log(`Creating a uniAuth account for ${email}.`);
-    const name =
-      process.env.UNIAUTH_ADMIN_NAME || prompt("Your name (shown in Uniloom):");
-    if (!name) await finish(1, "A name is needed to create the account.");
-    account = await post("/sign-up/email", { email, password, name });
+  let account;
+  try {
+    account = await post("/sign-in/email", { email, password });
+    if (account.status === 401) {
+      console.log(`Creating a uniAuth account for ${email}.`);
+      const name =
+        process.env.UNIAUTH_ADMIN_NAME ||
+        prompt("Your name (shown in Uniloom):");
+      if (!name) await finish(1, "A name is needed to create the account.");
+      account = await post("/sign-up/email", { email, password, name });
+    }
+  } catch (error) {
+    await finish(
+      1,
+      `Couldn't reach uniAuth at ${UNIAUTH} (${error?.message ?? error}). Run bun run uniauth:dev to see its error.`,
+    );
   }
   const accountBody = await account.json().catch(() => ({}));
   if (
@@ -162,9 +188,14 @@ const main = async () => {
       },
     },
   );
-  const client = JSON.parse(
-    create.stdout.toString().match(/\{[\s\S]*\}/)?.[0] ?? "{}",
-  );
+  let client;
+  try {
+    client = JSON.parse(
+      create.stdout.toString().match(/\{[\s\S]*\}/)?.[0] ?? "{}",
+    );
+  } catch {
+    client = {};
+  }
   if (create.exitCode !== 0 || !client.client_id || !client.client_secret)
     await finish(
       1,
