@@ -482,7 +482,7 @@ model ItemDocument {
 }
 
 // ---------------------------------------------------------------------------
-// Invite links and join requests (docs/plans/43-invite-links.md, 44-join-approval.md,
+// Invite links and join requests (docs/archived/43-invite-links.md, 44-join-approval.md,
 // ADR-0015)
 
 /// A project's invite link. A project has at most one where `revokedAt` is null (a

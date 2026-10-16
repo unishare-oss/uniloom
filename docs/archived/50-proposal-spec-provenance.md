@@ -1,6 +1,6 @@
 # 50: Optional proposal-to-spec provenance
 
-Status: In Review
+Status: Done
 
 ## Scope
 

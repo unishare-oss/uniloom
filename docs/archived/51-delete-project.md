@@ -1,6 +1,6 @@
 # 51: Delete a project (owner, soft delete, web only)
 
-Status: In Review
+Status: Done
 
 The user applied the migration on 2026-10-16; the seed and the full e2e suite then ran.
 

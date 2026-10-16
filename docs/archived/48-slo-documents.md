@@ -1,6 +1,6 @@
 # 48: SLO Knowledge documents
 
-Status: In Review
+Status: Done
 
 ## Scope
 

@@ -26,9 +26,9 @@ plans still need Ready status before code.
 | [28: Board filters](../archived/28-board-filters.md)                                      | Filter the board by item metadata.                                                                                                                                  | See plan for alignment                                                                                            |
 | [30: Review boundary and submission events](../archived/30-review-boundary-and-events.md) | Reviewer-controlled moves and atomic submission history.                                                                                                            | Existing item/membership rules; Accepted ADR-0011                                                                 |
 | [31: Review notification processing](../archived/31-review-notification-worker.md)        | In-app fan-out with a Bun/PostgreSQL worker and retry handling.                                                                                                     | Plan 30; Accepted ADR-0011                                                                                        |
-| [43: Invite links](43-invite-links.md)                                                    | One shareable link per project with an expiry and a limit; a join page.                                                                                             | Existing membership; Proposed ADR-0015; In Review                                                                 |
-| [44: Require approval and join requests](44-join-approval.md)                             | Links that make people ask to join; Owners and Managers approve or decline on the Members page.                                                                     | Plan 43                                                                                                           |
-| [45: The requester's view of a join request](45-join-request-status.md)                   | A person sees their waiting requests, cancels them and learns of a decline.                                                                                         | Plan 44                                                                                                           |
+| [43: Invite links](../archived/43-invite-links.md)                                        | One shareable link per project with an expiry and a limit; a join page.                                                                                             | Existing membership; Proposed ADR-0015; Done                                                                      |
+| [44: Require approval and join requests](../archived/44-join-approval.md)                 | Links that make people ask to join; Owners and Managers approve or decline on the Members page.                                                                     | Plan 43                                                                                                           |
+| [45: The requester's view of a join request](../archived/45-join-request-status.md)       | A person sees their waiting requests, cancels them and learns of a decline.                                                                                         | Plan 44                                                                                                           |
 
 | [29: Review inbox UI preview](../archived/29-review-inbox-ui.md) | UI-first sample inbox and local read/unread interactions. | Done; no backend dependency |
 
@@ -49,19 +49,19 @@ work-item hierarchy remains the baseline.
 
 The user confirmed these scopes on 2026-10-15. Both are In Review following implementation; implement 46 before 47.
 
-| Plan                                                 | Scope                                                                                                              | Depends on                                     |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
-| [46: MCP usability](46-mcp-usability.md)             | Document links, readable assignees, website URLs, compact confirmations and instruction-duplication investigation. | Plan 42 and existing ticket-document services. |
-| [47: Rich Markdown rendering](47-markdown-polish.md) | Colored headings, callouts, code controls, heading links, document contents and expandable Mermaid.                | Existing shared renderer; follows plan 46.     |
+| Plan                                                             | Scope                                                                                                              | Depends on                                     |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| [46: MCP usability](../archived/46-mcp-usability.md)             | Document links, readable assignees, website URLs, compact confirmations and instruction-duplication investigation. | Plan 42 and existing ticket-document services. |
+| [47: Rich Markdown rendering](../archived/47-markdown-polish.md) | Colored headings, callouts, code controls, heading links, document contents and expandable Mermaid.                | Existing shared renderer; follows plan 46.     |
 
 ## Confirmed reliability document scopes
 
 The user confirmed two standalone document-kind slices on 2026-10-15. Both are In Review following implementation. Follow plans 46–47, then implement SLO before SLA.
 
-| Plan                                               | Scope                                                                                         | Depends on                       |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------- |
-| [48: SLO Knowledge documents](48-slo-documents.md) | Project SLO kind, Markdown template, Knowledge UI, permissions, ticket links and MCP support. | Existing documents; plans 46–47. |
-| [49: SLA Knowledge documents](49-sla-documents.md) | Project SLA kind, template, supporting SLO links, Knowledge UI and MCP support.               | Plan 48.                         |
+| Plan                                                           | Scope                                                                                         | Depends on                       |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------- |
+| [48: SLO Knowledge documents](../archived/48-slo-documents.md) | Project SLO kind, Markdown template, Knowledge UI, permissions, ticket links and MCP support. | Existing documents; plans 46–47. |
+| [49: SLA Knowledge documents](../archived/49-sla-documents.md) | Project SLA kind, template, supporting SLO links, Knowledge UI and MCP support.               | Plan 48.                         |
 
 Architecture proposal: [ADR-0018](../adr/0018-reliability-document-kinds.md).
 
@@ -71,9 +71,9 @@ The user confirmed optional proposal-to-spec provenance on 2026-10-15. One propo
 may support many specs, and independent specs remain valid. The user set the design
 Ready with “start”; implementation is In Review on its own branch.
 
-| Plan                                                                       | Scope                                                                               | Depends on                                                    |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [50: Optional proposal-to-spec provenance](50-proposal-spec-provenance.md) | Typed optional source, API/MCP create/edit/read, web picker and forward/back links. | Existing documents and ticket-owned specs; Proposed ADR-0019. |
+| Plan                                                                                   | Scope                                                                               | Depends on                                                    |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [50: Optional proposal-to-spec provenance](../archived/50-proposal-spec-provenance.md) | Typed optional source, API/MCP create/edit/read, web picker and forward/back links. | Existing documents and ticket-owned specs; Proposed ADR-0019. |
 
 ## Review inbox alignment
 
