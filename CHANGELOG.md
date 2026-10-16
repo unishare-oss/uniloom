@@ -1,3 +1,18 @@
+# [1.12.0](https://github.com/unishare-oss/uniloom/compare/v1.11.0...v1.12.0) (2026-10-16)
+
+
+### Bug Fixes
+
+* **scripts:** await temp uniAuth exit, preflight uniAuth contract, fail closed on web timeout ([83a86e8](https://github.com/unishare-oss/uniloom/commit/83a86e8cec3c3dc28d070a1e7a4dbed3ad2f9bd3))
+* **scripts:** clean up temp uniAuth on every setup failure path ([1d1023a](https://github.com/unishare-oss/uniloom/commit/1d1023aa842405e742fdc1e80d34c55659bc8b70))
+
+
+### Features
+
+* **comments:** threaded comments on tickets and documents ([91c65dd](https://github.com/unishare-oss/uniloom/commit/91c65dd9361b4ca60a992cc402fa2323b97581c9))
+* **projects:** let owners soft-delete a project ([87b0515](https://github.com/unishare-oss/uniloom/commit/87b0515e33223b9ea27d64b33cd8fd2992bb3abd))
+* **web:** neobrutalist buttons ([d4e7b8d](https://github.com/unishare-oss/uniloom/commit/d4e7b8defdd305a2af667c5ef21e0eb1b3b270cc))
+
 # [1.11.0](https://github.com/unishare-oss/uniloom/compare/v1.10.0...v1.11.0) (2026-10-15)
 
 
