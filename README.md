@@ -68,27 +68,28 @@ explains each one.
 
 ### Day to day
 
-Start uniAuth first (the API checks it on start and exits if it can't reach it), then:
+With the local setup from [`SETUP.md`](SETUP.md), one command starts everything (the
+databases, uniAuth, the API, the web app and the notification worker), with each line
+labelled by part:
 
 ```bash
-bun run dev
+bun run dev:local
 ```
 
-This starts the API, the web app and the notification worker. On Windows, run
-`bun run dev:api`, `bun run dev:web` and `bun run dev:worker` in three terminals instead.
+Then open <http://127.0.0.1:3013>. `Ctrl+C` stops it all.
 
-Handy commands for a local setup (see [`SETUP.md`](SETUP.md)):
+| Command                 | What it does                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `bun run setup`         | Creates missing `.env` files, starts the databases, migrates, generates code |
+| `bun run setup:uniauth` | Creates your local uniAuth account and connects Uniloom to it                |
+| `bun run dev:local`     | Starts everything for local development                                      |
+| `bun run check:setup`   | Checks uniAuth, the API, the web app and sign-in (OK or FAIL)                |
+| `bun run stop`          | Stops whatever runs on ports 3002, 3011 and 3013                             |
 
-| Command               | What it does                                                  |
-| --------------------- | ------------------------------------------------------------- |
-| `bun run db:local`    | Starts the local uniAuth and Uniloom databases in Docker      |
-| `bun run uniauth:dev` | Starts uniAuth from `../uniAuth`                              |
-| `bun run check:setup` | Checks uniAuth, the API, the web app and sign-in (OK or FAIL) |
-| `bun run stop`        | Stops whatever runs on ports 3002, 3011 and 3013              |
-| `bun run setup`       | Generates the gitignored clients and applies migrations       |
+After pulling: `bun run uniauth:install`, `bun install`, then `bun run setup`.
 
-After pulling, run `bun install` and `bun run setup` to regenerate the gitignored clients
-and apply new migrations.
+With the team infrastructure below instead, start uniAuth's dev server elsewhere and run
+`bun run dev` (the API, the web app and the worker).
 
 Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a migration
 with `bun run db:migrate`.
@@ -163,18 +164,18 @@ bun run down
 
 ## Project Structure
 
-| Path                               | Purpose                                              |
-| ---------------------------------- | ---------------------------------------------------- |
-| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui          |
-| `apps/api`                         | Hono on Bun, Prisma schema and migrations            |
-| `skill`                            | Agent skill files, written after the MCP server      |
-| `docs`                             | Plans, ADRs and tech debt                            |
-| `SETUP.md`                         | Local setup from scratch on Windows, macOS and Linux |
-| `scripts/check-setup.mjs`          | Checks a local setup: uniAuth, API, web app, sign-in |
-| `compose.local.yml`                | Local databases for uniAuth and Uniloom (`db:local`) |
-| `docker-compose.yml`               | PostgreSQL (on Oracle), plus migrations, API and web |
-| `.github/workflows/`               | CI, image builds, release                            |
-| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app            |
+| Path                               | Purpose                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------- |
+| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui                            |
+| `apps/api`                         | Hono on Bun, Prisma schema and migrations                              |
+| `skill`                            | Agent skill files, written after the MCP server                        |
+| `docs`                             | Plans, ADRs and tech debt                                              |
+| `SETUP.md`                         | Local setup from scratch on Windows, macOS and Linux                   |
+| `scripts/`                         | Local setup helpers behind `bun run setup`, `dev:local`, `check:setup` |
+| `compose.local.yml`                | Local databases for uniAuth and Uniloom (`db:local`)                   |
+| `docker-compose.yml`               | PostgreSQL (on Oracle), plus migrations, API and web                   |
+| `.github/workflows/`               | CI, image builds, release                                              |
+| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app                              |
 
 ## Roadmap
 
