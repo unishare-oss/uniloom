@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { NEO_BUTTON } from "@/components/comments/neo-button";
 
 /** The box for a new top-level comment. */
 export const CommentComposer = ({
@@ -41,11 +40,7 @@ export const CommentComposer = ({
           <kbd className="font-mono">Shift</kbd> +{" "}
           <kbd className="font-mono">Enter</kbd> to submit
         </span>
-        <Button
-          onClick={() => void post()}
-          disabled={!canPost}
-          className={`${NEO_BUTTON} hover:bg-primary`}
-        >
+        <Button onClick={() => void post()} disabled={!canPost}>
           {isPending ? "Posting..." : "Post"}
         </Button>
       </div>
