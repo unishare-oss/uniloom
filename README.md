@@ -45,75 +45,74 @@ See [`MVP.md`](MVP.md) for the spec and build order.
 
 ## Getting Started
 
-### Prerequisites
+**New here? Follow [`SETUP.md`](SETUP.md).** It takes you from a fresh Windows, macOS or
+Linux computer to a signed-in Uniloom, with your own uniAuth and both databases in Docker.
+You only need a GitHub account with access to
+[uniAuth](https://github.com/unishare-oss/uniAuth). The guide is written so you can also
+hand it to an AI coding agent and let it do the steps.
 
-- Bun 1.4.2
-- Tailscale on the same tailnet as the Oracle VM (`oracle.tailcb9a25.ts.net`)
-- The `ssh oracle` host, to start and stop the database
+### What runs where
 
-PostgreSQL runs in Docker on the VM; the web and API apps run locally with Bun. No SSH tunnel is needed.
+| What              | Address                 | Notes                                               |
+| ----------------- | ----------------------- | --------------------------------------------------- |
+| Uniloom web app   | <http://127.0.0.1:3013> | Open this one. `localhost:3013` breaks sign-in      |
+| Uniloom API       | <http://127.0.0.1:3011> | The web app proxies `/api` to it                    |
+| uniAuth (sign-in) | <http://localhost:3002> | Stays on `localhost`: its issuer is checked exactly |
+| Uniloom database  | `127.0.0.1:5434`        | PostgreSQL 17 in Docker                             |
+| uniAuth database  | `127.0.0.1:5433`        | PostgreSQL 17 in Docker                             |
 
-### 1. Install dependencies
+Open the web app at `127.0.0.1`, not `localhost`. uniAuth only redirects local clients
+back to a loopback IP, so `BETTER_AUTH_URL`, uniAuth's `UNILOOM_ORIGIN` and the OAuth
+client's redirect all use `http://127.0.0.1:3013`. [`SETUP.md`](SETUP.md#why-some-urls-say-127001)
+explains each one.
 
-```bash
-bun install
-```
+### Day to day
 
-This also installs the Git hooks (see [Checks](#checks)).
-
-### 2. Configure environment
-
-```bash
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-```
-
-People sign in with [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md). The API refuses to start without `BETTER_AUTH_*` and `UNIAUTH_*` in `apps/api/.env`. For development, uniAuth runs at <https://auth-dev.psstee.me> with a local client registered for `http://127.0.0.1:3013/api/auth/callback/uniauth`:
-
-```env
-# apps/api/.env
-UNIAUTH_ISSUER="https://auth-dev.psstee.me/api/auth"
-UNIAUTH_CLIENT_ID="…"       # from the local client
-UNIAUTH_CLIENT_SECRET="…"   # from the local client
-
-# apps/web/.env
-NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.me"
-```
-
-The issuer must be https: uniAuth advertises an https issuer for any host other than localhost, so plain http breaks ID-token verification.
-
-### 3. Start the database
+With the local setup from [`SETUP.md`](SETUP.md), one command starts everything (the
+databases, uniAuth, the API, the web app and the notification worker), with each line
+labelled by part:
 
 ```bash
-bun run db:up
+bun run dev:local
 ```
 
-This copies `docker-compose.yml` to `~/uniloom` on the VM and starts PostgreSQL there, bound only to the VM's Tailscale IP on port `5434`: reachable from the tailnet, not from the internet. `DATABASE_URL` in `apps/api/.env.example` already points at it. Stop it with `bun run db:down`; the data stays in the `postgres_data` volume on the VM.
+Then open <http://127.0.0.1:3013>. `Ctrl+C` stops it all.
 
-### 4. Generate clients and migrate
+| Command                 | What it does                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `bun run setup`         | Creates missing `.env` files, starts the databases, migrates, generates code |
+| `bun run setup:uniauth` | Creates your local uniAuth account and connects Uniloom to it                |
+| `bun run dev:local`     | Starts everything for local development                                      |
+| `bun run check:setup`   | Checks uniAuth, the API, the web app and sign-in (OK or FAIL)                |
+| `bun run stop`          | Stops whatever runs on ports 3002, 3011 and 3013                             |
 
-The Prisma client and the web API client are gitignored, so generate them after cloning and after pulling schema changes:
+After pulling: `bun run uniauth:install`, `bun install`, then `bun run setup`.
+
+With the team infrastructure below instead, start uniAuth's dev server elsewhere and run
+`bun run dev` (the API, the web app and the worker).
+
+Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a migration
+with `bun run db:migrate`.
+
+### Team infrastructure (optional)
+
+Maintainers on the tailnet can use the shared database and dev uniAuth instead of local
+ones. This needs Tailscale on the same tailnet as the Oracle VM
+(`oracle.tailcb9a25.ts.net`), the `ssh oracle` host, and a dev OAuth client from the
+uniAuth maintainer.
 
 ```bash
-bun run db:generate
-bun run api:generate
-bun run db:migrate
+bun run db:up     # starts PostgreSQL on the VM, bound to its Tailscale IP on port 5434
+bun run db:down   # stops it; the data stays in the postgres_data volume on the VM
 ```
 
-Add models to `apps/api/prisma/schema.prisma` as slices need them, then create a migration with `bun run db:migrate`.
+`apps/api/.env.example` already points `DATABASE_URL` at it. For uniAuth, set
+`UNIAUTH_ISSUER="https://auth-dev.psstee.me/api/auth"` and the client's id and secret in
+`apps/api/.env`, and `NEXT_PUBLIC_UNIAUTH_URL="https://auth-dev.psstee.me"` in
+`apps/web/.env`. The issuer must be https: uniAuth advertises an https issuer for any host
+other than a loopback address, so plain http breaks ID-token verification.
 
-### 5. Start development servers
-
-```bash
-bun run dev
-```
-
-- Web: <http://127.0.0.1:3013> (open `127.0.0.1`, not `localhost`: it must match `BETTER_AUTH_URL` and the client's registered redirect)
-- API health: <http://localhost:3011/health>
-
-`bun run dev` starts the API, the web app and the notification worker.
-
-### 6. Seed test data
+### Seed test data
 
 After signing in once:
 
@@ -165,15 +164,18 @@ bun run down
 
 ## Project Structure
 
-| Path                               | Purpose                                              |
-| ---------------------------------- | ---------------------------------------------------- |
-| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui          |
-| `apps/api`                         | Hono on Bun, Prisma schema and migrations            |
-| `skill`                            | Agent skill files, written after the MCP server      |
-| `docs`                             | Plans, ADRs and tech debt                            |
-| `docker-compose.yml`               | PostgreSQL (on Oracle), plus migrations, API and web |
-| `.github/workflows/`               | CI, image builds, release                            |
-| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app            |
+| Path                               | Purpose                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------- |
+| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui                            |
+| `apps/api`                         | Hono on Bun, Prisma schema and migrations                              |
+| `skill`                            | Agent skill files, written after the MCP server                        |
+| `docs`                             | Plans, ADRs and tech debt                                              |
+| `SETUP.md`                         | Local setup from scratch on Windows, macOS and Linux                   |
+| `scripts/`                         | Local setup helpers behind `bun run setup`, `dev:local`, `check:setup` |
+| `compose.local.yml`                | Local databases for uniAuth and Uniloom (`db:local`)                   |
+| `docker-compose.yml`               | PostgreSQL (on Oracle), plus migrations, API and web                   |
+| `.github/workflows/`               | CI, image builds, release                                              |
+| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app                              |
 
 ## Roadmap
 
