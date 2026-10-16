@@ -1,6 +1,6 @@
 # 42: MCP document tools
 
-Status: In Review
+Status: Done
 
 ## Scope
 

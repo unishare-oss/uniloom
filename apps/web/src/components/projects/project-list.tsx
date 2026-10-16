@@ -39,7 +39,7 @@ export const ProjectList = () => {
         </div>
         <NewProjectDialog
           trigger={
-            <Button className="h-11 rounded-xl border-2 border-ink px-4 text-[15px] font-semibold shadow-hard hover:bg-primary/90">
+            <Button className="h-11 rounded-xl px-4 text-[15px]">
               <Plus />
               New project
             </Button>

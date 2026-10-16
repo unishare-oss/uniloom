@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { NEO_BUTTON } from "@/components/comments/neo-button";
 
 /** The inline editor for editing a comment or writing a reply. */
 export const CommentEditor = ({
@@ -53,7 +52,6 @@ export const CommentEditor = ({
             type="button"
             variant="outline"
             onClick={onCancel}
-            className={`${NEO_BUTTON} bg-background hover:bg-muted`}
             disabled={isPending}
           >
             Cancel
@@ -61,7 +59,6 @@ export const CommentEditor = ({
           <Button
             type="button"
             onClick={() => void onSubmit(value)}
-            className={`${NEO_BUTTON} hover:bg-primary`}
             disabled={!canSubmit}
           >
             {isPending ? pendingLabel : submitLabel}
