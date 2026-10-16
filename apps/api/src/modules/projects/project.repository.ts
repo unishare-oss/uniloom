@@ -43,7 +43,7 @@ export const createProject = async (data: {
 
 export const findProjectsForUser = (userId: string) => {
   return prisma.project.findMany({
-    where: { members: { some: { userId } } },
+    where: { deletedAt: null, members: { some: { userId } } },
     orderBy: { createdAt: 'asc' },
   });
 };
@@ -51,13 +51,13 @@ export const findProjectsForUser = (userId: string) => {
 /** The project, if `userId` is one of its members. */
 export const findProjectForMember = (projectId: string, userId: string) => {
   return prisma.project.findFirst({
-    where: { id: projectId, members: { some: { userId } } },
+    where: { id: projectId, deletedAt: null, members: { some: { userId } } },
   });
 };
 
 export const isMember = (projectId: string, userId: string) => {
   return prisma.member
-    .count({ where: { projectId, userId } })
+    .count({ where: { projectId, userId, project: { deletedAt: null } } })
     .then((count) => count > 0);
 };
 
@@ -72,7 +72,7 @@ export const findProjectDetailForMember = (
   userId: string,
 ) => {
   return prisma.project.findFirst({
-    where: { id: projectId, members: { some: { userId } } },
+    where: { id: projectId, deletedAt: null, members: { some: { userId } } },
     include: {
       states: {
         select: {
@@ -106,4 +106,13 @@ export const updateProject = (
         return null;
       throw error;
     });
+};
+
+/** Soft-deletes the project; the count is 0 when it was already deleted. */
+export const softDeleteProject = async (projectId: string) => {
+  const { count } = await prisma.project.updateMany({
+    where: { id: projectId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return count;
 };

@@ -81,7 +81,7 @@ export const decideIfPending = async (
 /** The person's waiting requests in every project, oldest first, with the project's name. */
 export const findMineWaiting = (userId: string) => {
   return prisma.joinRequest.findMany({
-    where: { userId, status: 'PENDING' },
+    where: { userId, status: 'PENDING', project: { deletedAt: null } },
     include: { project: { select: { name: true, keyPrefix: true } } },
     orderBy: [{ requestedAt: 'asc' }, { id: 'asc' }],
   });

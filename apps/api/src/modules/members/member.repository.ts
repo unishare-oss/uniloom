@@ -18,8 +18,8 @@ export const findMember = (
   userId: string,
   db: Prisma.TransactionClient = prisma,
 ) => {
-  return db.member.findUnique({
-    where: { projectId_userId: { projectId, userId } },
+  return db.member.findFirst({
+    where: { projectId, userId, project: { deletedAt: null } },
   });
 };
 

@@ -545,6 +545,9 @@
                     "canEditSettings": {
                       "type": "boolean"
                     },
+                    "canDeleteProject": {
+                      "type": "boolean"
+                    },
                     "canCreateLabels": {
                       "type": "boolean"
                     },
@@ -625,6 +628,7 @@
                     "canCreateItems",
                     "canAssignOthers",
                     "canEditSettings",
+                    "canDeleteProject",
                     "canCreateLabels",
                     "canCreateDocuments",
                     "documentKinds",
@@ -816,6 +820,36 @@
                     "createdAt",
                     "updatedAt"
                   ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProject",
+        "tags": [
+          "projects"
+        ],
+        "summary": "Delete a project (owners); it is hidden, not erased",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a project (owners); it is hidden, not erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
                 }
               }
             }

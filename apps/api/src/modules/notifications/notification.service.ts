@@ -40,7 +40,7 @@ export const processNextReviewEvent = async () => {
       const event = await notificationRepo.findNextDueEvent(tx);
       if (!event) return false;
       eventId = event.id;
-      if (!event.item.deletedAt) {
+      if (!event.item.deletedAt && !event.project.deletedAt) {
         const members = await notificationRepo.findEligibleRecipients(
           tx,
           event.projectId,
