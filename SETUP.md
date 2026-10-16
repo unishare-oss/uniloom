@@ -312,7 +312,9 @@ It asks three questions. Type the answer to each and press Enter:
 Then wait a few seconds while it connects Uniloom to uniAuth. You'll sign in to Uniloom
 with this email and password in step 8.
 
-**Check:** it ends with `Done. Uniloom is registered with uniAuth`.
+**Check:** it ends with `Done. Uniloom is registered with uniAuth`. If `dev:local`
+is already running, restart it (`Ctrl+C`, then `bun run dev:local` again) so the
+API picks up the new client.
 
 ## Step 7. Start Uniloom
 
@@ -385,6 +387,7 @@ what to try in each project. Running it again replaces only the test projects. A
 To stop, press `Ctrl+C` in the `dev:local` terminal. If it runs in the background or you
 can't find its terminal, run `bun run stop`. It
 stops uniAuth, the API and the web app, and `dev:local` then stops the worker too.
+The databases keep running, with your data: the next `bun run dev:local` reconnects.
 
 After you pull new code (in either repo): `bun run uniauth:install`, `bun install`, then
 `bun run setup`.
@@ -394,26 +397,26 @@ After you pull new code (in either repo): `bun run uniauth:install`, `bun instal
 First run `bun run check:setup`. Its `FAIL` lines say what's wrong. Then look for the
 error here:
 
-| What you see                                                                                                | What to do                                                                                                                                                                                  |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `git clone` of uniAuth says `could not read Username`, `Authentication failed` or `Repository not found`    | You aren't logged in to GitHub, or your account can't see uniAuth. Do step 2 again. If its check still fails, ask the uniAuth maintainer for access.                                        |
-| `bun run uniauth:install` fails with `401`, `403` or `404` for `@unishare-oss/...`                          | Do step 2 again, then step 4.                                                                                                                                                               |
-| `does not provide an export named 'styleText'`, or a message that a newer Node.js is needed                 | Node is too old. Install it again (step 1), open a new terminal, and check `node --version` is `v22.18.0` or higher.                                                                        |
-| `bun`, `node` or `gh` is "not found" or "not recognized" right after installing                             | Open a new terminal. On macOS or Linux, if that doesn't help, run `source ~/.bashrc` (or `source ~/.zshrc` on macOS).                                                                       |
-| `docker` says it can't connect, or `Is the docker daemon running?`                                          | Start Docker Desktop (Windows, macOS) and wait until it is running. On Linux, run `sudo systemctl start docker`.                                                                            |
-| `'compose' is not a docker command` (Linux)                                                                 | Install Docker Compose: `sudo apt install -y docker-compose-plugin`. If apt can't find it (Docker came from Ubuntu's own `docker.io` package), use `sudo apt install -y docker-compose-v2`. |
-| Linux: `permission denied` on `/var/run/docker.sock`                                                        | Run `sudo usermod -aG docker $USER`, then log out and back in.                                                                                                                              |
-| `port is already allocated` during `bun run setup` or `dev:local`                                           | Something else uses port 5433 or 5434, often another PostgreSQL. Run `docker ps` to see what, and ask before stopping it.                                                                   |
-| `uniAuth isn't next to uniloom`                                                                             | Both repos must be in `~/dev/unicorp`. Do step 3 again.                                                                                                                                     |
-| `setup:uniauth` says `already has a uniAuth account, with a different password`                             | Run it again with that account's password, or use a different email.                                                                                                                        |
-| `EADDRINUSE`, `Is port 3002 in use?` or "address already in use"                                            | An old server is still running. Run `bun run stop`, then `bun run dev:local` again.                                                                                                         |
-| `FAIL  Sign-in: Uniloom isn't connected to uniAuth yet`                                                     | Do step 6, then stop `dev:local` (`Ctrl+C`) and start it again.                                                                                                                             |
-| `FAIL  Sign-in`, a `redirect_uri` or `invalid_client` error, or sign-in keeps coming back to the login page | Run step 6 again, then restart `dev:local`. Make sure the browser's address is `http://127.0.0.1:3013`, not `localhost:3013`.                                                               |
-| `[api]` lines say `uniAuth is not reachable`                                                                | uniAuth didn't start. Read the `[uniauth]` lines for the reason.                                                                                                                            |
-| A missing module under `src/generated/prisma` or `src/lib/api/generated`                                    | Run `bun run setup` again.                                                                                                                                                                  |
-| `bun run db:seed` says nobody has signed in                                                                 | Do step 8 first.                                                                                                                                                                            |
-| Windows: "access a socket in a way forbidden by its access permissions"                                     | Windows has reserved that port. Restarting Windows usually fixes it.                                                                                                                        |
-| Windows: files are locked or installs fail at random                                                        | Your home folder may sync to OneDrive. Ask for help moving the repos to a folder outside OneDrive.                                                                                          |
+| What you see                                                                                                | What to do                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `git clone` of uniAuth says `could not read Username`, `Authentication failed` or `Repository not found`    | You aren't logged in to GitHub, or your account can't see uniAuth. Do step 2 again. If its check still fails, ask the uniAuth maintainer for access.                                                                                        |
+| `bun run uniauth:install` fails with `401`, `403` or `404` for `@unishare-oss/...`                          | Do step 2 again, then step 4.                                                                                                                                                                                                               |
+| `does not provide an export named 'styleText'`, or a message that a newer Node.js is needed                 | Node is too old. Install it again (step 1), open a new terminal, and check `node --version` is `v22.18.0` or higher.                                                                                                                        |
+| `bun`, `node` or `gh` is "not found" or "not recognized" right after installing                             | Open a new terminal. On macOS or Linux, if that doesn't help, run `source ~/.bashrc` (or `source ~/.zshrc` on macOS).                                                                                                                       |
+| `docker` says it can't connect, or `Is the docker daemon running?`                                          | Start Docker Desktop (Windows, macOS) and wait until it is running. On Linux, run `sudo systemctl start docker`.                                                                                                                            |
+| `'compose' is not a docker command` (Linux)                                                                 | Install Docker Compose: `sudo apt install -y docker-compose-plugin`. If apt can't find it (Docker came from Ubuntu's own `docker.io` package), use `sudo apt install -y docker-compose-v2`.                                                 |
+| Linux: `permission denied` on `/var/run/docker.sock`                                                        | Run `sudo usermod -aG docker $USER`, then log out and back in.                                                                                                                                                                              |
+| `port is already allocated` during `bun run setup` or `dev:local`                                           | Something else uses port 5433 or 5434, often another PostgreSQL. `docker ps` shows Docker's own containers; otherwise find it with `lsof -i :5433` (macOS, Linux) or `netstat -ano \| findstr :5433` (Windows), and ask before stopping it. |
+| `uniAuth isn't next to uniloom`                                                                             | Both repos must be in `~/dev/unicorp`. Do step 3 again.                                                                                                                                                                                     |
+| `setup:uniauth` says `already has a uniAuth account, with a different password`                             | Run it again with that account's password, or use a different email.                                                                                                                                                                        |
+| `EADDRINUSE`, `Is port 3002 in use?` or "address already in use"                                            | An old server is still running. Run `bun run stop`, then `bun run dev:local` again.                                                                                                                                                         |
+| `FAIL  Sign-in: Uniloom isn't connected to uniAuth yet`                                                     | Do step 6, then stop `dev:local` (`Ctrl+C`) and start it again.                                                                                                                                                                             |
+| `FAIL  Sign-in`, a `redirect_uri` or `invalid_client` error, or sign-in keeps coming back to the login page | Run step 6 again, then restart `dev:local`. Make sure the browser's address is `http://127.0.0.1:3013`, not `localhost:3013`.                                                                                                               |
+| `[api]` lines say `uniAuth is not reachable`                                                                | uniAuth didn't start. Read the `[uniauth]` lines for the reason.                                                                                                                                                                            |
+| A missing module under `src/generated/prisma` or `src/lib/api/generated`                                    | Run `bun run setup` again.                                                                                                                                                                                                                  |
+| `bun run db:seed` says nobody has signed in                                                                 | Do step 8 first.                                                                                                                                                                                                                            |
+| Windows: "access a socket in a way forbidden by its access permissions"                                     | Windows has reserved that port. Restarting Windows usually fixes it.                                                                                                                                                                        |
+| Windows: files are locked or installs fail at random                                                        | Your home folder may sync to OneDrive. Ask for help moving the repos to a folder outside OneDrive.                                                                                                                                          |
 
 These are normal, not errors:
 
@@ -440,7 +443,11 @@ All of these run from the `uniloom` folder and work the same on every system.
 
 Where things run: Uniloom at `http://127.0.0.1:3013`, its API at `http://127.0.0.1:3011`,
 uniAuth at `http://localhost:3002`, and the databases on ports 5433 (uniAuth) and 5434
-(Uniloom). Uniloom has to be opened at `127.0.0.1`, because uniAuth only sends you back
+(Uniloom).
+
+## Why some URLs say 127.0.0.1
+
+Uniloom has to be opened at `127.0.0.1`, because uniAuth only sends you back
 to that exact address. uniAuth stays on `localhost`, because Uniloom checks uniAuth's
 address letter for letter.
 
