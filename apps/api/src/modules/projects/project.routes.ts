@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { describe } from '@/openapi.js';
 import {
+  deleteProjectById,
   getProjectById,
   getProjects,
   patchProject,
@@ -62,4 +63,15 @@ projectRoutes.patch(
     data: projectSchema,
   }),
   patchProject,
+);
+projectRoutes.delete(
+  '/:projectId',
+  describe({
+    tag: 'projects',
+    operationId: 'deleteProject',
+    summary: 'Delete a project (owners); it is hidden, not erased',
+    pathParams: ['projectId'],
+    data: z.null(),
+  }),
+  deleteProjectById,
 );

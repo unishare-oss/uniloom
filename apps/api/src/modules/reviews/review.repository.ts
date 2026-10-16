@@ -4,6 +4,7 @@ import type { ReviewQuery, ReviewCursor } from './review.types.js';
 export const findReviewProjects = (userId: string) =>
   prisma.project.findMany({
     where: {
+      deletedAt: null,
       members: { some: { userId, role: { in: ['OWNER', 'MANAGER'] } } },
     },
     select: { id: true, name: true, keyPrefix: true },
@@ -20,6 +21,7 @@ export const findReviewItems = (
       deletedAt: null,
       state: { key: 'in_review' },
       project: {
+        deletedAt: null,
         members: { some: { userId, role: { in: ['OWNER', 'MANAGER'] } } },
       },
       ...(query.projectId && { projectId: query.projectId }),

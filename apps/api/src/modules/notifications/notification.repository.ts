@@ -30,7 +30,10 @@ export const findNextDueEvent = async (tx: Prisma.TransactionClient) => {
   return rows[0]
     ? tx.reviewEvent.findUnique({
         where: { id: rows[0].id },
-        include: { item: { select: { deletedAt: true } } },
+        include: {
+          item: { select: { deletedAt: true } },
+          project: { select: { deletedAt: true } },
+        },
       })
     : null;
 };
@@ -96,6 +99,7 @@ export const updateDelivery = (
 ) => tx.reviewEvent.update({ where: { id }, data });
 
 const permittedProject = (userId: string) => ({
+  deletedAt: null,
   members: {
     some: {
       userId,
@@ -114,7 +118,8 @@ export const findNotificationGroups = (
       COUNT(*) FILTER (WHERE n."readAt" IS NULL) AS "unreadCount"
     FROM notification n JOIN review_event e ON e.id=n."eventId"
     JOIN member m ON m."projectId"=n."projectId" AND m."userId"=n."recipientId"
-    WHERE n."recipientId"=${userId} AND m.role IN ('OWNER','MANAGER')
+    JOIN project p ON p.id=n."projectId"
+    WHERE n."recipientId"=${userId} AND m.role IN ('OWNER','MANAGER') AND p."deletedAt" IS NULL
       ${query.projectId ? Prisma.sql`AND n."projectId"=${query.projectId}::uuid` : Prisma.empty}
     GROUP BY n."itemId"
     HAVING (NOT ${query.unreadOnly === 'true'} OR COUNT(*) FILTER (WHERE n."readAt" IS NULL)>0)
@@ -196,7 +201,9 @@ export const lockPermittedNotifications = (
   ids: string[],
 ) => tx.$queryRaw<{ id: string }[]>`
   SELECT n.id FROM notification n JOIN member m ON m."projectId"=n."projectId" AND m."userId"=n."recipientId"
+  JOIN project p ON p.id=n."projectId"
   WHERE n.id=ANY(${ids}::uuid[]) AND n."recipientId"=${userId} AND m.role IN ('OWNER','MANAGER')
+  AND p."deletedAt" IS NULL
   FOR UPDATE OF n FOR SHARE OF m`;
 
 export const updateReadState = (

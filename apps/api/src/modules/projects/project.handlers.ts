@@ -3,6 +3,7 @@ import { apiSuccess, idParam, parseBody } from '@/http.js';
 import { createProjectSchema, updateProjectSchema } from './project.schema.js';
 import {
   createProject,
+  deleteProject,
   getProject,
   listProjects,
   updateProject,
@@ -31,4 +32,9 @@ export const patchProject = async (c: Context) => {
     await updateProject(idParam(c, 'projectId'), c.var.user.id, input),
     'Project updated',
   );
+};
+
+export const deleteProjectById = async (c: Context) => {
+  await deleteProject(idParam(c, 'projectId'), c.var.user.id);
+  return apiSuccess(c, null, 'Project deleted');
 };

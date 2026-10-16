@@ -21,8 +21,8 @@ export const findUserBySub = async (sub: string) => {
 
 /** The project id for a key prefix such as TG. Membership is checked by the service. */
 export const findProjectIdByKey = async (keyPrefix: string) => {
-  const project = await prisma.project.findUnique({
-    where: { keyPrefix },
+  const project = await prisma.project.findFirst({
+    where: { keyPrefix, deletedAt: null },
     select: { id: true },
   });
   return project?.id;
@@ -31,7 +31,7 @@ export const findProjectIdByKey = async (keyPrefix: string) => {
 /** The id of a live item, from its project's key prefix and its number (TG-12). */
 export const findItemIdByKey = async (keyPrefix: string, number: number) => {
   const item = await prisma.item.findFirst({
-    where: { number, deletedAt: null, project: { keyPrefix } },
+    where: { number, deletedAt: null, project: { keyPrefix, deletedAt: null } },
     select: { id: true },
   });
   return item?.id;
