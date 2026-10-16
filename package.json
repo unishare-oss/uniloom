@@ -23,7 +23,17 @@
     "db:up": "ssh oracle 'mkdir -p ~/uniloom' && scp -q docker-compose.yml oracle:uniloom/ && ssh oracle 'cd ~/uniloom && echo DB_HOST_IP=$(tailscale ip -4) > .env && sudo docker compose up -d --wait db'",
     "db:down": "ssh oracle 'cd ~/uniloom && sudo docker compose stop db'",
     "prepare": "simple-git-hooks",
-    "dev:worker": "bun run --cwd apps/api notifications:worker"
+    "dev:worker": "bun run --cwd apps/api notifications:worker",
+    "db:local": "docker compose -f compose.local.yml up -d --wait",
+    "db:deploy": "bun run --cwd apps/api db:deploy",
+    "setup": "bun run db:generate && bun run api:generate && bun run db:deploy",
+    "check:setup": "bun scripts/check-setup.mjs",
+    "secret": "bun -e \"console.log(crypto.randomUUID() + crypto.randomUUID())\"",
+    "stop": "bunx kill-port 3002 3011 3013",
+    "uniauth:install": "cd ../uniAuth && NODE_AUTH_TOKEN=$(gh auth token) bun install",
+    "uniauth:migrate": "cd ../uniAuth/apps/server && bun run db:migrate",
+    "uniauth:dev": "cd ../uniAuth && bun run dev",
+    "uniauth:client": "cd ../uniAuth/apps/server && bun scripts/create-client.ts --name Uniloom --origin http://127.0.0.1:3013 --local"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

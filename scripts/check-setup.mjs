@@ -1,9 +1,8 @@
 // Checks a local setup made with SETUP.md: uniAuth, the Uniloom API and web app, and a
-// sign-in between them. Needs no install and runs the same on every OS. From the folder
-// that holds both repos:
+// sign-in between them. Needs no install and runs the same on every OS:
 //
-//   bun uniloom/scripts/check-setup.mjs           # everything
-//   bun uniloom/scripts/check-setup.mjs uniauth   # only uniAuth (before Uniloom runs)
+//   bun run check:setup           # everything
+//   bun run check:setup uniauth   # only uniAuth (before Uniloom runs)
 const UNIAUTH = "http://localhost:3002";
 const ISSUER = `${UNIAUTH}/api/auth`;
 const API = "http://127.0.0.1:3011";
@@ -24,7 +23,10 @@ const request = (url, init = {}) =>
 const discovery = await request(`${ISSUER}/.well-known/openid-configuration`);
 const issuer = discovery?.ok ? (await discovery.json()).issuer : undefined;
 if (!discovery)
-  fail("uniAuth", `nothing answers at ${UNIAUTH}. Start it (SETUP.md step 7).`);
+  fail(
+    "uniAuth",
+    `nothing answers at ${UNIAUTH}. Start it with bun run uniauth:dev (SETUP.md step 7).`,
+  );
 else if (issuer !== ISSUER)
   fail(
     "uniAuth",
@@ -38,7 +40,7 @@ if (process.argv[2] !== "uniauth") {
   else
     fail(
       "Uniloom API",
-      `nothing answers at ${API}. Start it (step 13) and read its terminal for errors.`,
+      `nothing answers at ${API}. Start it (SETUP.md step 13) and read its terminal for errors.`,
     );
 
   const login = await request(`${WEB}/login`);
@@ -46,7 +48,7 @@ if (process.argv[2] !== "uniauth") {
   else
     fail(
       "Uniloom web app",
-      `nothing answers at ${WEB}. Start it (step 13) and read its terminal for errors.`,
+      `nothing answers at ${WEB}. Start it (SETUP.md step 13) and read its terminal for errors.`,
     );
 
   // The first half of a sign-in, as the browser does it: Uniloom asks uniAuth to sign the
