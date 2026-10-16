@@ -123,6 +123,8 @@ model Project {
   selfClaimAllowed  Boolean     @default(true)
   /// Next item number. Increment it in the same transaction that creates the item.
   nextItemNumber    Int         @default(1)
+  /// Soft delete (ADR-0020): set when an Owner deletes the project; every lookup skips it.
+  deletedAt         DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 

@@ -57,6 +57,7 @@ export const getProject = async (projectId: string, userId: string) => {
     canCreateItems: CREATORS.includes(role),
     canAssignOthers: CREATORS.includes(role),
     canEditSettings: role === 'OWNER',
+    canDeleteProject: role === 'OWNER',
     canCreateLabels: CREATORS.includes(role),
     canCreateDocuments: CREATORS.includes(role),
     documentKinds: documentKindsFor(project),
@@ -118,4 +119,11 @@ export const updateProject = async (
       'The limits changed while saving: reload and try again',
     );
   return updated;
+};
+
+/** Owner only: soft-deletes the project. 404 when it was already deleted. */
+export const deleteProject = async (projectId: string, userId: string) => {
+  await requireRole(projectId, userId, ['OWNER']);
+  const count = await projectRepo.softDeleteProject(projectId);
+  if (count === 0) throw apiError(404, 'not_found', 'Project not found');
 };

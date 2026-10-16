@@ -79,6 +79,7 @@ describe('Uniloom API (e2e)', () => {
         'deleteInvite',
         'deleteItem',
         'deleteLabel',
+        'deleteProject',
         'getDocument',
         'getInvite',
         'getItem',
