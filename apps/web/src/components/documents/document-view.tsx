@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { AdrStatusActions } from "@/components/documents/adr-status-actions";
 import { DocumentProvenance } from "@/components/documents/document-provenance";
+import { CommentSection } from "@/components/comments/comment-section";
 import { CreatedBy } from "@/components/documents/created-by";
 import { documentKey } from "@/components/documents/document-meta";
 import { KindBadge } from "@/components/documents/kind-badge";
@@ -179,6 +180,11 @@ export const DocumentView = ({
               )}
               <div className="mt-8">
                 <CreatedBy projectId={projectId} document={document} />
+              </div>
+              <div className="mt-8 border-t pt-6">
+                <CommentSection
+                  target={{ kind: "document", id: document.id }}
+                />
               </div>
             </article>
             <aside className="flex h-fit flex-col gap-4 rounded-xl border bg-card p-4 text-sm">
