@@ -2,6 +2,7 @@ import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { apiError } from '@/http.js';
 import * as documentService from '@/modules/documents/document.service.js';
+import * as blockerService from '@/modules/items/blocker.service.js';
 import * as checklistService from '@/modules/items/checklist.service.js';
 import * as itemDocumentService from '@/modules/items/item-document.service.js';
 import { createTicketDocumentSchema } from '@/modules/items/item.schema.js';
@@ -38,6 +39,22 @@ const findItemId = async (key: string) => {
     : undefined;
   if (!id) throw apiError(404, 'not_found', 'Item not found');
   return id;
+};
+
+/** Item keys (TG-3) for item ids, in the same order. */
+const findKeys = async (ids: string[]) => {
+  const keys = await mcpRepo.findItemKeys(ids);
+  return ids.flatMap((id) => keys.find((row) => row.id === id)?.key ?? []);
+};
+
+/** The status, code and message of a refused service call, or the error itself if it is no refusal. */
+const readRefusal = async (error: unknown) => {
+  if (!(error instanceof HTTPException) || !error.res) throw error;
+  const body = (await error.res.clone().json()) as {
+    code: string;
+    message: string;
+  };
+  return { status: error.status, code: body.code, message: body.message };
 };
 
 /**
@@ -146,6 +163,7 @@ export const getItem = async (userId: string, key: string) => {
   );
   return {
     ...item,
+    blockedBy: await findKeys(item.blockedBy),
     assignee: profile ? { name: profile.name, email: profile.email } : null,
     url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
     related: item.related.map((document) => ({
@@ -175,8 +193,9 @@ export const getCriteria = async (userId: string, key: string) => {
 };
 
 /**
- * Creates an item (no `key`) or updates one (`key`), then moves it when `state` is set.
- * The state is checked first, so a refused move leaves no half-saved item.
+ * Creates an item (no `key`) or updates one (`key`), adds the `blockedBy` items as blockers,
+ * then moves it when `state` is set. The state and the keys are checked first, so a refused
+ * state or an unknown key leaves no half-saved item.
  */
 export const saveItem = async (
   agent: Agent,
@@ -190,6 +209,7 @@ export const saveItem = async (
     priority?: Priority;
     assignee?: string;
     state?: string;
+    blockedBy?: string[];
   },
 ) => {
   const { userId } = agent;
@@ -218,6 +238,14 @@ export const saveItem = async (
     input.assignee === undefined
       ? undefined
       : await findAssigneeId(projectId, input.assignee, userId);
+  // One entry per item: CC-3 and CC-03 are the same blocker.
+  const blockers: { key: string; id: string }[] = [];
+  for (const text of input.blockedBy ?? []) {
+    const key = text.trim().toUpperCase();
+    const blockerId = await findItemId(key);
+    if (!blockers.some((blocker) => blocker.id === blockerId))
+      blockers.push({ key, id: blockerId });
+  }
 
   const fields = {
     title: input.title,
@@ -241,22 +269,41 @@ export const saveItem = async (
     await itemService.updateProjectItem(id, userId, fields, agent);
     saved = `${input.key!.trim().toUpperCase()}'s changes are saved`;
   }
+  // Blockers come before the move, so a refused move keeps them. Each is its own
+  // transaction: when one is refused, say what was already saved, blockers included.
+  if (blockers.length > 0) {
+    const current = (await itemService.getItem(id, userId)).blockedBy;
+    for (const blocker of blockers) {
+      if (current.includes(blocker.id)) continue;
+      try {
+        await blockerService.addBlocker(id, userId, blocker.id);
+      } catch (error) {
+        const refusal = await readRefusal(error);
+        throw apiError(
+          refusal.status,
+          refusal.code,
+          saved
+            ? `${saved}, but ${blocker.key} was not added as a blocker: ${refusal.message}`
+            : refusal.message,
+        );
+      }
+      saved = saved
+        ? `${saved}, ${blocker.key} was added as a blocker`
+        : `${blocker.key} was added as a blocker`;
+    }
+  }
   if (state) {
-    // The move is its own transaction: when it fails after a create or an edit, say what
-    // was already saved, so the agent doesn't create the item again.
+    // The move is its own transaction: when it fails after anything was saved, say what,
+    // so the agent doesn't create the item again.
     try {
       await itemService.moveItem(id, userId, state.id, agent);
     } catch (error) {
-      if (!saved || !(error instanceof HTTPException) || !error.res)
-        throw error;
-      const body = (await error.res.clone().json()) as {
-        code: string;
-        message: string;
-      };
+      if (!saved) throw error;
+      const refusal = await readRefusal(error);
       throw apiError(
-        error.status,
-        body.code,
-        `${saved}, but it was not moved to ${state.name}: ${body.message}`,
+        refusal.status,
+        refusal.code,
+        `${saved}, but it was not moved to ${state.name}: ${refusal.message}`,
       );
     }
   }
@@ -274,6 +321,27 @@ export const saveItem = async (
     priority: item.priority,
     assignee: profile ? { name: profile.name, email: profile.email } : null,
     parent: parent?.key ?? null,
+    blockedBy: await findKeys(item.blockedBy),
+    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
+  };
+};
+
+/** Stops `key` waiting on `blocker`; answers the keys it still waits on. */
+export const removeBlocker = async (
+  agent: Agent,
+  key: string,
+  blocker: string,
+) => {
+  const itemId = await findItemId(key);
+  await blockerService.removeBlocker(
+    itemId,
+    agent.userId,
+    await findItemId(blocker),
+  );
+  const item = await itemService.getItem(itemId, agent.userId);
+  return {
+    key: item.key,
+    blockedBy: await findKeys(item.blockedBy),
     url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
   };
 };
