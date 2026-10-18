@@ -14,6 +14,14 @@ export type AgentSetup = {
   config?: { where: string; text: string };
 };
 
+/** Installs the Uniloom skill (skill/ in this repo) with the skills CLI; agent is its --agent name. */
+const skillStep = (agent: string): AgentStep => ({
+  title: "Add the skill",
+  where: "Terminal, in your project folder",
+  text: `npx skills add unishare-oss/uniloom --skill uniloom --agent ${agent} -y`,
+  note: "Teaches your agent the Uniloom workflow for this project. Add -g to install it for every project.",
+});
+
 // Checked against each tool's docs on 2026-10-13:
 // Claude Code: https://code.claude.com/docs/en/mcp
 // Codex CLI:   https://learn.chatgpt.com/docs/extend/mcp?surface=cli
@@ -38,6 +46,7 @@ export const agentSetups = (serverUrl: string): AgentSetup[] => [
         text: "/mcp",
         note: "Pick uniloom and follow the steps in your browser.",
       },
+      skillStep("claude-code"),
     ],
   },
   {
@@ -54,6 +63,7 @@ export const agentSetups = (serverUrl: string): AgentSetup[] => [
         where: "Terminal",
         text: "codex mcp login uniloom",
       },
+      skillStep("codex"),
     ],
     config: {
       where: "~/.codex/config.toml",
@@ -74,6 +84,7 @@ export const agentSetups = (serverUrl: string): AgentSetup[] => [
         where: "Inside Gemini CLI",
         text: "/mcp auth uniloom",
       },
+      skillStep("gemini-cli"),
     ],
     config: {
       where: "~/.gemini/settings.json",
@@ -94,6 +105,7 @@ export const agentSetups = (serverUrl: string): AgentSetup[] => [
         where: "Terminal",
         text: "opencode mcp auth uniloom",
       },
+      skillStep("opencode"),
     ],
   },
   {
@@ -110,6 +122,7 @@ export const agentSetups = (serverUrl: string): AgentSetup[] => [
         where: "Cursor Settings → MCP",
         note: "Find uniloom in the list, connect it and sign in in your browser.",
       },
+      skillStep("cursor"),
     ],
   },
   {
@@ -126,6 +139,7 @@ export const agentSetups = (serverUrl: string): AgentSetup[] => [
         where: "Command Palette → MCP: List Servers",
         note: "Pick uniloom and start it. On first connect a browser window opens to sign in.",
       },
+      skillStep("github-copilot"),
     ],
   },
 ];
