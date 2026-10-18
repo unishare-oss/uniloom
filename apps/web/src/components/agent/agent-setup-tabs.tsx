@@ -10,7 +10,7 @@ const listClass =
 const triggerClass =
   "h-8 flex-none rounded-lg border-border bg-card px-3 text-foreground hover:bg-muted data-active:border-primary data-active:bg-accent data-active:font-semibold data-active:text-accent-foreground dark:text-foreground dark:data-active:border-primary dark:data-active:bg-accent dark:data-active:text-accent-foreground";
 
-/** One tab per agent; each lists the steps to add Uniloom and sign in. */
+/** One tab per agent; each lists the steps to add Uniloom, sign in and add the skill. */
 export const AgentSetupTabs = ({ serverUrl }: { serverUrl: string }) => {
   const setups = agentSetups(serverUrl);
 
