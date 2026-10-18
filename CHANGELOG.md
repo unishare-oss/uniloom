@@ -1,3 +1,15 @@
+# [1.13.0](https://github.com/unishare-oss/uniloom/compare/v1.12.0...v1.13.0) (2026-10-18)
+
+
+### Bug Fixes
+
+* **api:** point example UNIAUTH_ISSUER at auth-dev.psstee.me ([91e0a5a](https://github.com/unishare-oss/uniloom/commit/91e0a5a282883c1f011cf8ece1b89ef4ac131669))
+
+
+### Features
+
+* **api:** add and remove blockers over MCP ([cb629c4](https://github.com/unishare-oss/uniloom/commit/cb629c4fec6333a2e7ffb10a4a544deaa610f5a8))
+
 # [1.12.0](https://github.com/unishare-oss/uniloom/compare/v1.11.0...v1.12.0) (2026-10-16)
 
 
