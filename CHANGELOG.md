@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/unishare-oss/uniloom/compare/v1.13.0...v1.14.0) (2026-10-18)
+
+
+### Features
+
+* **web:** add skill install step to agent setups ([6bd9f35](https://github.com/unishare-oss/uniloom/commit/6bd9f35ba0523012a0d48646f578c70662b114d7))
+
 # [1.13.0](https://github.com/unishare-oss/uniloom/compare/v1.12.0...v1.13.0) (2026-10-18)
 
 
