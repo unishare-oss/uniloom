@@ -86,6 +86,18 @@ When you finish implementing something, end with a summary that always includes:
   - which ones to build on next (e.g. which the web app or MCP tools need first).
 - **Status:** checks run and their results, what is committed or pushed, and anything
   still open.
+- **Proof per done-when item:** each done-when item of the plan, with the test or check
+  that proves it. Flag any item proved only by hand or not at all.
+- **Try it yourself:** three to five steps to see the feature working in the app.
+- **Look here:** the few risky spots (uniAuth sign-in, membership and role checks,
+  workflow rules and gates, soft delete, migrations), as `file:line` links.
+- **Changed from the plan:** each small change recorded in the plan's Changes, and each
+  critical change I approved, or "none".
+- **New dependencies, environment variables, schema or migration changes**, or "none".
+- **Rules bent:** any exception to these guides and any tech debt added in
+  `docs/tech-debt/`, or "none".
+- **Not tested or unsure:** said plainly, or "none".
+- **Review:** the reviewer's verdict and findings, as Independent review requires.
 
 ## Checks
 
@@ -111,6 +123,19 @@ Rules:
   functions, what each does and why, and Mermaid flows.
 - Do not start code until I set the plan to Ready. Editing a Ready plan's design sends it
   back to Aligning.
+- When building shows a Ready plan should change:
+  - **Critical change: stop and ask me first.** A change is critical when it touches a
+    done-when item or the scope; an ADR or another decision I made; uniAuth sign-in,
+    membership or role checks, or a workflow rule or gate; the Prisma schema or a
+    migration that changes existing rows; the API contract (routes, the envelope, error
+    `code`s) or an MCP tool's inputs, outputs or rules; what users see or can do; or a
+    new dependency or service. If I agree, update the design and the plan goes back to
+    Aligning for me to set Ready again.
+  - **Small change: do it yourself.** Internal names, file layout, splitting a
+    function, an extra check or test, clearer error wording, layout details that don't
+    change what users can do. Don't edit the design; record each one under planned vs
+    actual in the plan's Changes.
+  - **When unsure, treat it as critical.**
 - Tick each item the moment it is met. Do not wait for the end.
 - Every item must be ticked before In Review. If you cannot finish without me, set
   Blocked and write the reason in the plan.
