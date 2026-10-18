@@ -386,6 +386,191 @@ describe('mcp write tools (e2e)', () => {
     });
   });
 
+  describe('blockedBy', () => {
+    /** A feature and three slices under it. */
+    const withSlices = async () => {
+      const w = await withSlice();
+      const make = (title: string) =>
+        ok(w.ownerToken, 'save_item', {
+          project: w.keyPrefix,
+          kind: 'SLICE',
+          title,
+          parent: w.feature.key,
+        });
+      return { ...w, second: await make('Second'), third: await make('Third') };
+    };
+
+    it('adds blockers on create and answers them as keys', async () => {
+      const w = await withSlice();
+      const created = await ok(w.ownerToken, 'save_item', {
+        project: w.keyPrefix,
+        kind: 'SLICE',
+        title: 'Waits',
+        parent: w.feature.key,
+        blockedBy: [w.slice.key],
+      });
+      expect(created.blockedBy).toEqual([w.slice.key]);
+      const read = await ok(w.ownerToken, 'get_item', { key: created.key });
+      expect(read.blockedBy).toEqual([w.slice.key]);
+    });
+
+    it('adds on update, keeps existing blockers and skips repeats', async () => {
+      const w = await withSlices();
+      await ok(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.second.key],
+      });
+      const again = await ok(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.second.key, w.third.key],
+      });
+      expect(again.blockedBy).toHaveLength(2);
+      expect(again.blockedBy).toContain(w.second.key);
+      expect(again.blockedBy).toContain(w.third.key);
+    });
+
+    it('treats two spellings of one key as one blocker', async () => {
+      const w = await withSlices();
+      const [prefix, number] = w.second.key.split('-');
+      const saved = await ok(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.second.key, `${prefix}-0${number}`],
+      });
+      expect(saved.blockedBy).toEqual([w.second.key]);
+    });
+
+    it('keeps blockers when the move after them is refused, and says so', async () => {
+      const w = await withSlices();
+      // No checklist yet, so In Review is refused after the blocker is added.
+      const moved = await tool(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.second.key],
+        state: 'In Review',
+      });
+      expect(moved.text).toMatch(
+        new RegExp(
+          `^criteria_incomplete: ${w.second.key} was added as a blocker, but it was not moved to In Review: `,
+        ),
+      );
+      const item = await ok(w.ownerToken, 'get_item', { key: w.slice.key });
+      expect(item.blockedBy).toEqual([w.second.key]);
+    });
+
+    it('leaves blockers alone when blockedBy is left out', async () => {
+      const w = await withSlices();
+      await ok(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.second.key],
+      });
+      const renamed = await ok(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        title: 'Renamed',
+      });
+      expect(renamed.blockedBy).toEqual([w.second.key]);
+    });
+
+    it('removes one blocker and answers the rest; a missing link is fine', async () => {
+      const w = await withSlices();
+      await ok(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.second.key, w.third.key],
+      });
+      const removed = await ok(w.ownerToken, 'remove_blocker', {
+        key: w.slice.key,
+        blocker: w.second.key,
+      });
+      expect(removed.blockedBy).toEqual([w.third.key]);
+      const again = await ok(w.ownerToken, 'remove_blocker', {
+        key: w.slice.key,
+        blocker: w.second.key,
+      });
+      expect(again.blockedBy).toEqual([w.third.key]);
+    });
+
+    it('answers not_found for an unknown key and saves nothing', async () => {
+      const w = await withSlice();
+      const created = await tool(w.ownerToken, 'save_item', {
+        project: w.keyPrefix,
+        kind: 'SLICE',
+        title: 'Never saved',
+        parent: w.feature.key,
+        blockedBy: [w.slice.key, `${w.keyPrefix}-999`],
+      });
+      expect(created.text).toMatch(/^not_found:/);
+      const edited = await tool(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        title: 'Not renamed',
+        blockedBy: [`${w.keyPrefix}-999`],
+      });
+      expect(edited.text).toMatch(/^not_found:/);
+      const all = await ok(w.ownerToken, 'list_items', {
+        project: w.keyPrefix,
+      });
+      expect(all).toHaveLength(2);
+      const item = await ok(w.ownerToken, 'get_item', { key: w.slice.key });
+      expect(item.title).toBe('Slice');
+      const unknown = await tool(w.ownerToken, 'remove_blocker', {
+        key: w.slice.key,
+        blocker: `${w.keyPrefix}-999`,
+      });
+      expect(unknown.text).toMatch(/^not_found:/);
+    });
+
+    it('refuses what the website refuses, and says what was saved', async () => {
+      const w = await withSlices();
+      const self = await tool(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.slice.key],
+      });
+      expect(self.text).toMatch(/^self_block:/);
+
+      await ok(w.ownerToken, 'save_item', {
+        key: w.slice.key,
+        blockedBy: [w.second.key],
+      });
+      const cycle = await tool(w.ownerToken, 'save_item', {
+        key: w.second.key,
+        title: 'Renamed',
+        blockedBy: [w.slice.key],
+      });
+      expect(cycle.text).toMatch(
+        new RegExp(
+          `^blocking_cycle: ${w.second.key}'s changes are saved, but ${w.slice.key} was not added as a blocker: `,
+        ),
+      );
+
+      const other = await setup();
+      const stranger = await ok(other.ownerToken, 'save_item', {
+        project: other.keyPrefix,
+        kind: 'FEATURE',
+        title: 'Elsewhere',
+      });
+      const created = await tool(w.ownerToken, 'save_item', {
+        project: w.keyPrefix,
+        kind: 'SLICE',
+        title: 'Created, then refused',
+        parent: w.feature.key,
+        blockedBy: [stranger.key],
+      });
+      expect(created.text).toMatch(
+        new RegExp(
+          `^invalid_blocker: ${w.keyPrefix}-\\d+ was created, but ${stranger.key} was not added as a blocker: `,
+        ),
+      );
+
+      const forbidden = await tool(w.memberToken, 'save_item', {
+        key: w.third.key,
+        blockedBy: [w.slice.key],
+      });
+      expect(forbidden.text).toMatch(/^forbidden:/);
+      const removeForbidden = await tool(w.memberToken, 'remove_blocker', {
+        key: w.slice.key,
+        blocker: w.second.key,
+      });
+      expect(removeForbidden.text).toMatch(/^forbidden:/);
+    });
+  });
+
   describe('criteria', () => {
     it('replaces the checklist in order and enforces the maximum', async () => {
       const w = await withSlice();

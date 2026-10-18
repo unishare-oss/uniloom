@@ -42,7 +42,8 @@ export const GuideAgentStep = () => {
             "Tickets",
             <>
               <code>list_items</code>, <code>get_item</code>,{" "}
-              <code>save_item</code>, <code>delete_item</code>
+              <code>save_item</code>, <code>delete_item</code>,{" "}
+              <code>remove_blocker</code>
             </>,
           ],
           [

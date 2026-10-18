@@ -36,3 +36,19 @@ export const findItemIdByKey = async (keyPrefix: string, number: number) => {
   });
   return item?.id;
 };
+
+/** The keys (TG-12) of items, from their ids, in one query. */
+export const findItemKeys = async (ids: string[]) => {
+  const items = await prisma.item.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      number: true,
+      project: { select: { keyPrefix: true } },
+    },
+  });
+  return items.map((item) => ({
+    id: item.id,
+    key: `${item.project.keyPrefix}-${item.number}`,
+  }));
+};

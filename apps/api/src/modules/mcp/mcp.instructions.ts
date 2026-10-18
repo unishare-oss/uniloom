@@ -7,7 +7,7 @@ Modes (each project has one):
 - Guided: Features contain Slices. States are fixed: Triage, Backlog, Aligning, Ready, In Progress, Blocked, In Review, Done, Canceled. Every slice needs a done-when checklist of 3 to 6 items (the project can change the limits; list_projects shows them) and an approved design before it can be Ready. In Review needs every checklist item ticked. A feature is Done when all its slices are.
 - Standard: Tasks contain Subtasks. States are set per project (use list_states); the default is To Do, In Progress, Done. A checklist is optional and any length.
 
-Writing: save_item creates (no key) or updates (key) an item and moves it when you set state (a state name). delete_item deletes; set_criteria replaces a checklist; check_criterion ticks one entry by number or exact text, with evidence. All follow your role: a Member can only move and edit tickets assigned to them (claim a free one with assignee "me" when the project allows it), and other tickets answer forbidden.
+Writing: save_item creates (no key) or updates (key) an item and moves it when you set state (a state name). delete_item deletes; set_criteria replaces a checklist; check_criterion ticks one entry by number or exact text, with evidence. save_item's blockedBy adds the items it waits on (keys) and keeps the ones it has; remove_blocker removes one. All follow your role: a Member can only move and edit tickets assigned to them (claim a free one with assignee "me" when the project allows it), and other tickets answer forbidden.
 
 People are named, never by id: assignee is "me", "none" or the email of a project member.
 

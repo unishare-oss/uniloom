@@ -322,6 +322,7 @@ describe('mcp (e2e)', () => {
         'list_labels',
         'list_projects',
         'list_states',
+        'remove_blocker',
         'save_document',
         'save_item',
         'set_criteria',
