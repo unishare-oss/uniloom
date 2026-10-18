@@ -8,6 +8,7 @@ import {
   listDocumentsSchema,
   listItemsSchema,
   projectSchema,
+  removeBlockerSchema,
   saveDocumentSchema,
   saveItemSchema,
   setCriteriaSchema,
@@ -123,12 +124,28 @@ export const buildServer = (agent: Agent) => {
     'save_item',
     {
       description:
-        'Returns a compact confirmation; get_item has full detail. Create an item (no key: needs project, kind and title) or update one (key). Set state to move it; Ready and Done are refused with people_only. assignee is me, none or a member email.',
+        'Returns a compact confirmation; get_item has full detail. Create an item (no key: needs project, kind and title) or update one (key). Set state to move it; Ready and Done are refused with people_only. assignee is me, none or a member email. blockedBy adds the items this one waits on and never removes; use remove_blocker to remove one.',
       inputSchema: saveItemSchema,
     },
     async (input) => {
       try {
         return reply(await mcpService.saveItem(agent, input));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'remove_blocker',
+    {
+      description:
+        'Remove one blocker: key stops waiting on blocker. Removing a link that does not exist is harmless. Answers the remaining blockedBy keys.',
+      inputSchema: removeBlockerSchema,
+    },
+    async ({ key, blocker }) => {
+      try {
+        return reply(await mcpService.removeBlocker(agent, key, blocker));
       } catch (error) {
         return toToolError(error);
       }

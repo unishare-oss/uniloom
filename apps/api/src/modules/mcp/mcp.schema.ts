@@ -46,6 +46,17 @@ export const saveItemSchema = z.object({
     .describe(
       'State name to move the item to, e.g. "In Progress". Ready and Done are for people.',
     ),
+  blockedBy: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Item keys this item waits on, e.g. ["TG-3"]. Adds them and never removes; keys already linked are skipped. Leave out to change nothing.',
+    ),
+});
+
+export const removeBlockerSchema = z.object({
+  key: itemKey,
+  blocker: itemKey.describe('The item key it no longer waits on, e.g. TG-3'),
 });
 
 export const setCriteriaSchema = z.object({
