@@ -10,7 +10,14 @@ export interface DirectoryIdentity {
   emailVerified: boolean;
   image: string | null;
   status: 'active' | 'suspended' | 'deleted';
+  /** uniAuth's identity version: rises with every observable change. */
+  version: number;
 }
+
+/** What provisioning needs of an identity: the version is known when it comes from the directory, not from a sign-in. */
+export type LocalIdentity = Omit<DirectoryIdentity, 'version'> & {
+  version?: number;
+};
 
 const TIMEOUT_MS = 5_000;
 
@@ -102,8 +109,8 @@ const accessToken = (refresh = false) => {
   return inFlight;
 };
 
-/** POST to the directory with the cached token; one fresh token and retry if it is refused. */
-const post = async (path: string, body: unknown) => {
+/** A request to the directory with the cached token; one fresh token and retry if it is refused. */
+const send = async (method: 'GET' | 'POST', path: string, body?: unknown) => {
   const s = readDirectorySettings();
   if (!s) throw unavailable('directory credentials are not set');
   for (const refresh of [false, true]) {
@@ -111,12 +118,12 @@ const post = async (path: string, body: unknown) => {
     let res: Response;
     try {
       res = await fetch(`${s.origin}/api/directory/v1${path}`, {
-        method: 'POST',
+        method,
         headers: {
-          'content-type': 'application/json',
+          ...(body !== undefined && { 'content-type': 'application/json' }),
           authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(body),
+        ...(body !== undefined && { body: JSON.stringify(body) }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (error) {
@@ -142,6 +149,7 @@ const parseIdentity = (body: unknown): DirectoryIdentity | null => {
     typeof data.email !== 'string' ||
     !data.email ||
     typeof data.emailVerified !== 'boolean' ||
+    typeof data.version !== 'number' ||
     typeof data.status !== 'string' ||
     !STATUSES.includes(data.status) ||
     (data.image !== null && typeof data.image !== 'string')
@@ -158,7 +166,7 @@ const parseIdentity = (body: unknown): DirectoryIdentity | null => {
  * an outage must not look like an unknown person.
  */
 export const resolveIdentity = async (email: string) => {
-  const res = await post('/users/resolve', { email });
+  const res = await send('POST', '/users/resolve', { email });
   if (res.ok) {
     const identity = parseIdentity(await res.json().catch(() => null));
     if (!identity)
@@ -190,4 +198,96 @@ export const resolveIdentity = async (email: string) => {
 export const resetDirectoryToken = () => {
   cached = null;
   inFlight = null;
+};
+
+/** One account by uniAuth id, or null if this client does not know it. Throws 503 when uniAuth cannot answer. */
+export const readIdentity = async (id: string) => {
+  const res = await send('GET', `/users/${encodeURIComponent(id)}`);
+  if (res.ok) {
+    const identity = parseIdentity(await res.json().catch(() => null));
+    if (!identity)
+      throw unavailable('read answered 200 with an unexpected body');
+    return identity;
+  }
+  await res.body?.cancel();
+  if (res.status === 404) return null;
+  throw unavailable(`read answered ${res.status}`);
+};
+
+/** Up to 100 known ids at once. `deleted` carries a tombstone; `not_found` means this client does not know the id. */
+export const batchIdentities = async (ids: string[]) => {
+  const res = await send('POST', '/users/batch', { ids });
+  if (!res.ok) {
+    await res.body?.cancel();
+    throw unavailable(`batch answered ${res.status}`);
+  }
+  const results = (
+    (await res.json().catch(() => null)) as {
+      data?: { results?: { id?: unknown; result?: unknown; data?: unknown }[] };
+    } | null
+  )?.data?.results;
+  if (!Array.isArray(results))
+    throw unavailable('batch answered 200 with an unexpected body');
+  const byId = new Map<
+    string,
+    {
+      result: 'found' | 'deleted' | 'not_found';
+      identity: DirectoryIdentity | null;
+    }
+  >();
+  for (const r of results) {
+    if (
+      typeof r.id !== 'string' ||
+      !['found', 'deleted', 'not_found'].includes(String(r.result))
+    )
+      throw unavailable('batch answered 200 with an unexpected body');
+    byId.set(r.id, {
+      result: r.result as 'found' | 'deleted' | 'not_found',
+      identity: r.result === 'found' ? parseIdentity({ data: r.data }) : null,
+    });
+  }
+  return byId;
+};
+
+export interface DirectoryChange {
+  eventId: string;
+  type: string;
+  id: string;
+  version: number;
+}
+
+/** Thrown when the change feed's cursor is older than uniAuth's retention: refresh known ids with batch reads instead. */
+export class ResyncRequired extends Error {}
+
+/** Changes to accounts this client knows since `cursor`, in commit order (never identity.created). */
+export const fetchChanges = async (cursor: string | null, limit = 100) => {
+  const query = new URLSearchParams({
+    limit: String(limit),
+    ...(cursor && { cursor }),
+  });
+  const res = await send('GET', `/users/changes?${query}`);
+  if (res.status === 410) {
+    await res.body?.cancel();
+    throw new ResyncRequired();
+  }
+  if (!res.ok) {
+    await res.body?.cancel();
+    throw unavailable(`changes answered ${res.status}`);
+  }
+  const data = (
+    (await res.json().catch(() => null)) as {
+      data?: {
+        changes?: DirectoryChange[];
+        cursor?: string;
+        hasMore?: boolean;
+      };
+    } | null
+  )?.data;
+  if (!data || !Array.isArray(data.changes) || typeof data.cursor !== 'string')
+    throw unavailable('changes answered 200 with an unexpected body');
+  return {
+    changes: data.changes,
+    cursor: data.cursor,
+    hasMore: data.hasMore === true,
+  };
 };

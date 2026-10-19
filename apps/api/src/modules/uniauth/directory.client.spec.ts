@@ -13,6 +13,7 @@ const identity = {
   emailVerified: true,
   image: null,
   status: 'active',
+  version: 1,
 };
 
 const json = (status: number, body: unknown) => Response.json(body, { status });

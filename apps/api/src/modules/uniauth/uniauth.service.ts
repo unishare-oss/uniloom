@@ -1,5 +1,5 @@
 import { apiError } from '@/http.js';
-import type { DirectoryIdentity } from './directory.client.js';
+import type { LocalIdentity } from './directory.client.js';
 import * as uniauthRepo from './uniauth.repository.js';
 
 /**
@@ -17,7 +17,7 @@ import * as uniauthRepo from './uniauth.repository.js';
  *   attached silently: 409 `identity_conflict`, for a person to reconcile.
  */
 export const ensureLocalUser = async (
-  identity: DirectoryIdentity,
+  identity: LocalIdentity,
   refresh = false,
 ) => {
   const linked = await uniauthRepo.findUserIdBySub(identity.id);
@@ -37,7 +37,7 @@ export const ensureLocalUser = async (
 };
 
 /** Writes the directory's name, email and avatar over the local copy, only where they differ. */
-const refreshUser = async (userId: string, identity: DirectoryIdentity) => {
+const refreshUser = async (userId: string, identity: LocalIdentity) => {
   const user = await uniauthRepo.findUserById(userId);
   if (!user) return;
   const email = identity.email.toLowerCase();

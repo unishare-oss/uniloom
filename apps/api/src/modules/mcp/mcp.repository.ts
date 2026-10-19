@@ -14,7 +14,11 @@ export const findUserBySub = async (sub: string) => {
     where: {
       providerId_accountId: { providerId: UNIAUTH_PROVIDER_ID, accountId: sub },
     },
-    select: { user: { select: { id: true, consentGivenAt: true } } },
+    select: {
+      user: {
+        select: { id: true, consentGivenAt: true, identityStatus: true },
+      },
+    },
   });
   return account?.user ?? null;
 };

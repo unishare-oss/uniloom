@@ -12,6 +12,9 @@ export const requireSession: MiddlewareHandler = async (c, next) => {
     returnHeaders: true,
   });
   if (!session) throw apiError(401, 'unauthorized', 'Sign in first');
+  // Suspended on uniAuth: blocked here at once, even before their sessions are gone.
+  if (session.user.identityStatus === 'suspended')
+    throw apiError(403, 'account_suspended', 'This account is suspended');
   c.set('user', session.user);
   await next();
   for (const cookie of headers.getSetCookie())

@@ -47,6 +47,37 @@ export const startMockUniauth = async (client: {
   >();
   const machineTokens = new Set<string>();
   const directory = { resolveCalls: 0, tokenCalls: 0, failWith: 0 };
+  /** Identity version and state per uniAuth id, and the change feed a test scripts. */
+  const states = new Map<
+    string,
+    { version: number; status: 'active' | 'suspended' | 'deleted' }
+  >();
+  const feed: { eventId: string; type: string; id: string; version: number }[] =
+    [];
+  const feedState = { gone: false, calls: 0 };
+  const bySub = (sub: string) =>
+    [...accounts.values()].find((a) => a.profile.sub === sub);
+  const identityOf = (sub: string) => {
+    const found = bySub(sub);
+    const state = states.get(sub) ?? {
+      version: 1,
+      status: found?.status ?? 'active',
+    };
+    if (state.status === 'deleted')
+      return { id: sub, status: 'deleted', version: state.version };
+    if (!found) return null;
+    return {
+      issuer,
+      id: sub,
+      name: found.profile.name,
+      email: found.profile.email,
+      emailVerified: found.verified,
+      image: found.profile.picture ?? null,
+      status: state.status,
+      version: state.version,
+      updatedAt: new Date().toISOString(),
+    };
+  };
   let profile: MockProfile | null = {
     sub: randomUUID(),
     email: 'mya@example.com',
@@ -75,6 +106,65 @@ export const startMockUniauth = async (client: {
     }
 
     if (url.pathname === '/api/auth/jwks') return json(200, { keys: [jwk] });
+
+    if (
+      url.pathname.startsWith('/api/directory/v1/users/') &&
+      url.pathname !== '/api/directory/v1/users/resolve'
+    ) {
+      const token = (req.headers.authorization ?? '').replace('Bearer ', '');
+      if (!machineTokens.has(token))
+        return json(401, { error: { code: 'invalid_token' } });
+      if (directory.failWith)
+        return json(directory.failWith, { error: { code: 'boom' } });
+      if (url.pathname === '/api/directory/v1/users/changes') {
+        feedState.calls++;
+        if (feedState.gone && url.searchParams.has('cursor'))
+          return json(410, { error: { code: 'resync_required' } });
+        const from = Number(url.searchParams.get('cursor') ?? 0);
+        const limit = Number(url.searchParams.get('limit') ?? 100);
+        const page = feed.slice(from, from + limit);
+        return json(200, {
+          data: {
+            changes: page.map((c) => ({
+              ...c,
+              occurredAt: new Date().toISOString(),
+            })),
+            cursor: String(from + page.length),
+            hasMore: from + limit < feed.length,
+          },
+        });
+      }
+      if (
+        url.pathname === '/api/directory/v1/users/batch' &&
+        req.method === 'POST'
+      ) {
+        let raw = '';
+        req.on('data', (chunk: Buffer) => (raw += chunk.toString()));
+        req.on('end', () => {
+          const ids = (JSON.parse(raw).ids ?? []) as string[];
+          json(200, {
+            data: {
+              results: ids.map((id) => {
+                const i = identityOf(id);
+                return i
+                  ? {
+                      id,
+                      result: i.status === 'deleted' ? 'deleted' : 'found',
+                      data: i,
+                    }
+                  : { id, result: 'not_found' };
+              }),
+            },
+          });
+        });
+        return;
+      }
+      const sub = decodeURIComponent(url.pathname.split('/').pop() ?? '');
+      const found = identityOf(sub);
+      return found
+        ? json(200, { data: found })
+        : json(404, { error: { code: 'identity_not_found' } });
+    }
 
     if (
       url.pathname === '/api/directory/v1/users/resolve' &&
@@ -237,6 +327,65 @@ export const startMockUniauth = async (client: {
     },
     /** Counters and a switch to make the directory answer with an error status. */
     directory,
+    /** What the directory says about one account now: version, state and (optionally) a new name. */
+    setIdentity(
+      sub: string,
+      next: {
+        version: number;
+        status?: 'active' | 'suspended' | 'deleted';
+        name?: string;
+      },
+    ) {
+      states.set(sub, {
+        version: next.version,
+        status: next.status ?? states.get(sub)?.status ?? 'active',
+      });
+      const found = bySub(sub);
+      if (found && next.name)
+        found.profile = { ...found.profile, name: next.name };
+    },
+    /** The change feed the directory serves; `gone` makes every cursor answer 410 resync_required. */
+    feed,
+    feedState,
+    /** Signs any `events` object for `audience`, for cases the typed helper cannot build. */
+    signRaw(sub: string, events: Record<string, object>, audience: string) {
+      return new SignJWT({ events })
+        .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+        .setIssuer(issuer)
+        .setAudience(audience)
+        .setSubject(sub)
+        .setIssuedAt()
+        .setExpirationTime('2m')
+        .sign(privateKey);
+    },
+    /** Signs a v1 identity event token for `audience` the way uniAuth's outbox does. */
+    signIdentityEvent(
+      sub: string,
+      event: { eventId: string; type: string; identityVersion: number },
+      audience: string,
+      extra: Record<string, unknown> = {},
+    ) {
+      return new SignJWT({
+        events: {
+          'urn:uniauth:event:identity': {
+            schemaVersion: 1,
+            issuer,
+            subject: sub,
+            occurredAt: new Date().toISOString(),
+            ...event,
+            ...extra,
+          },
+        },
+      })
+        .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+        .setIssuer(issuer)
+        .setAudience(audience)
+        .setSubject(sub)
+        .setJti(randomUUID())
+        .setIssuedAt()
+        .setExpirationTime('2m')
+        .sign(privateKey);
+    },
     /** Signs an event token the way uniAuth does for its server-to-server calls. */
     signEvent(sub: string, events: Record<string, object>) {
       return new SignJWT({ events })

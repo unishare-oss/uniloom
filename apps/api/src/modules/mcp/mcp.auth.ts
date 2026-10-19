@@ -69,6 +69,8 @@ export const requireAgent: MiddlewareHandler = async (c, next) => {
   if (!verified) throw unauthorized('Invalid or expired token');
   const user = await mcpRepo.findUserBySub(verified.sub);
   if (!user) throw unauthorized('Sign in to Uniloom on the website first');
+  if (user.identityStatus === 'suspended')
+    throw apiError(403, 'account_suspended', 'This account is suspended');
   if (!user.consentGivenAt)
     throw apiError(
       403,
