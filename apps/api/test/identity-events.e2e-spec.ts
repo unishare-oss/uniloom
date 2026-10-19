@@ -278,6 +278,8 @@ describe('v1 identity events and reconciliation (e2e)', () => {
     expect(await reconcileIdentities()).toEqual({
       applied: 2,
       resynced: false,
+      skipped: 0,
+      stopped: false,
     });
     expect(await local(a.id)).toMatchObject({
       name: 'A updated while offline',
@@ -341,6 +343,201 @@ describe('v1 identity events and reconciliation (e2e)', () => {
         .cursor,
     ).not.toBe('7');
     api.uniauth.feedState.gone = false;
+  });
+
+  it('a lagging directory is retried; a newer one stores its own version; a tombstone read deletes', async () => {
+    const p = await person('Lag');
+    // The event is for version 3 but the directory already shows version 5: that version is stored.
+    api.uniauth.setIdentity(p.sub, { version: 5, name: 'Five' });
+    expect((await send(p.sub, 'identity.updated', 3)).status).toBe(204);
+    expect(await local(p.id)).toMatchObject({
+      name: 'Five',
+      identityVersion: 5,
+    });
+    // The event is for version 7 but the directory is still at 5: not yet consistent, so 503 and nothing recorded.
+    const eventId = randomUUID();
+    expect((await send(p.sub, 'identity.updated', 7, eventId)).status).toBe(
+      503,
+    );
+    expect(
+      await prisma.identityEventReceipt.count({ where: { eventId } }),
+    ).toBe(0);
+    api.uniauth.setIdentity(p.sub, { version: 7, name: 'Seven' });
+    expect((await send(p.sub, 'identity.updated', 7, eventId)).status).toBe(
+      204,
+    );
+    expect(await local(p.id)).toMatchObject({
+      name: 'Seven',
+      identityVersion: 7,
+    });
+
+    // The directory answers an update with a tombstone (the account was deleted meanwhile): the existing deletion.
+    api.uniauth.setIdentity(p.sub, { version: 8, status: 'deleted' });
+    expect((await send(p.sub, 'identity.updated', 8)).status).toBe(204);
+    expect(await prisma.user.count({ where: { id: p.id } })).toBe(0);
+  });
+
+  it('two events for one person applied at the same moment never leave the older one in place', async () => {
+    const { applyIdentityEvent } =
+      await import('@/modules/uniauth/identity-events.service.js');
+    for (let round = 0; round < 12; round++) {
+      const p = await person('Race');
+      const at = (version: number, name: string) => ({
+        id: p.sub,
+        name,
+        email: p.profile.email,
+        emailVerified: true,
+        image: null,
+        status: 'active' as const,
+        version,
+      });
+      const ev = (version: number) => ({
+        eventId: randomUUID(),
+        type: 'identity.updated',
+        subject: p.sub,
+        identityVersion: version,
+      });
+      // Each event carries the profile as of its own version; the newer must win whichever runs first.
+      await Promise.all([
+        applyIdentityEvent(ev(5), { profile: at(5, 'Five'), userId: p.id }),
+        applyIdentityEvent(ev(6), { profile: at(6, 'Six'), userId: p.id }),
+      ]);
+      expect(await local(p.id)).toMatchObject({
+        name: 'Six',
+        identityVersion: 6,
+      });
+    }
+  });
+
+  it('keeps the old email when another user holds the new one, and still applies the rest', async () => {
+    const a = await person('Alpha');
+    const b = await person('Beta');
+    api.uniauth.setIdentity(a.sub, { version: 2, name: 'Alpha renamed' });
+    // The directory now says Alpha's email is Beta's (a reconciliation case).
+    await prisma.user.update({
+      where: { id: a.id },
+      data: { identityVersion: 1 },
+    });
+    api.uniauth.registerAccount({
+      ...a.profile,
+      email: b.profile.email,
+      name: 'Alpha renamed',
+    });
+    expect((await send(a.sub, 'identity.updated', 2)).status).toBe(204);
+    expect(await local(a.id)).toMatchObject({
+      name: 'Alpha renamed',
+      email: a.profile.email,
+      identityVersion: 2,
+    });
+  });
+
+  it('a bad feed entry or a missing profile is skipped and counted instead of wedging the cursor; a lagging directory stops', async () => {
+    await prisma.identityReconcile.deleteMany({});
+    api.uniauth.feed.length = 0;
+    api.uniauth.feedState.gone = false;
+    const good = await person('Good');
+    // A local user linked to a uniAuth id the directory does not know (so its batch read says not_found).
+    const orphan = await prisma.user.create({
+      data: {
+        id: randomUUID(),
+        name: 'Orphan',
+        email: `orphan@${api.emailDomain}`,
+      },
+    });
+    const orphanSub = `u_${randomUUID()}`;
+    await prisma.account.create({
+      data: {
+        id: randomUUID(),
+        accountId: orphanSub,
+        providerId: 'uniauth',
+        userId: orphan.id,
+      },
+    });
+    api.uniauth.setIdentity(good.sub, { version: 2, name: 'Good updated' });
+    api.uniauth.feed.push(
+      {
+        eventId: 'bad-1',
+        type: 'identity.updated',
+        id: 123 as unknown as string,
+        version: 1,
+      }, // malformed
+      {
+        eventId: 'missing-1',
+        type: 'identity.updated',
+        id: orphanSub,
+        version: 1,
+      }, // profile unreadable
+      { eventId: 'ok-1', type: 'identity.updated', id: good.sub, version: 2 },
+    );
+    const result = await reconcileIdentities();
+    expect(result).toEqual({
+      applied: 1,
+      resynced: false,
+      skipped: 2,
+      stopped: false,
+    });
+    expect(await local(good.id)).toMatchObject({ name: 'Good updated' });
+    expect(
+      (await prisma.identityReconcile.findUniqueOrThrow({ where: { id: 1 } }))
+        .cursor,
+    ).toBe('3'); // moved on
+
+    // The directory is behind the feed: stop BEFORE the page, leave the cursor, retry next run.
+    api.uniauth.feed.push({
+      eventId: 'ahead-1',
+      type: 'identity.updated',
+      id: good.sub,
+      version: 9,
+    });
+    const stopped = await reconcileIdentities();
+    expect(stopped).toMatchObject({ applied: 0, stopped: true });
+    expect(
+      (await prisma.identityReconcile.findUniqueOrThrow({ where: { id: 1 } }))
+        .cursor,
+    ).toBe('3');
+    api.uniauth.setIdentity(good.sub, { version: 9, name: 'Caught up' });
+    expect(await reconcileIdentities()).toMatchObject({
+      applied: 1,
+      stopped: false,
+    });
+    expect(await local(good.id)).toMatchObject({
+      name: 'Caught up',
+      identityVersion: 9,
+    });
+    await prisma.user.deleteMany({ where: { id: orphan.id } });
+  });
+
+  it('prunes receipts older than 14 days when it reconciles', async () => {
+    await prisma.identityEventReceipt.createMany({
+      data: [
+        {
+          eventId: 'old-receipt',
+          subject: 's',
+          version: 1,
+          type: 'identity.updated',
+          receivedAt: new Date(Date.now() - 20 * 86_400_000),
+        },
+        {
+          eventId: 'new-receipt',
+          subject: 's',
+          version: 1,
+          type: 'identity.updated',
+        },
+      ],
+    });
+    api.uniauth.feed.length = 0;
+    await prisma.identityReconcile.deleteMany({});
+    await reconcileIdentities();
+    expect(
+      await prisma.identityEventReceipt.count({
+        where: { eventId: 'old-receipt' },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.identityEventReceipt.count({
+        where: { eventId: 'new-receipt' },
+      }),
+    ).toBe(1);
   });
 
   it('a Unishare-only verified account is added by email, then signs in to the same user and membership', async () => {

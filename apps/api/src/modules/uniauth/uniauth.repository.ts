@@ -96,15 +96,24 @@ export interface AppliedEvent {
 
 /** What an identity event does to the local user. */
 export type IdentityChange =
-  | { kind: 'profile'; profile: DirectoryIdentity }
+  | { kind: 'profile'; profile: DirectoryIdentity; skipEmail?: boolean }
   | { kind: 'suspend' }
   | { kind: 'reactivate' }
   | { kind: 'delete' };
 
 /**
+ * Locks the user row for the rest of the transaction: two events (or an event and a resync) for the same person run one
+ * after the other, so the version check below sees the other's result and an older change can never overwrite a newer one.
+ */
+const lockUser = (tx: Prisma.TransactionClient, userId: string) => {
+  return tx.$queryRaw`SELECT id FROM "user" WHERE id = ${userId} FOR UPDATE`;
+};
+
+/**
  * Records the event and applies it in ONE transaction, so a retry can never apply it twice and a crash leaves
- * neither half. `duplicate`: this event id was applied before. `stale`: the user already holds an equal or newer
- * identity version (an old update must not undo a newer state, nor resurrect anyone). `gone`: no such user.
+ * neither half. `version` is the identity version the change brings (for a profile, the directory's version, which may
+ * be newer than the event's). `duplicate`: this event id was applied before. `stale`: the user already holds an equal or
+ * newer version (an old update must not undo a newer state, nor resurrect anyone). `gone`: no such user.
  * Suspension ends the person's sessions at once; deletion removes the user (sessions, accounts and memberships go
  * with it, as in the legacy user-deleted notice).
  */
@@ -112,6 +121,7 @@ export const recordAndApply = async (
   event: AppliedEvent,
   userId: string,
   change: IdentityChange,
+  version: number = event.identityVersion,
 ): Promise<'applied' | 'duplicate' | 'stale' | 'gone'> => {
   return prisma.$transaction(async (tx) => {
     // createMany + skipDuplicates: a conflict is not an error, so the transaction stays usable.
@@ -127,14 +137,12 @@ export const recordAndApply = async (
       skipDuplicates: true,
     });
     if (count === 0) return 'duplicate';
+    await lockUser(tx, userId);
     const user = await tx.user.findUnique({ where: { id: userId } });
     if (!user) return 'gone';
-    if (
-      user.identityVersion !== null &&
-      event.identityVersion <= user.identityVersion
-    )
+    if (user.identityVersion !== null && version <= user.identityVersion)
       return 'stale';
-    await applyChange(tx, user, event.identityVersion, change);
+    await applyChange(tx, user, version, change);
     return 'applied';
   });
 };
@@ -154,7 +162,8 @@ const applyChange = async (
     const email = profile.email.toLowerCase();
     // An email another local user holds is for a person to reconcile; the rest of the profile still applies.
     const taken =
-      email !== user.email && (await tx.user.count({ where: { email } })) > 0;
+      change.skipEmail ||
+      (email !== user.email && (await tx.user.count({ where: { email } })) > 0);
     await tx.user.update({
       where: { id: user.id },
       data: {
@@ -180,6 +189,30 @@ const applyChange = async (
     await tx.session.deleteMany({ where: { userId: user.id } });
 };
 
+/** True for a unique-constraint violation (an email another user holds, raced past the check). */
+export const isUniqueViolation = (error: unknown) => {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  );
+};
+
+/** The local user ids behind many uniAuth ids, in one query. */
+export const findUserIdsBySubs = async (subs: string[]) => {
+  const accounts = await prisma.account.findMany({
+    where: { providerId: UNIAUTH_PROVIDER_ID, accountId: { in: subs } },
+    select: { accountId: true, userId: true },
+  });
+  return new Map(accounts.map((a) => [a.accountId, a.userId]));
+};
+
+/** Receipts only dedupe redeliveries, which stop within uniAuth's 72 h window: older ones are dropped. */
+export const pruneReceipts = (olderThanMs: number) => {
+  return prisma.identityEventReceipt.deleteMany({
+    where: { receivedAt: { lt: new Date(Date.now() - olderThanMs) } },
+  });
+};
+
 /** Every local user with a uniAuth link: the ids a full resync refreshes. */
 export const listLinkedSubs = async (after: string | null, take: number) => {
   const accounts = await prisma.account.findMany({
@@ -200,9 +233,10 @@ export const applyResync = async (
   state: DirectoryIdentity | 'deleted',
 ) => {
   return prisma.$transaction(async (tx) => {
+    await lockUser(tx, userId);
     const user = await tx.user.findUnique({ where: { id: userId } });
     if (!user) return 'gone' as const;
-    if (state === 'deleted') {
+    if (state === 'deleted' || state.status === 'deleted') {
       await tx.user.deleteMany({ where: { id: userId } });
       return 'applied' as const;
     }

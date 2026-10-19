@@ -7,6 +7,35 @@ export const USER_DELETED_EVENT = 'urn:uniauth:event:user-deleted';
 export const USER_UPDATED_EVENT = 'urn:uniauth:event:user-updated';
 const EVENTS = [LOGOUT_EVENT, USER_DELETED_EVENT, USER_UPDATED_EVENT];
 
+const keySets = new Map<string, JWTVerifyGetKey>();
+
+/** uniAuth's signing keys, fetched lazily and cached per issuer: ONE key set shared by every event verifier. */
+export const uniauthKeys = (issuer: string): JWTVerifyGetKey => {
+  let keys = keySets.get(issuer);
+  if (!keys) {
+    keys = createRemoteJWKSet(new URL(`${issuer}/jwks`));
+    keySets.set(issuer, keys);
+  }
+  return keys;
+};
+
+/**
+ * The core of every uniAuth event check: signed with uniAuth's key, issued by it, for one of `audience` (the login
+ * client for the legacy notices, the machine client for v1 identity events), not expired. Null if any of that fails.
+ */
+export const verifyUniauthJwt = async (
+  token: string,
+  issuer: string,
+  audience: string | string[],
+  keys: JWTVerifyGetKey = uniauthKeys(issuer),
+) => {
+  try {
+    return (await jwtVerify(token, keys, { issuer, audience })).payload;
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Returns a function that verifies a uniAuth event token: signed with uniAuth's key, for this
  * client, carrying exactly the expected event and no nonce (so an ID token can't pass as one).
@@ -15,11 +44,12 @@ const EVENTS = [LOGOUT_EVENT, USER_DELETED_EVENT, USER_UPDATED_EVENT];
 export const createEventVerifier = (
   issuer: string,
   audience: string,
-  keys: JWTVerifyGetKey = createRemoteJWKSet(new URL(`${issuer}/jwks`)),
+  keys: JWTVerifyGetKey = uniauthKeys(issuer),
 ): EventVerifier => {
   return async (token, event) => {
     try {
-      const { payload } = await jwtVerify(token, keys, { issuer, audience });
+      const payload = await verifyUniauthJwt(token, issuer, audience, keys);
+      if (!payload) return null;
       const events = payload.events as Record<string, unknown> | undefined;
       const data = events?.[event];
       if (!events || !data || typeof data !== 'object' || 'nonce' in payload)

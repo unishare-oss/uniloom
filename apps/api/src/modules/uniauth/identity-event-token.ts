@@ -1,4 +1,5 @@
-import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
+import type { JWTVerifyGetKey } from 'jose';
+import { uniauthKeys, verifyUniauthJwt } from './event-token.js';
 
 export const IDENTITY_EVENT = 'urn:uniauth:event:identity';
 export const CONNECTION_CHECK_EVENT = 'urn:uniauth:event:connection-check';
@@ -29,18 +30,11 @@ export type IdentityEventResult =
 export const createIdentityEventVerifier = (
   issuer: string,
   audiences: string[],
-  keys: JWTVerifyGetKey = createRemoteJWKSet(new URL(`${issuer}/jwks`)),
+  keys: JWTVerifyGetKey = uniauthKeys(issuer),
 ) => {
   return async (token: string): Promise<IdentityEventResult> => {
-    let payload;
-    try {
-      ({ payload } = await jwtVerify(token, keys, {
-        issuer,
-        audience: audiences,
-      }));
-    } catch {
-      return { kind: 'unverified' };
-    }
+    const payload = await verifyUniauthJwt(token, issuer, audiences, keys);
+    if (!payload) return { kind: 'unverified' };
     const events = payload.events as Record<string, unknown> | undefined;
     if (
       !events ||

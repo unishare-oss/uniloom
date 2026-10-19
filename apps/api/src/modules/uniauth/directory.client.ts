@@ -141,6 +141,23 @@ const STATUSES = ['active', 'suspended', 'deleted'];
 /** The identity if the body is what the directory promises; otherwise null. */
 const parseIdentity = (body: unknown): DirectoryIdentity | null => {
   const data = (body as { data?: Record<string, unknown> } | null)?.data;
+  // A deleted account is a tombstone: just the id, the status and the last version, no profile.
+  if (
+    data &&
+    data.status === 'deleted' &&
+    typeof data.id === 'string' &&
+    data.id &&
+    typeof data.version === 'number'
+  )
+    return {
+      id: data.id,
+      name: '',
+      email: '',
+      emailVerified: false,
+      image: null,
+      status: 'deleted',
+      version: data.version,
+    };
   if (
     !data ||
     typeof data.id !== 'string' ||

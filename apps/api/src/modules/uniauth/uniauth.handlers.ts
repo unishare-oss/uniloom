@@ -8,7 +8,10 @@ import {
 } from './event-token.js';
 import { deleteUser, endSessions, updateUser } from './uniauth.service.js';
 import { createIdentityEventVerifier } from './identity-event-token.js';
-import { applyIdentityEvent } from './identity-events.service.js';
+import {
+  applyIdentityEvent,
+  NotYetConsistent,
+} from './identity-events.service.js';
 
 const verifyEvent = createEventVerifier(UNIAUTH_ISSUER, UNIAUTH_CLIENT_ID);
 
@@ -70,6 +73,15 @@ export const identityEvent = async (c: Context) => {
   const result = await identityVerifier(token);
   if (result.kind === 'unverified') return c.text('invalid token', 401);
   if (result.kind === 'malformed') return c.text('invalid event', 400);
-  if (result.kind === 'event') await applyIdentityEvent(result.event);
+  if (result.kind === 'event') {
+    try {
+      await applyIdentityEvent(result.event);
+    } catch (error) {
+      // A read that is behind the event: uniAuth retries.
+      if (error instanceof NotYetConsistent)
+        return c.text('the directory is not yet consistent; retry', 503);
+      throw error;
+    }
+  }
   return c.body(null, 204);
 };

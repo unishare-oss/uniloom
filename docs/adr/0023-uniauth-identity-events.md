@@ -26,6 +26,14 @@ uniAuth stops sending them to Uniloom.
   (default 6). If uniAuth answers 410 (cursor older than its 7-day retention) every linked account is refreshed with
   batch reads and the feed is read again from the start.
 
+- The row is locked (`SELECT … FOR UPDATE`) while an event or resync is applied, so two changes for one person run one after
+  the other and an older one cannot overwrite a newer one. The version stored for an update is the directory's if newer than
+  the event's; a directory read older than the event is not yet consistent (503, retried; reconciliation stops before it).
+  A deleted account (a tombstone read or a resync result) is the existing deletion.
+- Reconciliation skips, logs and counts (`skipped`) a malformed entry or a profile it cannot read, so one bad entry cannot
+  wedge the cursor; only a lagging directory stops it. Receipts older than 14 days are pruned. `UNIAUTH_RECONCILE_HOURS` is
+  validated at startup (positive, capped to a timer's range), and a run never overlaps the previous one.
+
 ## Consequences
 
 Events can arrive late, twice or never and Uniloom still converges. The cost is two columns on `user`, two small
