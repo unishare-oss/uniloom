@@ -119,6 +119,8 @@ export const auth = betterAuth({
     additionalFields: {
       // Set by Uniloom's consent screen, never at sign-up.
       consentGivenAt: { type: 'date', required: false, input: false },
+      // uniAuth's account state (active | suspended), set from its identity events, never from a request.
+      identityStatus: { type: 'string', required: false, input: false },
     },
   },
 });
