@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '@/db/prisma.js';
 import { Prisma } from '@/generated/prisma/client.js';
-import { UNIAUTH_PROVIDER_ID } from '@/auth/auth.js';
+import { UNIAUTH_PROVIDER_ID } from '@/auth/constants.js';
 import type { DirectoryIdentity } from './directory.client.js';
 
 /** Never by email: the uniAuth sub on the account row is the only link. */
@@ -18,7 +18,7 @@ export const findUserIdBySub = async (sub: string) => {
 /**
  * A local user for a uniAuth account that has not signed in here yet, with the account link a
  * first sign-in would have made: no password, no tokens, no accepted terms. The unique email
- * and the unique (provider, sub) pair decide any race: returns null if either is already taken.
+ * and the unique (provider, sub) pair decide any race: `{ conflict }` says which was taken.
  */
 export const createLinkedUser = (identity: DirectoryIdentity) => {
   return prisma
@@ -40,16 +40,27 @@ export const createLinkedUser = (identity: DirectoryIdentity) => {
           userId: user.id,
         },
       });
-      return user.id;
+      return { userId: user.id };
     })
     .catch((error: unknown) => {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
-      )
-        return null;
+      ) {
+        const where = JSON.stringify(error.meta ?? {});
+        // The account link's own unique pair, or else the user's email.
+        return {
+          conflict: /providerId|accountId|account_/.test(where)
+            ? ('link' as const)
+            : ('email' as const),
+        };
+      }
       throw error;
     });
+};
+
+export const findUserById = (userId: string) => {
+  return prisma.user.findUnique({ where: { id: userId } });
 };
 
 export const deleteSessions = (userId: string) => {

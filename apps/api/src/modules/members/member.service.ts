@@ -1,3 +1,5 @@
+import { HTTPException } from 'hono/http-exception';
+import { UNIAUTH_PROVIDER_ID } from '@/auth/constants.js';
 import { Role } from '@/generated/prisma/enums.js';
 import { apiError } from '@/http.js';
 import { prisma } from '@/db/prisma.js';
@@ -8,6 +10,7 @@ import {
 } from '@/modules/uniauth/directory.client.js';
 import { ensureLocalUser } from '@/modules/uniauth/uniauth.service.js';
 import * as memberRepo from './member.repository.js';
+import { takeLookup } from './member.rate-limit.js';
 import { view } from './member.utils.js';
 
 /** Every role. */
@@ -49,6 +52,20 @@ export const listMembers = async (projectId: string, userId: string) => {
   return [...owners, ...others].map(view);
 };
 
+/** True for the 503 the directory client throws when uniAuth cannot answer. */
+const isUnavailable = (error: unknown) => {
+  return error instanceof HTTPException && error.status === 503;
+};
+
+/** A user created by a uniAuth sign-in (or provisioning) has an account row for it. */
+const hasUniauthLink = async (userId: string) => {
+  return (
+    (await prisma.account.count({
+      where: { userId, providerId: UNIAUTH_PROVIDER_ID },
+    })) > 0
+  );
+};
+
 /**
  * Owner or manager, who may only add people as Member. The person needs a Unicorp account
  * (uniAuth's directory is asked, so they need not have signed in to Uniloom yet; their local
@@ -63,19 +80,35 @@ export const addMember = async (
   const caller = await requireRole(projectId, userId, CREATORS);
   if (!assignableRoles(caller.role).includes(input.role))
     throw apiError(403, 'forbidden', 'Your role cannot give that role');
+  // Each lookup says whether an email has an account, so each person gets a few per hour.
+  if (!takeLookup(userId))
+    throw apiError(
+      429,
+      'rate_limited',
+      'Too many lookups. Try again in a little while, or share an invite link.',
+    );
   let targetId: string | undefined;
   if (directoryEnabled()) {
     // Asked after the role check, and always: a local copy of the email may be stale.
-    const identity = await resolveIdentity(input.email);
-    if (identity) targetId = await ensureLocalUser(identity);
+    try {
+      const identity = await resolveIdentity(input.email);
+      if (identity) targetId = await ensureLocalUser(identity, true);
+    } catch (error) {
+      if (!isUnavailable(error)) throw error;
+      // uniAuth is down: someone who already has a uniAuth link here can still be added.
+      const local = await memberRepo.findUserByEmail(input.email);
+      if (!local || !(await hasUniauthLink(local.id))) throw error;
+      targetId = local.id;
+    }
   } else {
     targetId = (await memberRepo.findUserByEmail(input.email))?.id;
   }
+  // The same answer whether there is no account, or it is unverified or suspended.
   if (!targetId)
     throw apiError(
       404,
       'user_not_found',
-      'No Unicorp account has that email yet',
+      'No Unicorp account with that email can be added. Ask them for an invite link instead.',
     );
   const member = await memberRepo.insertMember(projectId, targetId, input.role);
   if (!member)

@@ -110,36 +110,71 @@ describe('add by email through the uniAuth directory (e2e)', () => {
     expect((await w.add(alice.email)).status).toBe(409); // already_member
   });
 
-  it('refuses unverified and suspended accounts, and answers 404 only for a genuinely unknown email', async () => {
+  it('answers the same 404 for unknown, unverified and suspended accounts, and provisions none of them', async () => {
     const w = await setup();
     const unverified = api.newProfile();
     api.uniauth.registerAccount(unverified, { verified: false });
     const suspended = api.newProfile();
     api.uniauth.registerAccount(suspended, { status: 'suspended' });
 
-    const a = await w.add(unverified.email);
-    expect([a.status, (await read(a)).code]).toEqual([
-      409,
-      'identity_unverified',
+    const answers = [];
+    for (const email of [
+      unverified.email,
+      suspended.email,
+      `nobody-${randomUUID()}@${api.emailDomain}`,
+    ]) {
+      const res = await w.add(email);
+      answers.push([res.status, await read(res)]);
+    }
+    expect(answers[0]).toEqual([
+      404,
+      expect.objectContaining({ code: 'user_not_found' }),
     ]);
-    const b = await w.add(suspended.email);
-    expect([b.status, (await read(b)).code]).toEqual([
-      409,
-      'identity_inactive',
-    ]);
-    const c = await w.add(`nobody-${randomUUID()}@${api.emailDomain}`);
-    expect([c.status, (await read(c)).code]).toEqual([404, 'user_not_found']);
-    // Nothing was provisioned for the refused ones.
+    // Identical bodies: nothing distinguishes the three.
+    expect(answers[1]).toEqual(answers[0]);
+    expect(answers[2]).toEqual(answers[0]);
     expect(
       await prisma.user.count({ where: { email: unverified.email } }),
     ).toBe(0);
     expect(await links(suspended.sub)).toHaveLength(0);
   });
 
-  it('answers 503, never 404, when uniAuth cannot answer', async () => {
+  it('limits each person to 20 lookups an hour', async () => {
+    const w = await setup();
+    for (let i = 0; i < 20; i++)
+      expect(
+        (await w.add(`nobody-${randomUUID()}@${api.emailDomain}`)).status,
+      ).toBe(404);
+    const limited = await w.add(`nobody-${randomUUID()}@${api.emailDomain}`);
+    expect([limited.status, (await read(limited)).code]).toEqual([
+      429,
+      'rate_limited',
+    ]);
+    // Someone else is unaffected.
+    const other = await setup();
+    expect(
+      (await other.add(`nobody-${randomUUID()}@${api.emailDomain}`)).status,
+    ).toBe(404);
+  });
+
+  it("refreshes a linked person's name from the directory when they are added", async () => {
+    const w = await setup();
+    const erin = api.newProfile({ name: 'Erin' });
+    await api.signIn(erin);
+    api.uniauth.registerAccount({ ...erin, name: 'Erin Renamed' });
+    expect((await w.add(erin.email)).status).toBe(201);
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { email: erin.email } }))
+        .name,
+    ).toBe('Erin Renamed');
+  });
+
+  it('answers 503, never 404, for someone unlinked when uniAuth cannot answer; linked people can still be added', async () => {
     const w = await setup();
     const bob = api.newProfile();
     api.uniauth.registerAccount(bob);
+    const linked = api.newProfile({ name: 'Linked' });
+    await api.signIn(linked); // has signed in here: a uniAuth link exists locally
     api.uniauth.directory.failWith = 500;
     try {
       const down = await w.add(bob.email);
@@ -147,6 +182,9 @@ describe('add by email through the uniAuth directory (e2e)', () => {
         503,
         'identity_service_unavailable',
       ]);
+      expect(await prisma.user.count({ where: { email: bob.email } })).toBe(0);
+      // Already linked: the local copy is enough while uniAuth is down.
+      expect((await w.add(linked.email)).status).toBe(201);
     } finally {
       api.uniauth.directory.failWith = 0;
     }
@@ -175,6 +213,27 @@ describe('add by email through the uniAuth directory (e2e)', () => {
       'identity_conflict',
     ]);
     expect(await links(carol.sub)).toHaveLength(0);
+  });
+
+  it('reports a genuine email conflict at once, without waiting for a race to resolve', async () => {
+    const w = await setup();
+    const fay = api.newProfile();
+    const other = await prisma.user.create({
+      data: { id: randomUUID(), name: 'Other', email: fay.email },
+    });
+    await prisma.account.create({
+      data: {
+        id: randomUUID(),
+        accountId: `u_${randomUUID()}`,
+        providerId: 'uniauth',
+        userId: other.id,
+      },
+    });
+    api.uniauth.registerAccount(fay);
+    const started = Date.now();
+    const res = await w.add(fay.email);
+    expect(res.status).toBe(409);
+    expect(Date.now() - started).toBeLessThan(400);
   });
 
   it('converges on one local user when provisioning races the first sign-in and itself', async () => {
@@ -207,8 +266,13 @@ describe('add by email through the uniAuth directory (e2e)', () => {
         }),
         api.signIn(dana),
       ]);
-      // A sign-in that lost to the unique email may need a second try; nothing may be duplicated.
-      if (results[3].status === 'rejected') await api.signIn(dana);
+      // Strict: the sign-in callback never errors, whichever writer got there first.
+      expect(results.map((r) => r.status)).toEqual([
+        'fulfilled',
+        'fulfilled',
+        'fulfilled',
+        'fulfilled',
+      ]);
 
       expect(await prisma.user.count({ where: { email: dana.email } })).toBe(1);
       expect(await links(dana.sub)).toHaveLength(1);
@@ -219,6 +283,7 @@ describe('add by email through the uniAuth directory (e2e)', () => {
       // However it interleaved, one more add finds her as a member of the same user.
       const again = await w.add(dana.email);
       expect([201, 409]).toContain(again.status);
+      expect((await w.add(dana.email)).status).toBe(409);
       expect(
         await prisma.member.count({
           where: { projectId: w.id, userId: user.id },
