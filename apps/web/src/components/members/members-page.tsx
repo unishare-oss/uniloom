@@ -148,7 +148,7 @@ export const MembersPage = ({ projectId }: { projectId: string }) => {
           }}
         >
           <label className="flex min-w-60 flex-1 flex-col gap-1.5 text-sm font-medium">
-            Email of someone with a Uniloom account
+            Email of someone with a Unicorp account
             <Input
               type="email"
               required
