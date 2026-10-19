@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { startMockUniauth, type MockProfile } from './mock-uniauth.js';
+import {
+  DIRECTORY_CLIENT,
+  startMockUniauth,
+  type MockProfile,
+} from './mock-uniauth.js';
 
 export const WEB_ORIGIN = 'http://127.0.0.1:3013';
 export const MCP_RESOURCE = `${WEB_ORIGIN}/mcp`;
@@ -18,6 +22,8 @@ export const startTestApi = async () => {
     UNIAUTH_CLIENT_ID: CLIENT.id,
     UNIAUTH_CLIENT_SECRET: CLIENT.secret,
     MCP_RESOURCE,
+    UNIAUTH_DIRECTORY_CLIENT_ID: DIRECTORY_CLIENT.id,
+    UNIAUTH_DIRECTORY_CLIENT_SECRET: DIRECTORY_CLIENT.secret,
   });
   const { app } = await import('@/app.js');
   /** Test users get this email domain, so a test file can delete exactly its own. */

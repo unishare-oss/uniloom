@@ -3,6 +3,12 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { exportJWK, generateKeyPair, SignJWT, type JWK } from 'jose';
 
+/** The machine credential Uniloom's API uses for the directory (UNIAUTH_DIRECTORY_CLIENT_*). */
+export const DIRECTORY_CLIENT = {
+  id: 'uniloom-directory-test',
+  secret: 'uniloom-directory-test-secret',
+};
+
 export interface MockProfile {
   sub: string;
   email: string;
@@ -34,6 +40,13 @@ export const startMockUniauth = async (client: {
     use: 'sig',
   };
   const codes = new Map<string, PendingCode>();
+  /** Accounts the mock directory knows: everyone who signed in, plus whoever a test registers. */
+  const accounts = new Map<
+    string,
+    { profile: MockProfile; verified: boolean; status: 'active' | 'suspended' }
+  >();
+  const machineTokens = new Set<string>();
+  const directory = { resolveCalls: 0, tokenCalls: 0, failWith: 0 };
   let profile: MockProfile | null = {
     sub: randomUUID(),
     email: 'mya@example.com',
@@ -62,6 +75,45 @@ export const startMockUniauth = async (client: {
     }
 
     if (url.pathname === '/api/auth/jwks') return json(200, { keys: [jwk] });
+
+    if (
+      url.pathname === '/api/directory/v1/users/resolve' &&
+      req.method === 'POST'
+    ) {
+      let raw = '';
+      req.on('data', (chunk: Buffer) => (raw += chunk.toString()));
+      req.on('end', () => {
+        directory.resolveCalls++;
+        const token = (req.headers.authorization ?? '').replace('Bearer ', '');
+        if (!machineTokens.has(token))
+          return json(401, { error: { code: 'invalid_token' } });
+        if (directory.failWith)
+          return json(directory.failWith, { error: { code: 'boom' } });
+        const email = String(JSON.parse(raw).email ?? '')
+          .trim()
+          .toLowerCase();
+        const found = accounts.get(email);
+        if (!found) return json(404, { error: { code: 'identity_not_found' } });
+        if (found.status === 'suspended')
+          return json(409, { error: { code: 'identity_inactive' } });
+        if (!found.verified)
+          return json(409, { error: { code: 'identity_unverified' } });
+        json(200, {
+          data: {
+            issuer,
+            id: found.profile.sub,
+            name: found.profile.name,
+            email: found.profile.email,
+            emailVerified: true,
+            image: found.profile.picture ?? null,
+            status: 'active',
+            version: 1,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      });
+      return;
+    }
 
     if (url.pathname === '/api/auth/oauth2/authorize') {
       const redirectUri = url.searchParams.get('redirect_uri') ?? '';
@@ -92,6 +144,24 @@ export const startMockUniauth = async (client: {
       req.on('end', () => {
         void (async () => {
           const form = new URLSearchParams(raw);
+          if (form.get('grant_type') === 'client_credentials') {
+            directory.tokenCalls++;
+            const machine = Buffer.from(
+              `${DIRECTORY_CLIENT.id}:${DIRECTORY_CLIENT.secret}`,
+            ).toString('base64');
+            if (
+              req.headers.authorization !== `Basic ${machine}` ||
+              form.get('resource') !== `${new URL(issuer).origin}/api/directory`
+            )
+              return json(401, { error: 'invalid_client' });
+            const accessToken = `machine-${randomUUID()}`;
+            machineTokens.add(accessToken);
+            return json(200, {
+              access_token: accessToken,
+              token_type: 'Bearer',
+              expires_in: 300,
+            });
+          }
           const basic = Buffer.from(`${client.id}:${client.secret}`).toString(
             'base64',
           );
@@ -147,7 +217,26 @@ export const startMockUniauth = async (client: {
     /** The person the next authorize request signs in as. null = signed out. */
     signInAs(next: MockProfile | null) {
       profile = next;
+      if (next && !accounts.has(next.email.toLowerCase()))
+        accounts.set(next.email.toLowerCase(), {
+          profile: next,
+          verified: true,
+          status: 'active',
+        });
     },
+    /** An account that exists in uniAuth but has never signed in to Uniloom. */
+    registerAccount(
+      next: MockProfile,
+      state: { verified?: boolean; status?: 'active' | 'suspended' } = {},
+    ) {
+      accounts.set(next.email.toLowerCase(), {
+        profile: next,
+        verified: state.verified ?? true,
+        status: state.status ?? 'active',
+      });
+    },
+    /** Counters and a switch to make the directory answer with an error status. */
+    directory,
     /** Signs an event token the way uniAuth does for its server-to-server calls. */
     signEvent(sub: string, events: Record<string, object>) {
       return new SignJWT({ events })

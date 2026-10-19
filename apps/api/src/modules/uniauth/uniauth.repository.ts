@@ -1,5 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { prisma } from '@/db/prisma.js';
+import { Prisma } from '@/generated/prisma/client.js';
 import { UNIAUTH_PROVIDER_ID } from '@/auth/auth.js';
+import type { DirectoryIdentity } from './directory.client.js';
 
 /** Never by email: the uniAuth sub on the account row is the only link. */
 export const findUserIdBySub = async (sub: string) => {
@@ -10,6 +13,43 @@ export const findUserIdBySub = async (sub: string) => {
     select: { userId: true },
   });
   return account?.userId;
+};
+
+/**
+ * A local user for a uniAuth account that has not signed in here yet, with the account link a
+ * first sign-in would have made: no password, no tokens, no accepted terms. The unique email
+ * and the unique (provider, sub) pair decide any race: returns null if either is already taken.
+ */
+export const createLinkedUser = (identity: DirectoryIdentity) => {
+  return prisma
+    .$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          id: randomUUID(),
+          name: identity.name || identity.email,
+          email: identity.email.toLowerCase(),
+          emailVerified: identity.emailVerified,
+          image: identity.image,
+        },
+      });
+      await tx.account.create({
+        data: {
+          id: randomUUID(),
+          accountId: identity.id,
+          providerId: UNIAUTH_PROVIDER_ID,
+          userId: user.id,
+        },
+      });
+      return user.id;
+    })
+    .catch((error: unknown) => {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        return null;
+      throw error;
+    });
 };
 
 export const deleteSessions = (userId: string) => {

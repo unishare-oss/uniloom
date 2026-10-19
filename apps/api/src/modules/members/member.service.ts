@@ -2,6 +2,11 @@ import { Role } from '@/generated/prisma/enums.js';
 import { apiError } from '@/http.js';
 import { prisma } from '@/db/prisma.js';
 import type { Prisma } from '@/generated/prisma/client.js';
+import {
+  directoryEnabled,
+  resolveIdentity,
+} from '@/modules/uniauth/directory.client.js';
+import { ensureLocalUser } from '@/modules/uniauth/uniauth.service.js';
 import * as memberRepo from './member.repository.js';
 import { view } from './member.utils.js';
 
@@ -45,8 +50,10 @@ export const listMembers = async (projectId: string, userId: string) => {
 };
 
 /**
- * Owner or manager, who may only add people as Member. The person must already have a
- * Uniloom account.
+ * Owner or manager, who may only add people as Member. The person needs a Unicorp account
+ * (uniAuth's directory is asked, so they need not have signed in to Uniloom yet; their local
+ * user is created and links to the same account their first sign-in will use). Without
+ * directory credentials only people who already signed in to Uniloom are found.
  */
 export const addMember = async (
   projectId: string,
@@ -56,18 +63,25 @@ export const addMember = async (
   const caller = await requireRole(projectId, userId, CREATORS);
   if (!assignableRoles(caller.role).includes(input.role))
     throw apiError(403, 'forbidden', 'Your role cannot give that role');
-  const user = await memberRepo.findUserByEmail(input.email);
-  if (!user)
+  let targetId: string | undefined;
+  if (directoryEnabled()) {
+    // Asked after the role check, and always: a local copy of the email may be stale.
+    const identity = await resolveIdentity(input.email);
+    if (identity) targetId = await ensureLocalUser(identity);
+  } else {
+    targetId = (await memberRepo.findUserByEmail(input.email))?.id;
+  }
+  if (!targetId)
     throw apiError(
       404,
       'user_not_found',
-      'No Uniloom account has that email yet',
+      'No Unicorp account has that email yet',
     );
-  const member = await memberRepo.insertMember(projectId, user.id, input.role);
+  const member = await memberRepo.insertMember(projectId, targetId, input.role);
   if (!member)
     throw apiError(409, 'already_member', 'They are already a member');
   // If they had asked to join through an invite link, that request is answered now.
-  await memberRepo.settleJoinRequest(prisma, projectId, user.id);
+  await memberRepo.settleJoinRequest(prisma, projectId, targetId);
   return view(member);
 };
 
