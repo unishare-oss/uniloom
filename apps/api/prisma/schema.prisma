@@ -22,6 +22,10 @@ model User {
   image          String?
   /// When the user accepted Uniloom's Terms and Privacy Policy. Null until they do.
   consentGivenAt DateTime?
+  /// The last uniAuth identity version applied to this person (null until one is). An event applies only if newer.
+  identityVersion Int?
+  /// uniAuth's account state: active | suspended. A suspended person is blocked at once; deletion removes the user.
+  identityStatus  String    @default("active")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -573,4 +577,25 @@ model Comment {
   @@index([documentId, createdAt])
   @@index([parentId])
   @@map("comment")
+}
+
+/// uniAuth identity events already applied, by their stable event id: a redelivery changes nothing.
+model IdentityEventReceipt {
+  eventId    String   @id
+  subject    String
+  version    Int
+  type       String
+  receivedAt DateTime @default(now())
+
+  @@index([receivedAt])
+  @@map("identity_event_receipt")
+}
+
+/// Where reconciliation with uniAuth's change feed stands (one row).
+model IdentityReconcile {
+  id        Int      @id @default(1)
+  cursor    String?
+  updatedAt DateTime @updatedAt
+
+  @@map("identity_reconcile")
 }
