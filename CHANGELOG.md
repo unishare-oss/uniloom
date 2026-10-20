@@ -1,3 +1,17 @@
+# [1.15.0](https://github.com/unishare-oss/uniloom/compare/v1.14.0...v1.15.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **api:** harden add-by-email against enumeration and sign-in races ([e70fa7f](https://github.com/unishare-oss/uniloom/commit/e70fa7f7e0c5b52b0a418f4a5c5abf1afc419df4))
+* **api:** make identity event application race-safe and reconciliation robust ([7da3456](https://github.com/unishare-oss/uniloom/commit/7da345619f280c7b092e1c96512645bb67ea8f09))
+
+
+### Features
+
+* **api:** add members by email through the uniAuth directory ([792db6f](https://github.com/unishare-oss/uniloom/commit/792db6fecd674bd79251c0ab66d0602bcecc7505))
+* **api:** apply uniAuth v1 identity events and reconcile from the change feed ([1e67bf6](https://github.com/unishare-oss/uniloom/commit/1e67bf62981e0d314f81ff8a7e7de89ce1d994c3))
+
 # [1.14.0](https://github.com/unishare-oss/uniloom/compare/v1.13.0...v1.14.0) (2026-10-18)
 
 
