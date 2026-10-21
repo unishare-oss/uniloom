@@ -1,3 +1,12 @@
+# [1.18.0](https://github.com/unishare-oss/uniloom/compare/v1.17.2...v1.18.0) (2026-10-21)
+
+
+### Features
+
+* **api:** enforce verified shared acceptance for REST and MCP ([c7a6c08](https://github.com/unishare-oss/uniloom/commit/c7a6c08721c958f7e1a7e43d0fd172080133d305))
+* **web:** refresh shared acceptance through UniAuth ([e5607bd](https://github.com/unishare-oss/uniloom/commit/e5607bd7fae7d9ed6f184cc718e2c4cfef820deb))
+* **web:** show the agent's logo and wordmark in activity rows ([b05c0ec](https://github.com/unishare-oss/uniloom/commit/b05c0eccb731cdc11e95c76e62d4411e5871c66c))
+
 ## [1.17.2](https://github.com/unishare-oss/uniloom/compare/v1.17.1...v1.17.2) (2026-10-21)
 
 
