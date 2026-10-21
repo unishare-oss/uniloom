@@ -183,7 +183,9 @@ export const Board = ({ projectId }: { projectId: string }) => {
   };
 
   return (
-    <main className="flex min-w-0 flex-1 flex-col bg-dots">
+    // Exactly the window, less the mobile top bar (h-14); not flex-1, which would let it grow with
+    // the cards. The columns take what is left and scroll their own cards.
+    <main className="flex h-[calc(100svh-3.5rem)] min-w-0 flex-col bg-dots md:h-svh">
       <div className="flex flex-col gap-1 px-6 pt-5">
         <nav
           aria-label="Breadcrumb"
@@ -259,7 +261,7 @@ export const Board = ({ projectId }: { projectId: string }) => {
       >
         {/* relative: the cards' sr-only labels are absolute; without it they escape this
             scroller and widen the whole page. */}
-        <div className="relative flex snap-x snap-mandatory gap-2 overflow-x-auto px-6 pb-6 sm:snap-none">
+        <div className="relative flex min-h-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto px-6 pb-6 sm:snap-none">
           {(!project || !items) &&
             [0, 1, 2, 3].map((n) => (
               <Skeleton
