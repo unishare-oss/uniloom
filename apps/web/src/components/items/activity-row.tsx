@@ -1,4 +1,4 @@
-import { Bot } from "lucide-react";
+import { AgentBadge, AgentMark } from "@/components/agent/agent-brand";
 import { ActivitySentence } from "@/components/items/activity-sentence";
 import type { StateCategory } from "@/components/items/item-meta";
 import { Avatar } from "@/components/user/avatar";
@@ -30,7 +30,7 @@ export const ActivityRow = ({
             title="Made by an agent"
             className="absolute -right-1.5 -bottom-1.5 inline-flex size-4 items-center justify-center rounded-full border bg-card text-primary"
           >
-            <Bot className="size-2.5" />
+            <AgentMark name={row.agent.name} />
           </span>
         )}
       </span>
@@ -38,10 +38,7 @@ export const ActivityRow = ({
         <span className="font-semibold">{person}</span>
         {row.agent &&
           (row.agent.name ? (
-            <span className="mx-1 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 align-[1px] text-xs leading-5 font-medium text-primary">
-              <Bot className="size-3" />
-              {row.agent.name}
-            </span>
+            <AgentBadge name={row.agent.name} />
           ) : (
             "'s agent"
           ))}{" "}
