@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/unishare-oss/uniloom/compare/v1.15.0...v1.15.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **web:** scroll board columns instead of growing their height ([dc0ae61](https://github.com/unishare-oss/uniloom/commit/dc0ae61ff4313570fd4447a5c05129de3a2519c3))
+
 # [1.15.0](https://github.com/unishare-oss/uniloom/compare/v1.14.0...v1.15.0) (2026-10-20)
 
 
