@@ -1,3 +1,10 @@
+## [1.17.1](https://github.com/unishare-oss/uniloom/compare/v1.17.0...v1.17.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **web:** keep the board page from scrolling ([abb08d5](https://github.com/unishare-oss/uniloom/commit/abb08d50a17b036c75295849009b757e08edbce2))
+
 # [1.17.0](https://github.com/unishare-oss/uniloom/compare/v1.16.0...v1.17.0) (2026-10-21)
 
 
