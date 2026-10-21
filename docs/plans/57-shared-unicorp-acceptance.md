@@ -67,3 +67,7 @@ Proof for the five done-when items, in order:
 The full live Unishare-to-Uniloom browser journey awaits staging rollout; individual
 central browser flows and consumer API behavior were exercised separately.
 No independent reviewer was run. No real account or membership was changed.
+
+Publication check: full PR CI exposed two old negative fixtures that supplied current
+shared evidence while expecting denial. Both now explicitly omit shared acceptance;
+the 403 assertions remain unchanged. Full integration CI is rerun before merging.

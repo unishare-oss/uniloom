@@ -35,7 +35,7 @@ describe('projects (e2e)', () => {
 
   it('needs a session and consent', async () => {
     expect((await api.call('/api/projects')).status).toBe(401);
-    const { cookie } = await api.signIn(api.newProfile());
+    const { cookie } = await api.signIn(api.newProfile({ sharedTerms: false }));
     expect((await api.send('GET', '/api/projects', cookie)).status).toBe(403);
   });
 
