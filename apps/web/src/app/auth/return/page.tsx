@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { takeReturnTo } from "@/lib/uniauth";
+import { signInWithUniauth, takeReturnTo } from "@/lib/uniauth";
 
 /** uniAuth errors land here. login_required = not signed in there: carry on signed out. */
 const AuthReturnPage = () => {
@@ -13,6 +13,12 @@ const AuthReturnPage = () => {
     started.current = true;
     const error = new URLSearchParams(window.location.search).get("error");
     const returnTo = takeReturnTo() ?? "/";
+    if (error === "interaction_required") {
+      void signInWithUniauth({
+        returnTo: new URL(returnTo, window.location.origin).href,
+      });
+      return;
+    }
     if (!error || error === "login_required") window.location.replace(returnTo);
     else window.location.replace(`/login?error=${encodeURIComponent(error)}`);
   }, []);

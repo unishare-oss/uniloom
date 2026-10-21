@@ -1,82 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { goToLogin } from "@/lib/api";
-import { ApiError } from "@/lib/api/fetcher";
-import { useAcceptTerms } from "@/lib/api/generated/users/users";
 import { authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-next";
-import { signOutEverywhere } from "@/lib/uniauth";
+import { signInWithUniauth } from "@/lib/uniauth";
 
-/** Signing in through uniAuth is not agreeing to Uniloom's terms: this asks once. */
+const REFRESH_KEY = "uniloom:shared-terms-refresh";
+
+/** Older app sessions refresh shared acceptance through UniAuth, which owns the only acceptance step. */
 const Consent = () => {
-  const [next] = useState(() =>
-    safeNext(new URLSearchParams(window.location.search).get("next")),
-  );
-  const [ready, setReady] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const acceptTerms = useAcceptTerms({
-    mutation: {
-      onSuccess: () => window.location.replace(next),
-      onError: (err) => {
-        if (err instanceof ApiError && err.status === 401) return goToLogin();
-        toast.error(
-          err instanceof ApiError
-            ? err.message
-            : "Couldn't reach Uniloom. Check your connection and try again.",
-        );
-      },
-    },
-  });
-  const busy = acceptTerms.isPending || signingOut;
-
+  const started = useRef(false);
+  const [error, setError] = useState("");
   useEffect(() => {
-    void authClient.getSession().then(({ data }) => {
-      if (!data) return goToLogin();
-      const { consentGivenAt } = data.user as { consentGivenAt?: unknown };
-      if (consentGivenAt) return window.location.replace(next);
-      setReady(true);
-    });
-  }, [next]);
-
-  if (!ready) return null;
+    if (started.current) return;
+    started.current = true;
+    const next = safeNext(
+      new URLSearchParams(window.location.search).get("next"),
+    );
+    void authClient
+      .getSession()
+      .then(async ({ data }) => {
+        if (!data) return goToLogin();
+        const user = data.user as {
+          unicorpTermsVersion?: number;
+          unicorpTermsAcceptedAt?: unknown;
+        };
+        if (user.unicorpTermsVersion === 1 && user.unicorpTermsAcceptedAt) {
+          sessionStorage.removeItem(REFRESH_KEY);
+          return window.location.replace(next);
+        }
+        if (sessionStorage.getItem(REFRESH_KEY))
+          throw new Error(
+            "Could not confirm shared acceptance. Please try signing in again.",
+          );
+        sessionStorage.setItem(REFRESH_KEY, "1");
+        await signInWithUniauth({
+          returnTo: new URL(next, window.location.origin).href,
+        });
+      })
+      .catch((error: unknown) =>
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Could not connect to UniAuth.",
+        ),
+      );
+  }, []);
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-16">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Before you continue
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          To use Uniloom, please read and accept our{" "}
-          <a href="/terms" className="underline underline-offset-4">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="/privacy" className="underline underline-offset-4">
-            Privacy Policy
-          </a>
-          . Your uniAuth account is shared with other apps, but these terms are
-          Uniloom&rsquo;s own.
-        </p>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Button size="lg" disabled={busy} onClick={() => acceptTerms.mutate()}>
-          I agree
-        </Button>
+    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 px-6">
+      <p role={error ? "alert" : "status"}>
+        {error || "Connecting to your Unicorp account…"}
+      </p>
+      {error && (
         <Button
-          size="lg"
-          variant="ghost"
-          disabled={busy}
           onClick={() => {
-            setSigningOut(true);
-            void signOutEverywhere();
+            sessionStorage.removeItem(REFRESH_KEY);
+            window.location.reload();
           }}
         >
-          Sign out
+          Try again
         </Button>
-      </div>
+      )}
     </main>
   );
 };
