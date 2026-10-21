@@ -32,8 +32,17 @@ export const AuthBootstrap = () => {
     if (OWN_SIGN_IN(pathname)) return;
     void authClient.getSession().then(({ data }) => {
       if (data) {
-        const { consentGivenAt } = data.user as { consentGivenAt?: unknown };
-        if (!consentGivenAt && !NO_CONSENT_NEEDED(pathname)) goToConsent();
+        const { unicorpTermsVersion, unicorpTermsAcceptedAt } = data.user as {
+          unicorpTermsVersion?: number;
+          unicorpTermsAcceptedAt?: unknown;
+        };
+        if (
+          (unicorpTermsVersion !== 1 || !unicorpTermsAcceptedAt) &&
+          !NO_CONSENT_NEEDED(pathname)
+        )
+          goToConsent();
+        if (unicorpTermsVersion === 1 && unicorpTermsAcceptedAt)
+          sessionStorage.removeItem("uniloom:shared-terms-refresh");
         return;
       }
       if (silentCheckDone()) return;

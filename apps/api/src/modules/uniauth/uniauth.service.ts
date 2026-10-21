@@ -96,3 +96,12 @@ export const updateUser = async (
     }),
   });
 };
+
+/** Persist server-controlled acceptance explicitly: Better Auth filters input:false profile fields. */
+export const saveSharedAcceptance = (
+  userId: string,
+  evidence: {
+    unicorpTermsVersion: number | null;
+    unicorpTermsAcceptedAt: Date | null;
+  },
+) => uniauthRepo.saveSharedAcceptance(userId, evidence);

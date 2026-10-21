@@ -64,7 +64,7 @@ export const AppSidebar = () => {
     { limit: 1 },
     {
       query: {
-        enabled: !!me?.consentGivenAt,
+        enabled: me?.unicorpTermsVersion === 1 && !!me.unicorpTermsAcceptedAt,
         select: (response) => response.data,
         retry: false,
       },
@@ -74,7 +74,7 @@ export const AppSidebar = () => {
     { limit: 1 },
     {
       query: {
-        enabled: !!me?.consentGivenAt,
+        enabled: me?.unicorpTermsVersion === 1 && !!me.unicorpTermsAcceptedAt,
         select: (response) => response.data,
         retry: false,
       },

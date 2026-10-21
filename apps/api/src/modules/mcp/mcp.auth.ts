@@ -60,7 +60,7 @@ const unauthorized = (message: string) => {
 
 /**
  * Puts the calling agent on the context, or answers 401 with the metadata link. A person
- * who never signed in to Uniloom, or hasn't accepted its terms, is refused too.
+ * without a local identity and recorded current shared acceptance is refused too.
  */
 export const requireAgent: MiddlewareHandler = async (c, next) => {
   const token = readBearer(c.req.header('authorization'));
@@ -71,11 +71,11 @@ export const requireAgent: MiddlewareHandler = async (c, next) => {
   if (!user) throw unauthorized('Sign in to Uniloom on the website first');
   if (user.identityStatus === 'suspended')
     throw apiError(403, 'account_suspended', 'This account is suspended');
-  if (!user.consentGivenAt)
+  if (user.unicorpTermsVersion !== 1 || !user.unicorpTermsAcceptedAt)
     throw apiError(
       403,
       'consent_required',
-      "Accept Uniloom's Terms and Privacy Policy first",
+      'Complete the shared Unicorp terms step through UniAuth',
     );
   const agent: Agent = {
     userId: user.id,

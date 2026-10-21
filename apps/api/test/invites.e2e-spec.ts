@@ -406,7 +406,7 @@ describe('invite links (e2e)', () => {
     const w = await setup();
     const invite = await w.link();
     expect((await api.call(`/api/invites/${invite.token}`)).status).toBe(401);
-    const { cookie } = await api.signIn(api.newProfile());
+    const { cookie } = await api.signIn(api.newProfile({ sharedTerms: false }));
     const res = await preview(cookie, invite.token);
     expect(res.status).toBe(403);
     expect(await read(res)).toMatchObject({ code: 'consent_required' });

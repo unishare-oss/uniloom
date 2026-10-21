@@ -570,7 +570,7 @@ describe('v1 identity events and reconciliation (e2e)', () => {
     ).toEqual([['uniauth', unishareId, null]]);
     expect(provisioned.consentGivenAt).toBeNull();
 
-    // She signs in to Uniloom for the first time: the same local user, her membership intact, terms still to accept.
+    // She signs in to Uniloom for the first time: the same local user, her membership intact, shared acceptance supplied by UniAuth.
     const session = await api.signIn(alice);
     const me = (await read(
       await api.send('GET', '/api/me', session.cookie),

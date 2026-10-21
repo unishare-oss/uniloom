@@ -14,6 +14,7 @@ export interface MockProfile {
   email: string;
   name: string;
   picture?: string;
+  sharedTerms?: boolean;
 }
 
 interface PendingCode {
@@ -274,6 +275,12 @@ export const startMockUniauth = async (client: {
           const idToken = await new SignJWT({
             ...claims,
             email_verified: true,
+            ...(pending.profile.sharedTerms !== false && {
+              'urn:unicorp:terms': {
+                version: 1,
+                acceptedAt: '2026-10-21T00:00:00.000Z',
+              },
+            }),
             ...(pending.nonce && { nonce: pending.nonce }),
           })
             .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })

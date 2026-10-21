@@ -9,5 +9,7 @@ export const toMe = (user: SessionUser) => {
     name: user.name,
     image: user.image ?? null,
     consentGivenAt: user.consentGivenAt ?? null,
+    unicorpTermsVersion: user.unicorpTermsVersion ?? null,
+    unicorpTermsAcceptedAt: user.unicorpTermsAcceptedAt ?? null,
   };
 };

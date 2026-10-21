@@ -20,8 +20,10 @@ model User {
   email          String    @unique
   emailVerified  Boolean   @default(false)
   image          String?
-  /// When the user accepted Uniloom's Terms and Privacy Policy. Null until they do.
+  /// Historical app-only consent; shared acceptance is stored separately.
   consentGivenAt DateTime?
+  unicorpTermsVersion Int?
+  unicorpTermsAcceptedAt DateTime?
   /// The last uniAuth identity version applied to this person (null until one is). An event applies only if newer.
   identityVersion Int?
   /// uniAuth's account state: active | suspended. A suspended person is blocked at once; deletion removes the user.

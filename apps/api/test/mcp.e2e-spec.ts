@@ -274,7 +274,7 @@ describe('mcp (e2e)', () => {
     });
 
     it('refuses a person who has not accepted the terms', async () => {
-      const profile = api.newProfile();
+      const profile = api.newProfile({ sharedTerms: false });
       await api.signIn(profile);
       const token = await api.uniauth.signAgentToken(profile.sub, MCP_RESOURCE);
       const res = await rpc(token, 'tools/list');
