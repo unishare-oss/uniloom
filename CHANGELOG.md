@@ -1,3 +1,104 @@
+# [1.16.0](https://github.com/unishare-oss/uniloom/compare/v1.15.2...v1.16.0) (2026-10-21)
+
+
+### Features
+
+* **web:** show the agent's logo and wordmark in activity rows ([d24c50b](https://github.com/unishare-oss/uniloom/commit/d24c50bbdb2d8a0d647fd4d24a7b782e4e11adcd))
+
+## [1.15.2](https://github.com/unishare-oss/uniloom/compare/v1.15.1...v1.15.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **web:** hide the board column scroll bar ([7901f96](https://github.com/unishare-oss/uniloom/commit/7901f96a590ff455f8ce6bd80925f02db3203172))
+
+## [1.15.1](https://github.com/unishare-oss/uniloom/compare/v1.15.0...v1.15.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **web:** scroll board columns instead of growing their height ([dc0ae61](https://github.com/unishare-oss/uniloom/commit/dc0ae61ff4313570fd4447a5c05129de3a2519c3))
+
+# [1.15.0](https://github.com/unishare-oss/uniloom/compare/v1.14.0...v1.15.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **api:** harden add-by-email against enumeration and sign-in races ([e70fa7f](https://github.com/unishare-oss/uniloom/commit/e70fa7f7e0c5b52b0a418f4a5c5abf1afc419df4))
+* **api:** make identity event application race-safe and reconciliation robust ([7da3456](https://github.com/unishare-oss/uniloom/commit/7da345619f280c7b092e1c96512645bb67ea8f09))
+
+
+### Features
+
+* **api:** add members by email through the uniAuth directory ([792db6f](https://github.com/unishare-oss/uniloom/commit/792db6fecd674bd79251c0ab66d0602bcecc7505))
+* **api:** apply uniAuth v1 identity events and reconcile from the change feed ([1e67bf6](https://github.com/unishare-oss/uniloom/commit/1e67bf62981e0d314f81ff8a7e7de89ce1d994c3))
+
+# [1.14.0](https://github.com/unishare-oss/uniloom/compare/v1.13.0...v1.14.0) (2026-10-18)
+
+
+### Features
+
+* **web:** add skill install step to agent setups ([6bd9f35](https://github.com/unishare-oss/uniloom/commit/6bd9f35ba0523012a0d48646f578c70662b114d7))
+
+# [1.13.0](https://github.com/unishare-oss/uniloom/compare/v1.12.0...v1.13.0) (2026-10-18)
+
+
+### Bug Fixes
+
+* **api:** point example UNIAUTH_ISSUER at auth-dev.psstee.me ([91e0a5a](https://github.com/unishare-oss/uniloom/commit/91e0a5a282883c1f011cf8ece1b89ef4ac131669))
+
+
+### Features
+
+* **api:** add and remove blockers over MCP ([cb629c4](https://github.com/unishare-oss/uniloom/commit/cb629c4fec6333a2e7ffb10a4a544deaa610f5a8))
+
+# [1.12.0](https://github.com/unishare-oss/uniloom/compare/v1.11.0...v1.12.0) (2026-10-16)
+
+
+### Bug Fixes
+
+* **scripts:** await temp uniAuth exit, preflight uniAuth contract, fail closed on web timeout ([83a86e8](https://github.com/unishare-oss/uniloom/commit/83a86e8cec3c3dc28d070a1e7a4dbed3ad2f9bd3))
+* **scripts:** clean up temp uniAuth on every setup failure path ([1d1023a](https://github.com/unishare-oss/uniloom/commit/1d1023aa842405e742fdc1e80d34c55659bc8b70))
+
+
+### Features
+
+* **comments:** threaded comments on tickets and documents ([91c65dd](https://github.com/unishare-oss/uniloom/commit/91c65dd9361b4ca60a992cc402fa2323b97581c9))
+* **projects:** let owners soft-delete a project ([87b0515](https://github.com/unishare-oss/uniloom/commit/87b0515e33223b9ea27d64b33cd8fd2992bb3abd))
+* **web:** neobrutalist buttons ([d4e7b8d](https://github.com/unishare-oss/uniloom/commit/d4e7b8defdd305a2af667c5ef21e0eb1b3b270cc))
+
+# [1.11.0](https://github.com/unishare-oss/uniloom/compare/v1.10.0...v1.11.0) (2026-10-15)
+
+
+### Features
+
+* **documents:** link specs to source proposals ([0a51174](https://github.com/unishare-oss/uniloom/commit/0a51174451a9ccdbe64d76a737f8800fc096a860))
+
+# [1.10.0](https://github.com/unishare-oss/uniloom/compare/v1.9.0...v1.10.0) (2026-10-15)
+
+
+### Bug Fixes
+
+* address review findings on invite links ([aa64927](https://github.com/unishare-oss/uniloom/commit/aa64927388ebe034bda57722481beb77f73b2468))
+* **api:** reword invite link and join request messages ([1341159](https://github.com/unishare-oss/uniloom/commit/13411597df8abc8f7045ea648ce535136ec90011))
+* **ci:** isolate feature image tags ([5ba7f1c](https://github.com/unishare-oss/uniloom/commit/5ba7f1c77ef02a55bdf35c5051361b8121ffb70f))
+* **web:** mark the join page's link buttons as links ([4bfa4f8](https://github.com/unishare-oss/uniloom/commit/4bfa4f898aee4a2fa04c8b8b1e5ceacffc3b83fb))
+
+
+### Features
+
+* **api:** add join requests for invite links that need approval ([e9f6c08](https://github.com/unishare-oss/uniloom/commit/e9f6c0835d5dffc8561e14a04293cc0b9b85123a))
+* **api:** add project invite links ([41eab32](https://github.com/unishare-oss/uniloom/commit/41eab32b166ad10ea164e9e2d81c423a9e793276))
+* **api:** delete invite links revoked over 30 days ago ([b4f2d3e](https://github.com/unishare-oss/uniloom/commit/b4f2d3e6f395a366bdcf1264df76eb86d091fde3))
+* **api:** let people see and cancel their join requests ([2ef43c5](https://github.com/unishare-oss/uniloom/commit/2ef43c57dda67548a066b2500ea7f1979403f137))
+* **api:** trace requests and outgoing fetch calls ([0d98f6f](https://github.com/unishare-oss/uniloom/commit/0d98f6f00436b7b2c105256a82dcf8e35be173dc))
+* improve MCP usability and knowledge documents ([2331c50](https://github.com/unishare-oss/uniloom/commit/2331c509dfb0fe6a4cda3809bf3c2c5716c5340c))
+* **web:** add the join page and invite link card ([fc1d7cc](https://github.com/unishare-oss/uniloom/commit/fc1d7cc5c68cf10e1f59fc578188294421d899a3))
+* **web:** add the join requests card and sidebar count ([20ff4e6](https://github.com/unishare-oss/uniloom/commit/20ff4e6156b4ca568612a08283ce8d424e5efc7f))
+* **web:** default a new invite link to one person ([d9541de](https://github.com/unishare-oss/uniloom/commit/d9541de0146b287c36ea8787d2356247b2ae420d))
+* **web:** show waiting join requests on the home page ([67c328c](https://github.com/unishare-oss/uniloom/commit/67c328caf9940abd5b4bdfde32fc2106936dc985))
+* **web:** show when the invite link was created and expires ([2650df9](https://github.com/unishare-oss/uniloom/commit/2650df9fecd9b792ebc47c1b60fdff3274e93cd6))
+
 # [1.9.0](https://github.com/unishare-oss/uniloom/compare/v1.8.0...v1.9.0) (2026-10-13)
 
 
