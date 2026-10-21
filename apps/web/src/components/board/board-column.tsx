@@ -37,7 +37,7 @@ export const BoardColumn = ({
       <h2 className="px-1.5 pt-1.5 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {state.name} <span className="font-normal">{count}</span>
       </h2>
-      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+      <div className="no-scrollbar flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {children}
         {target && (
           <div className="h-[88px] shrink-0 rounded-[4px] border-2 border-dashed border-primary bg-card/60" />
