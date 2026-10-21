@@ -10,15 +10,29 @@ the feature that can be reviewed and shipped on its own.
   is left out on purpose. The slices and their SPECs hold the detail.
 - The feature has no SPEC of its own; each slice gets one.
 
+## Keep slices small
+
+Small slices are easier to review in full, catch a wrong turn before more is built on
+it, and keep a coding agent close to its SPEC. Size every slice to:
+
+- **One user-visible behaviour.** Something a person can try in the app or through the
+  API when the slice is done.
+- **At most one new piece of infrastructure**: a database, queue, file storage, model
+  service or external provider. Build features end to end and add only the tables and
+  services this slice needs, not ones a later slice will.
+- **3–4 done-when items.** The project's `checklistMax` is a ceiling, not a target.
+- **A review that fits in one sitting**: about 5 meaningful functions in the SPEC.
+
+When in doubt, split.
+
 ## When to split into slices
 
-Start with one slice. Split only when one of these is true:
+Split when any of these is true:
 
-- **Too many done-when items.** It needs more than 6 items (or the project's
-  `checklistMax`). Seven items means two slices. The server refuses more with
-  `checklist_max_exceeded`.
-- **Too many functions.** The design lists more than about 8 meaningful functions. More
-  than that is too big to review.
+- **More than one behaviour.** Signing in and setting a profile are two slices.
+- **More than one new piece of infrastructure.** Adding a database and a queue is two
+  slices.
+- **More than 4 done-when items**, or more than about 5 meaningful functions.
 - **Part of it is usable earlier.** A smaller piece already gives a person something to
   use, and the rest builds on it.
 - **Parts wait on different things.** One part needs an ADR accepted, a decision from the
@@ -26,7 +40,7 @@ Start with one slice. Split only when one of these is true:
 
 Don't split when:
 
-- The change is small. A feature with one slice is fine; don't split for the sake of it.
+- The change is one small behaviour already. A feature with one slice is fine.
 - The split would be by layer (one slice for the schema, one for the API, one for the UI).
 - A piece cannot be reviewed or used on its own.
 
@@ -34,7 +48,8 @@ Don't split when:
 
 - **Vertical, not layered.** Each slice goes end to end: data, API, UI and tests for one
   behaviour.
-- **3–6 done-when items per slice**, or the project's limits from `list_projects`.
+- **3–4 done-when items per slice**, never more than the project's limits from
+  `list_projects`.
 - **Two levels only.** A slice cannot have slices. A slice that grows becomes more slices
   of the same feature. The slice is the unit of review: it carries the SPEC, the
   checklist and the move to Ready and In Review, so a slice that needs pieces is already
