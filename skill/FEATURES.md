@@ -15,15 +15,17 @@ the feature that can be reviewed and shipped on its own.
 Small slices are easier to review in full, catch a wrong turn before more is built on
 it, and keep a coding agent close to its SPEC. Size every slice to:
 
-- **One user-visible behaviour.** Something a person can try in the app or through the
-  API when the slice is done.
-- **At most one new piece of infrastructure**: a database, queue, file storage, model
-  service or external provider. Build features end to end and add only the tables and
-  services this slice needs, not ones a later slice will.
-- **3–4 done-when items.** The project's `checklistMax` is a ceiling, not a target.
-- **A review that fits in one sitting**: about 5 meaningful functions in the SPEC.
-
-When in doubt, split.
+- Keep slices small: one user-visible behaviour, and at most one new piece of
+  infrastructure (database, queue, storage, model service, external provider) per
+  slice. Build features end to end and add only the tables and services the slice
+  needs.
+- A slice has 3 to 6 done-when items. Each item is one outcome someone can check,
+  with at most one test name. If an item needs "and" or ";" to join two results, or
+  names two tests, it is two items. If a slice needs more than 6 items, split the
+  slice. Never merge items to fit the limit.
+- Before proposing a split, count each slice's behaviours, new services and tests.
+  More than one behaviour, more than one new service or more than 6 outcomes means
+  split. When in doubt, split.
 
 ## When to split into slices
 
@@ -32,7 +34,8 @@ Split when any of these is true:
 - **More than one behaviour.** Signing in and setting a profile are two slices.
 - **More than one new piece of infrastructure.** Adding a database and a queue is two
   slices.
-- **More than 4 done-when items**, or more than about 5 meaningful functions.
+- **More than 6 outcomes**, counted one per item, or more than about 5 meaningful
+  functions.
 - **Part of it is usable earlier.** A smaller piece already gives a person something to
   use, and the rest builds on it.
 - **Parts wait on different things.** One part needs an ADR accepted, a decision from the
@@ -48,8 +51,7 @@ Don't split when:
 
 - **Vertical, not layered.** Each slice goes end to end: data, API, UI and tests for one
   behaviour.
-- **3–4 done-when items per slice**, never more than the project's limits from
-  `list_projects`.
+- **3 to 6 done-when items per slice.** A slice that needs more is split, never packed.
 - **Two levels only.** A slice cannot have slices. A slice that grows becomes more slices
   of the same feature. The slice is the unit of review: it carries the SPEC, the
   checklist and the move to Ready and In Review, so a slice that needs pieces is already
@@ -69,7 +71,7 @@ Each item is one result someone can check, derived from what the user asked for.
 | The room page shows new messages without a reload                | Frontend works         |
 | `test_post_message_requires_membership` passes                   | Tests written          |
 
-- One behaviour per item.
+- One outcome per item, with at most one test name.
 - Name the route, screen, rule or test it is about.
 - No generic items (`code reviewed`, `lint passes`, `docs updated`): checks run on every
   slice anyway.
