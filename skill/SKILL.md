@@ -83,7 +83,7 @@ A function never gets its own document.
    one-slice change with a single obvious option may skip it if the user says so.
 3. **Propose the feature** (see [FEATURES.md](FEATURES.md)): its title, whether and how
    it splits into small slices (one behaviour and at most one new piece of
-   infrastructure each), each slice's title, its 3 to 6 done-when items (one outcome
+   infrastructure each), each slice's title, its 3 to 6 done-when items (one behaviour
    each), and which slices
    wait on which. Confirm with the user before creating anything.
 4. **Create** the feature, then each slice with `parent` set to the feature, all in

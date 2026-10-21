@@ -19,13 +19,17 @@ it, and keep a coding agent close to its SPEC. Size every slice to:
   infrastructure (database, queue, storage, model service, external provider) per
   slice. Build features end to end and add only the tables and services the slice
   needs.
-- A slice has 3 to 6 done-when items. Each item is one outcome someone can check,
-  with at most one test name. If an item needs "and" or ";" to join two results, or
-  names two tests, it is two items. If a slice needs more than 6 items, split the
-  slice. Never merge items to fit the limit.
+- A slice has 3 to 6 done-when items. Each item is one behaviour someone can check,
+  proved by one test. Keep items short: edge cases go in the SPEC's Edge cases section
+  and the item's test. Name an edge case in the item only when it guards security,
+  privacy or data, or is a rule users will notice. Two different behaviours are two
+  items. If a slice needs more than 6 items, split the slice. Never merge behaviours to
+  fit the limit.
+- Don't pad a slice to reach 3 items. A behaviour too small for 3 items joins a
+  neighbouring slice of the same feature instead of becoming its own slice.
 - Before proposing a split, count each slice's behaviours, new services and tests.
-  More than one behaviour, more than one new service or more than 6 outcomes means
-  split. When in doubt, split.
+  More than one user-visible behaviour, more than one new service or more than 6 items
+  means split. When in doubt, split.
 
 ## When to split into slices
 
@@ -34,8 +38,8 @@ Split when any of these is true:
 - **More than one behaviour.** Signing in and setting a profile are two slices.
 - **More than one new piece of infrastructure.** Adding a database and a queue is two
   slices.
-- **More than 6 outcomes**, counted one per item, or more than about 5 meaningful
-  functions.
+- **More than 6 done-when items**, counted one behaviour per item, or more than about 5
+  meaningful functions.
 - **Part of it is usable earlier.** A smaller piece already gives a person something to
   use, and the rest builds on it.
 - **Parts wait on different things.** One part needs an ADR accepted, a decision from the
@@ -71,7 +75,8 @@ Each item is one result someone can check, derived from what the user asked for.
 | The room page shows new messages without a reload                | Frontend works         |
 | `test_post_message_requires_membership` passes                   | Tests written          |
 
-- One outcome per item, with at most one test name.
+- One behaviour per item, proved by one test. Its edge cases go in the SPEC, unless they
+  guard security, privacy or data, or are a rule users will notice.
 - Name the route, screen, rule or test it is about.
 - No generic items (`code reviewed`, `lint passes`, `docs updated`): checks run on every
   slice anyway.
