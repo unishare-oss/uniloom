@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/unishare-oss/uniloom/compare/v1.16.0...v1.17.0) (2026-10-21)
+
+
+### Features
+
+* **web:** write the agent inline as "via <logo> <name>" ([b49b5f8](https://github.com/unishare-oss/uniloom/commit/b49b5f8cafc40f8b7f07b0d5c1acbdf1ac6b40ec))
+
 # [1.16.0](https://github.com/unishare-oss/uniloom/compare/v1.15.2...v1.16.0) (2026-10-21)
 
 
