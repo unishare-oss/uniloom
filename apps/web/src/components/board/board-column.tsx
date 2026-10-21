@@ -29,7 +29,7 @@ export const BoardColumn = ({
       ref={setNodeRef}
       aria-label={state.name}
       className={cn(
-        "flex h-[calc(100svh-13rem)] w-[85vw] shrink-0 snap-start flex-col gap-1 rounded-md rounded-t-[4px] border-t-[3px] bg-column p-1.5 sm:w-[270px]",
+        "flex h-full w-[85vw] shrink-0 snap-start flex-col gap-1 rounded-md rounded-t-[4px] border-t-[3px] bg-column p-1.5 sm:w-[270px]",
         stateTopClass(state),
         target && "bg-accent ring-2 ring-primary ring-inset",
       )}
