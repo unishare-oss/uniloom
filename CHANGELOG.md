@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/unishare-oss/uniloom/compare/v1.15.1...v1.15.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **web:** hide the board column scroll bar ([7901f96](https://github.com/unishare-oss/uniloom/commit/7901f96a590ff455f8ce6bd80925f02db3203172))
+
 ## [1.15.1](https://github.com/unishare-oss/uniloom/compare/v1.15.0...v1.15.1) (2026-10-21)
 
 
