@@ -262,6 +262,8 @@ describe('Uniloom API (e2e)', () => {
         name: 'Mya',
         image: profile.picture,
         consentGivenAt: null,
+        unicorpTermsVersion: 1,
+        unicorpTermsAcceptedAt: '2026-10-21T00:00:00.000Z',
       });
     });
 
@@ -433,78 +435,63 @@ describe('Uniloom API (e2e)', () => {
     });
   });
 
-  describe('consent', () => {
+  describe('shared acceptance', () => {
     const consent = (cookie?: string) =>
       call('/api/users/me/consent', { method: 'POST', cookie });
-    // No feature routes yet: an unknown route still goes through both checks, and answers
-    // 404 only once they pass.
     const protectedRoute = (cookie?: string) => call('/api/probe', { cookie });
 
-    it('POST /api/users/me/consent without a session → 401', async () => {
+    it('requires a session for the compatibility endpoint and protected routes', async () => {
       expect((await consent()).status).toBe(401);
-    });
-
-    it('records consent once and keeps the first timestamp', async () => {
-      const { cookie } = await signIn(newProfile());
-
-      const first = await consent(cookie);
-      expect(first.status).toBe(200);
-      const { consentGivenAt } = (await read(first)) as {
-        consentGivenAt: string;
-      };
-      expect(Date.parse(consentGivenAt)).toBeGreaterThan(Date.now() - 60_000);
-      const second = (await read(await consent(cookie))) as {
-        consentGivenAt: string;
-      };
-      expect(second.consentGivenAt).toBe(consentGivenAt);
-    });
-
-    it('a protected route without a session → 401', async () => {
       expect((await protectedRoute()).status).toBe(401);
     });
 
-    it('a new user gets 403 consent_required, then passes after consent', async () => {
+    it('returns central acceptance unchanged and never invents app-only history', async () => {
       const { cookie } = await signIn(newProfile());
-
-      const blocked = await protectedRoute(cookie);
-      expect(blocked.status).toBe(403);
-      expect(((await read(blocked)) as { code: string }).code).toBe(
-        'consent_required',
-      );
-
-      expect((await consent(cookie)).status).toBe(200);
+      for (let i = 0; i < 2; i++) {
+        const response = await consent(cookie);
+        expect(response.status).toBe(200);
+        expect(await read(response)).toEqual({
+          consentGivenAt: '2026-10-21T00:00:00.000Z',
+        });
+      }
+      expect(await read(await call('/api/me', { cookie }))).toMatchObject({
+        consentGivenAt: null,
+        unicorpTermsVersion: 1,
+        unicorpTermsAcceptedAt: '2026-10-21T00:00:00.000Z',
+      });
       expect((await protectedRoute(cookie)).status).toBe(404);
     });
 
-    it('GET /api/me works without consent and shows consentGivenAt', async () => {
-      const { cookie } = await signIn(newProfile());
-
-      const before = (await read(await call('/api/me', { cookie }))) as {
-        consentGivenAt: unknown;
-      };
-      expect(before.consentGivenAt).toBeNull();
-
-      const given = (await read(await consent(cookie))) as {
-        consentGivenAt: string;
-      };
-      const after = (await read(await call('/api/me', { cookie }))) as {
-        consentGivenAt: string;
-      };
-      expect(after.consentGivenAt).toBe(given.consentGivenAt);
+    it('local acceptance cannot bypass missing shared evidence; a fresh UniAuth sign-in supplies it', async () => {
+      const profile = newProfile({ sharedTerms: false });
+      const { cookie } = await signIn(profile);
+      await prisma.user.update({
+        where: { email: profile.email },
+        data: { consentGivenAt: new Date() },
+      });
+      expect((await protectedRoute(cookie)).status).toBe(403);
+      expect((await consent(cookie)).status).toBe(403);
+      await call('/api/auth/update-user', {
+        method: 'POST',
+        cookie,
+        headers: { origin: WEB_ORIGIN, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          unicorpTermsVersion: 1,
+          unicorpTermsAcceptedAt: new Date().toISOString(),
+        }),
+      });
+      expect((await protectedRoute(cookie)).status).toBe(403);
+      const fresh = await signIn({ ...profile, sharedTerms: true });
+      expect((await protectedRoute(fresh.cookie)).status).toBe(404);
     });
 
-    it('health, auth and uniAuth receivers work for a user without consent', async () => {
-      const { cookie } = await signIn(newProfile());
-
+    it('account, health and signed event receivers remain reachable without shared acceptance', async () => {
+      const { cookie } = await signIn(newProfile({ sharedTerms: false }));
       expect((await call('/health', { cookie })).status).toBe(200);
-      expect((await call('/api/health', { cookie })).status).toBe(200);
-      const session = await call('/api/auth/get-session', { cookie });
-      expect(session.status).toBe(200);
-      expect(
-        ((await read(session)) as { user: { consentGivenAt: unknown } }).user
-          .consentGivenAt,
-      ).toBeNull();
-      // Reaches the receiver: a bad token is its own 400, not the consent 403.
+      expect((await call('/api/me', { cookie })).status).toBe(200);
+      expect((await call('/api/auth/get-session', { cookie })).status).toBe(
+        200,
+      );
       const receiver = await call('/api/uniauth/user-updated', {
         method: 'POST',
         cookie,

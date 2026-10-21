@@ -16,7 +16,12 @@ export const findUserBySub = async (sub: string) => {
     },
     select: {
       user: {
-        select: { id: true, consentGivenAt: true, identityStatus: true },
+        select: {
+          id: true,
+          unicorpTermsVersion: true,
+          unicorpTermsAcceptedAt: true,
+          identityStatus: true,
+        },
       },
     },
   });

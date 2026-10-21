@@ -3,7 +3,7 @@ import { describe } from '@/openapi.js';
 import { getMe, postConsent } from './user.handlers.js';
 import { consentSchema, meSchema } from './user.schema.js';
 
-/** The signed-in user, and accepting Uniloom's terms. Both work before consent. */
+/** The signed-in user and existing shared acceptance; both work before the terms gate. */
 export const userRoutes = new Hono();
 
 userRoutes.get(
@@ -21,7 +21,8 @@ userRoutes.post(
   describe({
     tag: 'users',
     operationId: 'acceptTerms',
-    summary: "Accept Uniloom's terms (the first time only)",
+    summary:
+      'Read shared Unicorp acceptance (complete missing acceptance through UniAuth)',
     data: consentSchema,
   }),
   postConsent,

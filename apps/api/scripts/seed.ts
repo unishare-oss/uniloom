@@ -75,6 +75,13 @@ const SEED_PROJECTS = {
   TK: 'Seed · Already deleted',
 };
 
+/** Shared-account cases use real UniAuth sign-in; the seed must never fabricate acceptance. */
+const SHARED_ACCOUNT_SCENARIOS = [
+  'Shared acceptance: open Uniloom after accepting on UniAuth — no app terms prompt',
+  'Before first visit: add a verified UniAuth email in Members — membership exists on first sign-in',
+  'Unverified email: adding returns the generic ineligible-account message',
+];
+
 /** Fake people, so there are assignees, authors and an owner who isn't you. */
 const SEED_USERS = [
   { id: 'seed-mya', name: 'Mya (seed)', email: 'seed-mya@example.com' },
@@ -517,6 +524,8 @@ const seedStandard = async (ownerId: string) => {
   const { item } = await seedProject('TS', 'STANDARD', ownerId, [
     { userId: mya.id, role: 'MEMBER' },
   ]);
+  for (const title of SHARED_ACCOUNT_SCENARIOS)
+    await item({ kind: 'TASK', title });
   const task = await item({
     kind: 'TASK',
     title: 'Delete me → 409 has_children',

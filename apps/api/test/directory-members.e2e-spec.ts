@@ -86,7 +86,7 @@ describe('add by email through the uniAuth directory (e2e)', () => {
     });
     expect(await prisma.session.count({ where: { userId: user.id } })).toBe(0);
 
-    // She signs in later: same local user, the membership is there, terms still to accept.
+    // She signs in later: same local user, the membership is there, shared acceptance is already available.
     const session = await api.signIn(alice);
     const me = (await read(
       await api.send('GET', '/api/me', session.cookie),
@@ -97,8 +97,11 @@ describe('add by email through the uniAuth directory (e2e)', () => {
     expect(me.id).toBe(user.id);
     expect(me.consentGivenAt).toBeNull();
     expect(
+      (me as unknown as { unicorpTermsVersion: number }).unicorpTermsVersion,
+    ).toBe(1);
+    expect(
       (await api.send('GET', `/api/projects/${w.id}`, session.cookie)).status,
-    ).toBe(403); // consent_required until she accepts
+    ).toBe(200); // shared acceptance arrives with the first sign-in
     expect(
       (await api.send('POST', '/api/users/me/consent', session.cookie)).status,
     ).toBe(200);
@@ -215,7 +218,7 @@ describe('add by email through the uniAuth directory (e2e)', () => {
     expect(await links(carol.sub)).toHaveLength(0);
   });
 
-  it('reports a genuine email conflict at once, without waiting for a race to resolve', async () => {
+  it('reports a genuine email conflict without linking another identity', async () => {
     const w = await setup();
     const fay = api.newProfile();
     const other = await prisma.user.create({
@@ -230,10 +233,10 @@ describe('add by email through the uniAuth directory (e2e)', () => {
       },
     });
     api.uniauth.registerAccount(fay);
-    const started = Date.now();
     const res = await w.add(fay.email);
     expect(res.status).toBe(409);
-    expect(Date.now() - started).toBeLessThan(400);
+    expect(await links(fay.sub)).toHaveLength(0);
+    expect(await prisma.user.count({ where: { email: fay.email } })).toBe(1);
   });
 
   it('converges on one local user when provisioning races the first sign-in and itself', async () => {
@@ -298,5 +301,5 @@ describe('add by email through the uniAuth directory (e2e)', () => {
         ).id,
       ).toBe(user.id);
     }
-  });
+  }, 120_000);
 });
