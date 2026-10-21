@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/unishare-oss/uniloom/compare/v1.15.2...v1.16.0) (2026-10-21)
+
+
+### Features
+
+* **web:** show the agent's logo and wordmark in activity rows ([d24c50b](https://github.com/unishare-oss/uniloom/commit/d24c50bbdb2d8a0d647fd4d24a7b782e4e11adcd))
+
 ## [1.15.2](https://github.com/unishare-oss/uniloom/compare/v1.15.1...v1.15.2) (2026-10-21)
 
 
