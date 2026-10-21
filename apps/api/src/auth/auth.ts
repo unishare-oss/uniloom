@@ -3,7 +3,10 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { genericOAuth } from 'better-auth/plugins';
 import { prisma } from '@/db/prisma.js';
 
-export const UNIAUTH_PROVIDER_ID = 'uniauth';
+import { UNIAUTH_PROVIDER_ID } from '@/auth/constants.js';
+import { ensureLocalUser } from '@/modules/uniauth/uniauth.service.js';
+
+export { UNIAUTH_PROVIDER_ID };
 
 export interface AuthEnv {
   /** The web origin: it proxies /api to this server, so the session cookie lives there. */
@@ -69,14 +72,35 @@ export const auth = betterAuth({
           scopes: ['openid', 'profile', 'email', 'offline_access'],
           // Name and avatar are uniAuth's: refreshed at every sign-in.
           overrideUserInfo: true,
-          mapProfileToUser: (profile) => ({
-            email: String(profile.email),
-            emailVerified: profile.email_verified === true,
-            name: String(profile.name || profile.email),
-            // '' = no avatar: Better Auth skips an undefined image, so a removed uniAuth
-            // avatar would never clear. The database hooks store '' as null.
-            image: typeof profile.picture === 'string' ? profile.picture : '',
-          }),
+          mapProfileToUser: async (profile) => {
+            const user = {
+              email: String(profile.email),
+              emailVerified: profile.email_verified === true,
+              name: String(profile.name || profile.email),
+              // '' = no avatar: Better Auth skips an undefined image, so a removed uniAuth
+              // avatar would never clear. The database hooks store '' as null.
+              image: typeof profile.picture === 'string' ? profile.picture : '',
+            };
+            // Make the local user and its link first, the same way add-by-email does, so a
+            // sign-in racing an add meets one row and Better Auth only ever finds it. A
+            // conflict (the email is another user's) is left for Better Auth to report.
+            if (typeof profile.sub === 'string') {
+              await ensureLocalUser({
+                id: profile.sub,
+                name: user.name,
+                email: user.email,
+                emailVerified: user.emailVerified,
+                image: user.image || null,
+                status: 'active',
+              }).catch((error: unknown) => {
+                console.error(
+                  '[uniauth] could not prepare the local user:',
+                  String(error),
+                );
+              });
+            }
+            return user;
+          },
         },
       ],
     }),
@@ -95,6 +119,8 @@ export const auth = betterAuth({
     additionalFields: {
       // Set by Uniloom's consent screen, never at sign-up.
       consentGivenAt: { type: 'date', required: false, input: false },
+      // uniAuth's account state (active | suspended), set from its identity events, never from a request.
+      identityStatus: { type: 'string', required: false, input: false },
     },
   },
 });
