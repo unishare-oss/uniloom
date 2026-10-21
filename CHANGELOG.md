@@ -1,3 +1,10 @@
+## [1.17.2](https://github.com/unishare-oss/uniloom/compare/v1.17.1...v1.17.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **web:** stop the board scrolling vertically in Firefox ([e08bb03](https://github.com/unishare-oss/uniloom/commit/e08bb0383dea86e0f034e02210fead625fc20b03))
+
 ## [1.17.1](https://github.com/unishare-oss/uniloom/compare/v1.17.0...v1.17.1) (2026-10-21)
 
 
