@@ -38,7 +38,10 @@ export const ActivityRow = ({
         <span className="font-semibold">{person}</span>
         {row.agent &&
           (row.agent.name ? (
-            <AgentBadge name={row.agent.name} />
+            <>
+              {" "}
+              <AgentBadge name={row.agent.name} />
+            </>
           ) : (
             "'s agent"
           ))}{" "}
