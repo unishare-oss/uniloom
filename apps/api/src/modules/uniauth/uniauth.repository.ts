@@ -263,3 +263,12 @@ export const saveReconcileCursor = (cursor: string | null) => {
     update: { cursor },
   });
 };
+
+/** Only the validated OIDC sign-in path supplies this evidence. */
+export const saveSharedAcceptance = (
+  userId: string,
+  evidence: {
+    unicorpTermsVersion: number | null;
+    unicorpTermsAcceptedAt: Date | null;
+  },
+) => prisma.user.update({ where: { id: userId }, data: evidence });

@@ -7,6 +7,8 @@ export const meSchema = z.object({
   name: z.string(),
   image: z.string().nullable(),
   consentGivenAt: z.iso.datetime().nullable(),
+  unicorpTermsVersion: z.number().int().nullable(),
+  unicorpTermsAcceptedAt: z.iso.datetime().nullable(),
 });
 
 export const consentSchema = z.object({ consentGivenAt: z.iso.datetime() });

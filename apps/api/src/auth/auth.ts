@@ -2,9 +2,13 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { genericOAuth } from 'better-auth/plugins';
 import { prisma } from '@/db/prisma.js';
+import { sharedTerms } from './shared-terms.js';
 
 import { UNIAUTH_PROVIDER_ID } from '@/auth/constants.js';
-import { ensureLocalUser } from '@/modules/uniauth/uniauth.service.js';
+import {
+  ensureLocalUser,
+  saveSharedAcceptance,
+} from '@/modules/uniauth/uniauth.service.js';
 
 export { UNIAUTH_PROVIDER_ID };
 
@@ -74,6 +78,7 @@ export const auth = betterAuth({
           overrideUserInfo: true,
           mapProfileToUser: async (profile) => {
             const user = {
+              ...sharedTerms(profile),
               email: String(profile.email),
               emailVerified: profile.email_verified === true,
               name: String(profile.name || profile.email),
@@ -85,7 +90,7 @@ export const auth = betterAuth({
             // sign-in racing an add meets one row and Better Auth only ever finds it. A
             // conflict (the email is another user's) is left for Better Auth to report.
             if (typeof profile.sub === 'string') {
-              await ensureLocalUser({
+              const localId = await ensureLocalUser({
                 id: profile.sub,
                 name: user.name,
                 email: user.email,
@@ -98,6 +103,8 @@ export const auth = betterAuth({
                   String(error),
                 );
               });
+              if (localId)
+                await saveSharedAcceptance(localId, sharedTerms(profile));
             }
             return user;
           },
@@ -117,8 +124,10 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      // Set by Uniloom's consent screen, never at sign-up.
+      // Historical app-only consent, retained separately from shared evidence.
       consentGivenAt: { type: 'date', required: false, input: false },
+      unicorpTermsVersion: { type: 'number', required: false, input: false },
+      unicorpTermsAcceptedAt: { type: 'date', required: false, input: false },
       // uniAuth's account state (active | suspended), set from its identity events, never from a request.
       identityStatus: { type: 'string', required: false, input: false },
     },

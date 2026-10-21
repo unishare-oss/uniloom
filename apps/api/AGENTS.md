@@ -74,7 +74,7 @@ Health is the only route outside it, in `app.ts`. Better Auth is mounted at
 before `requireSession` are public, routes between `requireSession` and
 `requireConsent` need a session only (`/api/me`, consent), and every module router
 mounted after `requireConsent` needs both: `401` without a session, `403
-consent_required` until the user accepts Uniloom's terms. Mount new feature routers at
+consent_required` until the user has current shared Unicorp acceptance. Mount new feature routers at
 the end. Read the signed-in user with `c.var.user`. Map uniAuth people by `sub` through
 `account`, never by email.
 

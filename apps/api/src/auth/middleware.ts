@@ -22,15 +22,18 @@ export const requireSession: MiddlewareHandler = async (c, next) => {
 };
 
 /**
- * Signing in through uniAuth is not agreeing to Uniloom's terms. Answers 403
- * consent_required until the user has accepted them. Runs after requireSession.
+ * Require recorded shared acceptance from a validated UniAuth sign-in.
+ * App-only consent history is not shared acceptance. Runs after requireSession.
  */
 export const requireConsent: MiddlewareHandler = async (c, next) => {
-  if (!c.var.user.consentGivenAt)
+  if (
+    c.var.user.unicorpTermsVersion !== 1 ||
+    !c.var.user.unicorpTermsAcceptedAt
+  )
     throw apiError(
       403,
       'consent_required',
-      "Accept Uniloom's Terms and Privacy Policy first",
+      'Complete the shared Unicorp terms step through UniAuth',
     );
   await next();
 };
