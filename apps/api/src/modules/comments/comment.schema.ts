@@ -5,9 +5,18 @@ export const createCommentSchema = z.object({
   body: z.string(),
   /** The comment this one replies to, on the same ticket. */
   parentId: z.uuid().nullish(),
+  /**
+   * Ids of the people the body mentions (ticket comments only). Only members of the
+   * ticket's project other than the author count; the rest are dropped.
+   */
+  mentions: z.array(z.string().min(1)).max(20).optional(),
 });
 
-export const updateCommentSchema = z.object({ body: z.string() });
+export const updateCommentSchema = z.object({
+  body: z.string(),
+  /** Omitted keeps the current mentions; `[]` clears them. Only new people are notified. */
+  mentions: z.array(z.string().min(1)).max(20).optional(),
+});
 
 export const commentSchema = z
   .object({
@@ -22,6 +31,8 @@ export const commentSchema = z
         image: z.string().nullable(),
       })
       .nullable(),
+    /** The project members this comment mentions; empty for a deleted comment. */
+    mentions: z.array(z.object({ id: z.string(), name: z.string() })),
     /** The ticket's creator: shows the Author badge. */
     isTargetAuthor: z.boolean(),
     createdAt: z.iso.datetime(),

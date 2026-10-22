@@ -11,6 +11,7 @@ const row = (id: string, extra: Partial<CommentRow> = {}) => {
     authorId: 'a',
     author: { id: 'a', name: 'Ann', image: null },
     body: `body ${id}`,
+    mentionIds: [],
     editedAt: null,
     deletedAt: null,
     createdAt: new Date('2026-10-16T10:00:00Z'),
@@ -73,5 +74,19 @@ describe('toCommentTree', () => {
     ).comments;
     expect(c.isTargetAuthor).toBe(true);
     expect(c.editedAt).toBe(edited.toISOString());
+  });
+
+  it('lists the mentioned people by name, leaves out those who are gone, and none when deleted', () => {
+    const users = [{ id: 'u1', name: 'Uma' }];
+    const tree = toCommentTree(
+      [
+        row('1', { mentionIds: ['u1', 'gone'] }),
+        row('2', { mentionIds: ['u1'], deletedAt: new Date() }),
+      ],
+      viewer('x', 'MEMBER'),
+      users,
+    );
+    expect(tree.comments[0].mentions).toEqual([{ id: 'u1', name: 'Uma' }]);
+    expect(tree.comments[1].mentions).toEqual([]);
   });
 });

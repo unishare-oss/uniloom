@@ -1,4 +1,5 @@
 import { prisma } from '@/db/prisma.js';
+import type { Prisma } from '@/generated/prisma/client.js';
 
 const withAuthor = {
   author: { select: { id: true, name: true, image: true } },
@@ -35,20 +36,50 @@ export const findLiveComment = (id: string) => {
   });
 };
 
-export const insertComment = (row: {
-  projectId: string;
-  itemId?: string;
-  documentId?: string;
-  parentId: string | null;
-  authorId: string;
-  body: string;
-}) => {
-  return prisma.comment.create({ data: row, include: withAuthor });
+/** Which of `ids` are members of the project, with their names. */
+export const findMentionableMembers = (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  ids: string[],
+) => {
+  return tx.member.findMany({
+    where: { projectId, userId: { in: ids } },
+    select: { user: { select: { id: true, name: true } } },
+  });
+};
+
+/** The names of the people a set of comments mention. Gone accounts are simply missing. */
+export const findUserNames = (ids: string[]) => {
+  return prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true },
+  });
+};
+
+export const insertComment = (
+  row: {
+    projectId: string;
+    itemId?: string;
+    documentId?: string;
+    parentId: string | null;
+    authorId: string;
+    body: string;
+    mentionIds?: string[];
+  },
+  tx: Prisma.TransactionClient = prisma,
+) => {
+  return tx.comment.create({ data: row, include: withAuthor });
 };
 
 export const updateCommentRow = (
   id: string,
-  data: { body?: string; editedAt?: Date; deletedAt?: Date },
+  data: {
+    body?: string;
+    mentionIds?: string[];
+    editedAt?: Date;
+    deletedAt?: Date;
+  },
+  tx: Prisma.TransactionClient = prisma,
 ) => {
-  return prisma.comment.update({ where: { id }, data, include: withAuthor });
+  return tx.comment.update({ where: { id }, data, include: withAuthor });
 };
