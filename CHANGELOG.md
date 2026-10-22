@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/unishare-oss/uniloom/compare/v1.18.0...v1.19.0) (2026-10-22)
+
+
+### Features
+
+* mention project members in ticket comments (UN-7) ([55088ee](https://github.com/unishare-oss/uniloom/commit/55088ee38d46e966a5643568ba706436f80ef31e))
+
 # [1.18.0](https://github.com/unishare-oss/uniloom/compare/v1.17.2...v1.18.0) (2026-10-21)
 
 
