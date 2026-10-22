@@ -32,12 +32,13 @@ export const recordReviewSubmission = async (
 };
 
 /** Called inside the comment's transaction: one MENTION notification per person, once. */
-export const recordMentionNotifications = (
+export const recordMentionNotifications = async (
   tx: Prisma.TransactionClient,
   comment: { projectId: string; itemId: string; commentId: string },
   recipientIds: string[],
 ) => {
-  return notificationRepo.insertMentionNotifications(tx, comment, recipientIds);
+  await notificationRepo.insertMentionNotifications(tx, comment, recipientIds);
+  await notificationRepo.notifyRecipients(tx, recipientIds);
 };
 
 /** In-app fan-out only. No external delivery call belongs inside this transaction. */
@@ -54,11 +55,9 @@ export const processNextReviewEvent = async () => {
           event.projectId,
           event.recipientIds,
         );
-        await notificationRepo.insertNotifications(
-          tx,
-          event,
-          members.map((member) => member.userId),
-        );
+        const recipientIds = members.map((member) => member.userId);
+        await notificationRepo.insertNotifications(tx, event, recipientIds);
+        await notificationRepo.notifyRecipients(tx, recipientIds);
       }
       await notificationRepo.markEventProcessed(tx, event.id);
       return true;
