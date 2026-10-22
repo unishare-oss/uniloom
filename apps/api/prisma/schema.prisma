@@ -342,21 +342,32 @@ model Activity {
   @@map("activity")
 }
 
-/// Separate inbox/read state for each recipient of each actual submission.
+enum NotificationKind {
+  REVIEW
+  MENTION
+}
+
+/// Separate inbox/read state for each recipient of each source: a review submission
+/// (`eventId`) or a comment that mentions them (`commentId`). The migration adds the CHECK
+/// `notification_one_source`: a REVIEW row has only an event, a MENTION row only a comment.
 model Notification {
-  id          String      @id @default(uuid(7)) @db.Uuid
-  eventId     String      @db.Uuid
-  event       ReviewEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id          String           @id @default(uuid(7)) @db.Uuid
+  kind        NotificationKind @default(REVIEW)
+  eventId     String?          @db.Uuid
+  event       ReviewEvent?     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  commentId   String?          @db.Uuid
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
   recipientId String
-  recipient   User        @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  projectId   String      @db.Uuid
-  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  itemId      String      @db.Uuid
-  item        Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  createdAt   DateTime    @default(now())
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  projectId   String           @db.Uuid
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId      String           @db.Uuid
+  item        Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
   readAt      DateTime?
 
   @@unique([eventId, recipientId])
+  @@unique([commentId, recipientId])
   @@index([recipientId, createdAt, id])
   @@index([recipientId, itemId, createdAt, id])
   @@map("notification")
@@ -556,24 +567,27 @@ model JoinRequest {
 /// `itemId` and `documentId` is set (the migration adds the CHECK `comment_one_target`).
 /// Deleting keeps the row (`deletedAt`) so replies keep their place. See ADR-0021.
 model Comment {
-  id         String    @id @default(uuid(7)) @db.Uuid
-  projectId  String    @db.Uuid
-  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  itemId     String?   @db.Uuid
-  item       Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  documentId String?   @db.Uuid
-  document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  parentId   String?   @db.Uuid
-  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies    Comment[] @relation("CommentReplies")
+  id            String         @id @default(uuid(7)) @db.Uuid
+  projectId     String         @db.Uuid
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId        String?        @db.Uuid
+  item          Item?          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  documentId    String?        @db.Uuid
+  document      Document?      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  parentId      String?        @db.Uuid
+  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]      @relation("CommentReplies")
   /// Null when the person's account is gone.
-  authorId   String?
-  author     User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  body       String
+  authorId      String?
+  author        User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body          String
+  /// Ticket comments only: the project members this comment mentions (never the author).
+  mentionIds    String[]       @default([])
+  notifications Notification[]
   /// Set when the author edits; a delete never sets it.
-  editedAt   DateTime?
-  deletedAt  DateTime?
-  createdAt  DateTime  @default(now())
+  editedAt      DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime       @default(now())
 
   @@index([itemId, createdAt])
   @@index([documentId, createdAt])

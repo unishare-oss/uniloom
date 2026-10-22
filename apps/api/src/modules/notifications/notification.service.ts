@@ -1,5 +1,4 @@
 import type { NotificationQuery } from './notification.types.js';
-import { listReviewProjects } from '@/modules/reviews/review.service.js';
 import {
   decodeReviewCursor,
   reviewCursor,
@@ -30,6 +29,15 @@ export const recordReviewSubmission = async (
     ...input,
     recipientIds: members.map((member) => member.userId),
   });
+};
+
+/** Called inside the comment's transaction: one MENTION notification per person, once. */
+export const recordMentionNotifications = (
+  tx: Prisma.TransactionClient,
+  comment: { projectId: string; itemId: string; commentId: string },
+  recipientIds: string[],
+) => {
+  return notificationRepo.insertMentionNotifications(tx, comment, recipientIds);
 };
 
 /** In-app fan-out only. No external delivery call belongs inside this transaction. */
@@ -99,7 +107,9 @@ export const listNotificationGroups = async (
   userId: string,
   query: NotificationQuery,
 ) => {
-  const projects = await listReviewProjects(userId, query.projectId);
+  const projects = await notificationRepo.findInboxProjects(userId);
+  if (query.projectId && !projects.some((p) => p.id === query.projectId))
+    throw apiError(404, 'not_found', 'Project not found');
   const rows = await notificationRepo.findNotificationGroups(
     userId,
     query,
@@ -130,6 +140,7 @@ export const listNotificationGroups = async (
         latestSubmittedAt: row.latestSubmittedAt,
         totalCount: Number(row.totalCount),
         unreadCount: Number(row.unreadCount),
+        mentionUnreadCount: Number(row.mentionUnreadCount),
         needsReview: available && item.state.key === 'in_review',
       },
     ];
@@ -167,14 +178,19 @@ export const listItemNotifications = async (
   return {
     items: page.map((row) => ({
       id: row.id,
+      kind: row.kind,
       eventId: row.eventId,
+      commentId: row.commentId,
+      at: row.at,
       readAt: row.readAt,
-      ...row.event,
+      fromStateKey: row.fromStateKey,
+      toStateKey: row.toStateKey,
+      actor: row.actorId
+        ? { id: row.actorId, name: row.actorName!, image: row.actorImage }
+        : null,
     })),
     nextCursor:
-      rows.length > query.limit && last
-        ? reviewCursor(last.event.submittedAt, last.eventId)
-        : null,
+      rows.length > query.limit && last ? reviewCursor(last.at, last.id) : null,
   };
 };
 

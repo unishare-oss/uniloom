@@ -20,8 +20,11 @@ import {
 /** The comments on a ticket or a document: count, composer, and the nested thread. */
 export const CommentSection = ({
   target,
+  projectId,
 }: {
   target: { kind: "item" | "document"; id: string };
+  /** A ticket's project: turns on @mentions. Documents leave it out. */
+  projectId?: string;
 }) => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -58,12 +61,19 @@ export const CommentSection = ({
     return false;
   };
 
-  const post = async (body: string, parentId?: string) => {
+  const post = async (body: string, mentions: string[], parentId?: string) => {
     setError(null);
     try {
-      const input = { id: target.id, data: { body, parentId } };
-      if (isItem) await createOnItem.mutateAsync(input);
-      else await createOnDocument.mutateAsync(input);
+      if (isItem)
+        await createOnItem.mutateAsync({
+          id: target.id,
+          data: { body, parentId, mentions },
+        });
+      else
+        await createOnDocument.mutateAsync({
+          id: target.id,
+          data: { body, parentId },
+        });
       if (parentId) setReplyingId(null);
       await refresh();
       return true;
@@ -72,10 +82,13 @@ export const CommentSection = ({
     }
   };
 
-  const save = async (id: string, body: string) => {
+  const save = async (id: string, body: string, mentions: string[]) => {
     setError(null);
     try {
-      await update.mutateAsync({ id, data: { body } });
+      await update.mutateAsync({
+        id,
+        data: isItem ? { body, mentions } : { body },
+      });
       setEditingId(null);
       await refresh();
       return true;
@@ -100,8 +113,9 @@ export const CommentSection = ({
     <CollapsibleSection id="comments" title="Comments" count={count}>
       <div className="mt-3 mb-6">
         <CommentComposer
+          projectId={projectId}
           isPending={create.isPending && replyingId === null}
-          onSubmit={(body) => post(body)}
+          onSubmit={(body, mentions) => post(body, mentions)}
         />
         {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
       </div>
@@ -112,6 +126,7 @@ export const CommentSection = ({
           <CommentThread
             key={comment.id}
             comment={comment}
+            projectId={projectId}
             depth={0}
             editingId={editingId}
             replyingId={replyingId}
@@ -133,7 +148,7 @@ export const CommentSection = ({
               setReplyingId(null);
             }}
             onSave={save}
-            onReply={(id, body) => post(body, id)}
+            onReply={(id, body, mentions) => post(body, mentions, id)}
             onDelete={(id) => void del(id)}
           />
         ))}

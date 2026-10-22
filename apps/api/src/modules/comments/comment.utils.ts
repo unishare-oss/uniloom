@@ -10,7 +10,12 @@ import type {
  * placeholder without body or author, so its replies keep their place. The buttons come from
  * `canEdit` and `canDelete`; the web app makes no role check of its own.
  */
-export const toCommentTree = (rows: CommentRow[], viewer: CommentViewer) => {
+export const toCommentTree = (
+  rows: CommentRow[],
+  viewer: CommentViewer,
+  /** Names of the people the rows mention; a mentioned person who is gone is left out. */
+  users: { id: string; name: string }[] = [],
+) => {
   const nodes = new Map<string, CommentNode>();
   for (const row of rows) {
     const deleted = row.deletedAt !== null;
@@ -26,6 +31,12 @@ export const toCommentTree = (rows: CommentRow[], viewer: CommentViewer) => {
               name: row.author.name,
               image: row.author.image,
             },
+      mentions: deleted
+        ? []
+        : row.mentionIds.flatMap((id) => {
+            const user = users.find((user) => user.id === id);
+            return user ? [{ id: user.id, name: user.name }] : [];
+          }),
       isTargetAuthor:
         !deleted &&
         row.authorId !== null &&

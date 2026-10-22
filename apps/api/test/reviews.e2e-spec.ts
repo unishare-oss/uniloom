@@ -823,3 +823,133 @@ it('keeps submission history when its actor is deleted', async () => {
   expect(history.items[0].actor).toBeNull();
   expect(history.items[0].toStateKey).toBe('in_review');
 });
+
+it('shows a Member their own mentions in the inbox, with read state, and keeps review rows from them', async () => {
+  const f = await fixture();
+  const commented = await api.send(
+    'POST',
+    `/api/items/${f.item.id}/comments`,
+    f.manager.cookie,
+    { body: 'Look @Member', mentions: [f.memberId] },
+  );
+  const comment = await read(commented);
+  // A review submission reaches the reviewers only.
+  await api.send('POST', `/api/items/${f.item.id}/move`, f.member.cookie, {
+    stateId: f.review,
+  });
+  await prisma.reviewEvent.updateMany({
+    where: { itemId: f.item.id },
+    data: { nextAttemptAt: new Date(0) },
+  });
+  await processNextReviewEvent();
+  const kinds = await prisma.notification.findMany({
+    where: { itemId: f.item.id },
+    select: { kind: true, recipientId: true, eventId: true, commentId: true },
+  });
+  expect(
+    kinds.filter((row) => row.kind === 'REVIEW').every((row) => row.eventId),
+  ).toBe(true);
+  expect(
+    kinds.some(
+      (row) => row.recipientId === f.memberId && row.kind === 'REVIEW',
+    ),
+  ).toBe(false);
+
+  const inbox = await read(
+    await api.send('GET', '/api/notifications', f.member.cookie),
+  );
+  expect(inbox.unreadCount).toBe(1);
+  expect(inbox.projects.map((p: { id: string }) => p.id)).toEqual([
+    f.projectId,
+  ]);
+  expect(inbox.groups).toHaveLength(1);
+  expect(inbox.groups[0]).toMatchObject({
+    totalCount: 1,
+    unreadCount: 1,
+    mentionUnreadCount: 1,
+  });
+  expect(
+    (
+      await api.send(
+        'GET',
+        `/api/notifications?projectId=${f.projectId}`,
+        f.member.cookie,
+      )
+    ).status,
+  ).toBe(200);
+
+  const history = await read(
+    await api.send(
+      'GET',
+      `/api/notifications/items/${f.item.id}`,
+      f.member.cookie,
+    ),
+  );
+  expect(history.items).toHaveLength(1);
+  expect(history.items[0]).toMatchObject({
+    kind: 'MENTION',
+    commentId: comment.id,
+    eventId: null,
+    toStateKey: null,
+    readAt: null,
+    actor: { id: f.managerId },
+  });
+  expect(history.items[0].at).toEqual(expect.any(String));
+  expect(JSON.stringify(history)).not.toContain('Look @Member');
+
+  const id = history.items[0].id;
+  const mark = (path: string, cookie: string) =>
+    api.send('POST', `/api/notifications/${path}`, cookie, { ids: [id] });
+  expect((await mark('read', f.member.cookie)).status).toBe(200);
+  expect(
+    (await read(await api.send('GET', '/api/notifications', f.member.cookie)))
+      .unreadCount,
+  ).toBe(0);
+  expect((await mark('unread', f.member.cookie)).status).toBe(200);
+  expect(
+    (await read(await api.send('GET', '/api/notifications', f.member.cookie)))
+      .unreadCount,
+  ).toBe(1);
+  // Someone else cannot touch it.
+  expect((await mark('read', f.outsider.cookie)).status).toBe(404);
+
+  // The Owner sees the review row; the Member's mention is not theirs.
+  const owner = await read(
+    await api.send('GET', '/api/notifications', f.owner.cookie),
+  );
+  expect(owner.groups[0]).toMatchObject({
+    totalCount: 1,
+    mentionUnreadCount: 0,
+  });
+});
+
+it('keeps a mention visible to a Manager who becomes a Member, and hides review rows', async () => {
+  const f = await fixture();
+  await api.send('POST', `/api/items/${f.item.id}/move`, f.member.cookie, {
+    stateId: f.review,
+  });
+  await prisma.reviewEvent.updateMany({
+    where: { itemId: f.item.id },
+    data: { nextAttemptAt: new Date(0) },
+  });
+  await processNextReviewEvent();
+  await api.send('POST', `/api/items/${f.item.id}/comments`, f.owner.cookie, {
+    body: 'Hi',
+    mentions: [f.managerId],
+  });
+  await prisma.member.update({
+    where: {
+      projectId_userId: { projectId: f.projectId, userId: f.managerId },
+    },
+    data: { role: 'MEMBER' },
+  });
+  const inbox = await read(
+    await api.send('GET', '/api/notifications', f.manager.cookie),
+  );
+  expect(inbox.groups).toHaveLength(1);
+  expect(inbox.groups[0]).toMatchObject({
+    totalCount: 1,
+    mentionUnreadCount: 1,
+  });
+  expect(inbox.unreadCount).toBe(1);
+});

@@ -147,7 +147,7 @@ export const AppSidebar = () => {
                 render={<Link href="/reviews" />}
               >
                 <Inbox />
-                <span className="flex-1">Review inbox</span>
+                <span className="flex-1">Inbox</span>
                 {(needsReview || hasUnread) && (
                   <span
                     role="status"

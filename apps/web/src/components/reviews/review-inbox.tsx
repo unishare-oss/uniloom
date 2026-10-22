@@ -27,22 +27,40 @@ import { cn } from "@/lib/utils";
 
 export const ReviewInbox = () => {
   const client = useQueryClient();
-  const [view, setView] = useState<"review" | "notifications">("review");
+  const [chosenView, setView] = useState<"review" | "notifications">("review");
   const [projectId, setProjectId] = useState("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
   const [retained, setRetained] = useState<GetNotifications200GroupsItem[]>([]);
   const project = projectId === "all" ? undefined : projectId;
+  // The projects this person reviews, never filtered (the sidebar makes the same call).
+  // A filtered reviews call answers 404 for a project where they are only a Member.
+  const reviewer = useGetReviews(
+    { limit: 1 },
+    { query: { select: (response) => response.data, retry: false } },
+  );
+  const reviewProjects = reviewer.data?.projects ?? [];
+  // A Member has nothing to review: the inbox is only their notifications.
+  const canReview =
+    !reviewer.isSuccess ||
+    (project
+      ? reviewProjects.some((p) => p.id === project)
+      : reviewProjects.length > 0);
   const reviews = useGetReviews(
     {
       projectId: project,
       limit: 25,
-      cursor: view === "review" ? cursors.at(-1) : undefined,
+      cursor: chosenView === "review" ? cursors.at(-1) : undefined,
     },
     {
-      query: { select: (response) => response.data, retry: false },
+      query: {
+        enabled: canReview,
+        select: (response) => response.data,
+        retry: false,
+      },
     },
   );
+  const view = canReview ? chosenView : "notifications";
   const notifications = useGetNotifications(
     {
       projectId: project,
@@ -76,7 +94,7 @@ export const ReviewInbox = () => {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-7 px-4 py-8 sm:px-6 sm:py-12">
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <h1 className="text-3xl font-semibold tracking-tight">Review inbox</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Inbox</h1>
         <Button
           variant="outline"
           className="h-10 rounded-xl"
@@ -105,22 +123,24 @@ export const ReviewInbox = () => {
           aria-label="Inbox views"
           className="flex gap-1 rounded-xl bg-muted p-1"
         >
-          <Button
-            aria-pressed={view === "review"}
-            variant="ghost"
-            className={cn(
-              "h-10 rounded-lg px-2 text-xs sm:px-4 sm:text-sm",
-              view === "review" && "bg-card shadow-sm",
-            )}
-            onClick={() => {
-              setView("review");
-              setCursors([undefined]);
-              setRetained([]);
-            }}
-          >
-            <Inbox className="hidden sm:block" />
-            Needs review
-          </Button>
+          {canReview && (
+            <Button
+              aria-pressed={view === "review"}
+              variant="ghost"
+              className={cn(
+                "h-10 rounded-lg px-2 text-xs sm:px-4 sm:text-sm",
+                view === "review" && "bg-card shadow-sm",
+              )}
+              onClick={() => {
+                setView("review");
+                setCursors([undefined]);
+                setRetained([]);
+              }}
+            >
+              <Inbox className="hidden sm:block" />
+              Needs review
+            </Button>
+          )}
           <Button
             aria-pressed={view === "notifications"}
             variant="ghost"
@@ -178,7 +198,9 @@ export const ReviewInbox = () => {
       <section aria-labelledby="inbox-section-title" className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="inbox-section-title" className="text-lg font-semibold">
-            {view === "review" ? "Ready for your review" : "Submission history"}
+            {view === "review"
+              ? "Ready for your review"
+              : "Notification history"}
           </h2>
           {view === "notifications" && (
             <label className="flex cursor-pointer items-center gap-2 text-sm">

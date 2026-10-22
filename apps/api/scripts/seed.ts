@@ -73,6 +73,7 @@ const SEED_PROJECTS = {
   TZ: 'Seed · Delete me',
   TU: 'Seed · Delete as manager',
   TK: 'Seed · Already deleted',
+  TN: 'Seed · Mentions',
 };
 
 /** Shared-account cases use real UniAuth sign-in; the seed must never fabricate acceptance. */
@@ -86,6 +87,7 @@ const SHARED_ACCOUNT_SCENARIOS = [
 const SEED_USERS = [
   { id: 'seed-mya', name: 'Mya (seed)', email: 'seed-mya@example.com' },
   { id: 'seed-ko', name: 'Ko (seed)', email: 'seed-ko@example.com' },
+  { id: 'seed-zed', name: 'Zed (seed)', email: 'seed-zed@example.com' },
 ];
 
 /** The accounts in SEED_OWNER_EMAIL, in order, or the first user who signed in. */
@@ -133,6 +135,8 @@ const addOtherOwners = async (ownerId: string, otherIds: string[]) => {
         role: member.role,
       })),
     ),
+    // Someone the seed already made a Member (the mentions project) stays one.
+    skipDuplicates: true,
   });
 };
 
@@ -1461,6 +1465,86 @@ const seedComments = async (ownerId: string) => {
   );
 };
 
+/**
+ * Mentions in ticket comments. Your second account (SEED_OWNER_EMAIL) is the Member here, so
+ * sign in as them to see the Inbox as a Member. Zed belongs to another project only.
+ */
+const seedMentions = async (ownerId: string, memberId?: string) => {
+  const [mya, ko, zed] = SEED_USERS;
+  const member = memberId ?? mya.id;
+  const { item } = await seedProject('TN', 'STANDARD', ownerId, [
+    { userId: ko.id, role: 'MANAGER' },
+    { userId: mya.id, role: 'MEMBER' },
+    ...(memberId ? [{ userId: memberId, role: 'MEMBER' as const }] : []),
+  ]);
+  // Zed is a member of another seed project, not of this one.
+  const elsewhere = await prisma.project.findFirstOrThrow({
+    where: { keyPrefix: 'TX' },
+  });
+  await prisma.member.create({
+    data: { projectId: elsewhere.id, userId: zed.id, role: 'MEMBER' },
+  });
+
+  const first = await item({
+    kind: 'TASK',
+    title:
+      'Mention the Member: they see it in their inbox (a comment here already mentions you and the Member)',
+    description: `Open the Inbox: "Ko (seed) mentioned you on" this ticket; click it → this ticket, scrolled to the comment, and the entry reads as read. Sign in as the Member (${memberId ? 'your second account' : 'Mya is a seed person and cannot sign in'}): they have the Inbox link, the dot and the same entry, but no review sections.`,
+  });
+  const named = await prisma.user.findMany({
+    where: { id: { in: [ownerId, member] } },
+  });
+  const nameOf = (id: string) => named.find((user) => user.id === id)!.name;
+  await createItemComment(first.id, ko.id, {
+    body: `Please look at this, @${nameOf(ownerId)} and @${nameOf(member)}.`,
+    mentions: [ownerId, member],
+  });
+  const second = await item({
+    kind: 'TASK',
+    title:
+      'Edit to add a second person: only they are notified, not the one already mentioned',
+    description:
+      'Post a comment with @ and one name, then Edit it, add a second @name and save: only the second person gets a new inbox entry.',
+  });
+  const edited = await createItemComment(second.id, ownerId, {
+    body: 'Heads up @Ko',
+    mentions: [ko.id],
+  });
+  await updateComment(edited.id, ownerId, {
+    body: 'Heads up @Ko and @Mya',
+    mentions: [ko.id, mya.id],
+  });
+  await item({
+    kind: 'TASK',
+    title:
+      'Save an edit with the same mentions: nobody is notified again, even if they read it',
+    description:
+      'Edit a comment that mentions someone, change only the words and save: no new unread entry for them.',
+  });
+  const outsider = await item({
+    kind: 'TASK',
+    title:
+      'Mention someone from another project via the API: nobody is notified and they are not listed',
+    description: `The picker only offers this project's members. Send it straight to the API (cookie from the browser): POST /api/items/<this ticket's id>/comments with {"body":"hi","mentions":["${zed.id}"]}. The comment is saved, "mentions" in the answer is empty, and Zed gets nothing.`,
+  });
+  await createItemComment(outsider.id, ko.id, {
+    body: 'This one tried to mention Zed (another project) and the author himself: no highlight, nobody notified.',
+    mentions: [zed.id, ko.id],
+  });
+  note(
+    first.key,
+    'Inbox (renamed from Reviews): "Ko (seed) mentioned you on TN-1"; opening it scrolls to the comment and marks it read; the Member sees only mentions',
+  );
+  note(
+    second.key,
+    'edit the comment to add a name: only the new person is notified',
+  );
+  note(
+    outsider.key,
+    'API mention of Zed (not a member): comment saved, no mention, no notification',
+  );
+};
+
 const seedDocumentComments = async (ownerId: string) => {
   const [mya, ko] = SEED_USERS;
   const guided = await prisma.project.findFirstOrThrow({
@@ -1702,6 +1786,7 @@ await seedSpecProvenance(owner.id);
 await seedAdrs(owner.id);
 await seedTechDebt(owner.id);
 await seedComments(owner.id);
+await seedMentions(owner.id, others[0]?.id);
 await seedDocumentComments(owner.id);
 await seedInvites(owner.id);
 await seedJoinRequests(owner.id);
