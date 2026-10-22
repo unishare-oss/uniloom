@@ -1,9 +1,9 @@
 "use client";
 
 import { ChevronDown, MessageSquareReply, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CommentEditor } from "@/components/comments/comment-editor";
-import { linkifyText } from "@/components/comments/linkify-text";
+import { MentionedText } from "@/components/comments/mentioned-text";
 import { Avatar } from "@/components/user/avatar";
 import { Button } from "@/components/ui/button";
 import type { Comment } from "@/lib/api/generated/uniloomAPI.schemas";
@@ -21,6 +21,7 @@ const LAYERS = [
 /** One comment and, below it, its replies. Calls itself for each reply. */
 export const CommentThread = ({
   comment,
+  projectId,
   depth,
   editingId,
   replyingId,
@@ -34,6 +35,8 @@ export const CommentThread = ({
   onDelete,
 }: {
   comment: Comment;
+  /** Set for a ticket's comments: turns on @mentions in the editors. */
+  projectId?: string;
   depth: number;
   editingId: string | null;
   replyingId: string | null;
@@ -42,8 +45,8 @@ export const CommentThread = ({
   onStartEdit: (id: string) => void;
   onStartReply: (id: string) => void;
   onCancel: () => void;
-  onSave: (id: string, body: string) => Promise<boolean>;
-  onReply: (id: string, body: string) => Promise<boolean>;
+  onSave: (id: string, body: string, mentions: string[]) => Promise<boolean>;
+  onReply: (id: string, body: string, mentions: string[]) => Promise<boolean>;
   onDelete: (id: string) => void;
 }) => {
   const [open, setOpen] = useState(true);
@@ -53,10 +56,19 @@ export const CommentThread = ({
   const hasReplies = comment.replies.length > 0;
   const subtle = layer?.text ?? "text-muted-foreground";
 
+  // An inbox link ends in #comment-<id>: scroll to that comment once it is on the page.
+  useEffect(() => {
+    if (window.location.hash === `#comment-${comment.id}`)
+      document
+        .getElementById(`comment-${comment.id}`)
+        ?.scrollIntoView({ block: "center" });
+  }, [comment.id]);
+
   return (
     <div
+      id={`comment-${comment.id}`}
       className={cn(
-        "py-4",
+        "scroll-mt-24 py-4",
         depth === 0 && "border-b last:border-b-0",
         depth > 0 && "pb-0",
         depth >= 1 && "ml-4",
@@ -121,11 +133,15 @@ export const CommentThread = ({
           {editingId === comment.id ? (
             <div className="pl-9">
               <CommentEditor
+                projectId={projectId}
                 initialValue={comment.body}
+                initialMentions={comment.mentions}
                 submitLabel="Save"
                 pendingLabel="Saving..."
                 isPending={isSaving}
-                onSubmit={(body) => onSave(comment.id, body)}
+                onSubmit={(body, mentions) =>
+                  onSave(comment.id, body, mentions)
+                }
                 onCancel={onCancel}
               />
             </div>
@@ -139,9 +155,14 @@ export const CommentThread = ({
                     : "text-foreground",
                 )}
               >
-                {comment.deleted
-                  ? "This comment was deleted."
-                  : linkifyText(comment.body)}
+                {comment.deleted ? (
+                  "This comment was deleted."
+                ) : (
+                  <MentionedText
+                    body={comment.body}
+                    mentions={comment.mentions}
+                  />
+                )}
               </p>
               {!comment.deleted && (
                 <div className="mt-2 flex flex-wrap items-center gap-1 pl-9">
@@ -185,11 +206,14 @@ export const CommentThread = ({
           {replyingId === comment.id && !comment.deleted && (
             <div className="mt-3 pl-9">
               <CommentEditor
+                projectId={projectId}
                 placeholder={`Reply to ${name}...`}
                 submitLabel="Reply"
                 pendingLabel="Replying..."
                 isPending={isReplying}
-                onSubmit={(body) => onReply(comment.id, body)}
+                onSubmit={(body, mentions) =>
+                  onReply(comment.id, body, mentions)
+                }
                 onCancel={onCancel}
               />
             </div>
@@ -227,6 +251,7 @@ export const CommentThread = ({
               <CommentThread
                 key={reply.id}
                 comment={reply}
+                projectId={projectId}
                 depth={depth + 1}
                 editingId={editingId}
                 replyingId={replyingId}

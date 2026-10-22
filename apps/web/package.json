@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "api:generate": "orval",
-    "test": "bun test src/components/markdown"
+    "test": "bun test src/components/markdown src/lib"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

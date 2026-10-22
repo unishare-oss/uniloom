@@ -182,10 +182,17 @@ export const NotificationGroup = ({
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             {group.totalCount}{" "}
-            {group.totalCount === 1 ? "submission" : "submissions"} · Latest{" "}
+            {group.totalCount === 1 ? "notification" : "notifications"} · Latest{" "}
             <time dateTime={group.latestSubmittedAt}>
               {timestamp.format(new Date(group.latestSubmittedAt))}
             </time>
+            {group.mentionUnreadCount > 0 && (
+              <span className="font-semibold text-primary">
+                {" "}
+                · {group.mentionUnreadCount} unread{" "}
+                {group.mentionUnreadCount === 1 ? "mention" : "mentions"}
+              </span>
+            )}
           </p>
         </div>
         {item.state && (
@@ -247,7 +254,7 @@ export const NotificationGroup = ({
           )}
           {history.isPending ? (
             <p role="status" className="text-sm text-muted-foreground">
-              Loading submissions…
+              Loading notifications…
             </p>
           ) : history.isError ? (
             <div role="alert" className="space-y-3 text-sm">
@@ -301,13 +308,38 @@ export const NotificationGroup = ({
                         <span className="font-medium">
                           {entry.actor?.name ?? "Former member"}
                         </span>
-                        <span className="text-muted-foreground">
-                          {" "}
-                          submitted for review
-                        </span>
+                        {entry.kind === "MENTION" ? (
+                          <>
+                            <span className="text-muted-foreground">
+                              {" "}
+                              mentioned you on{" "}
+                            </span>
+                            {item.available ? (
+                              <Link
+                                href={`/p/${item.project.id}/items/${item.id}#comment-${entry.commentId}`}
+                                onClick={() => {
+                                  if (!isRead)
+                                    read.mutate({ data: { ids: [entry.id] } });
+                                }}
+                                className="font-mono font-medium underline underline-offset-4"
+                              >
+                                {item.key}
+                              </Link>
+                            ) : (
+                              <span className="text-muted-foreground">
+                                an unavailable item
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            submitted for review
+                          </span>
+                        )}
                         <p className="mt-1 text-xs text-muted-foreground">
-                          <time dateTime={entry.submittedAt}>
-                            {timestamp.format(new Date(entry.submittedAt))}
+                          <time dateTime={entry.at}>
+                            {timestamp.format(new Date(entry.at))}
                           </time>
                         </p>
                       </div>
@@ -333,7 +365,7 @@ export const NotificationGroup = ({
                       setCursors((current) => current.slice(0, -1))
                     }
                   >
-                    Newer submissions
+                    Newer notifications
                   </Button>
                 )}
                 {history.data.nextCursor && (
@@ -347,7 +379,7 @@ export const NotificationGroup = ({
                       ])
                     }
                   >
-                    Older submissions
+                    Older notifications
                   </Button>
                 )}
               </div>

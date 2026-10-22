@@ -1,3 +1,5 @@
+import { prisma } from '@/db/prisma.js';
+import type { Prisma } from '@/generated/prisma/client.js';
 import { apiError } from '@/http.js';
 import { loadDocument } from '@/modules/documents/document.service.js';
 import { loadItem } from '@/modules/items/item.service.js';
@@ -6,6 +8,7 @@ import {
   requireRole,
   ROLES,
 } from '@/modules/members/member.service.js';
+import { recordMentionNotifications } from '@/modules/notifications/notification.service.js';
 import * as commentRepo from './comment.repository.js';
 import { commentError } from './comment.rules.js';
 import { toCommentTree } from './comment.utils.js';
@@ -20,30 +23,51 @@ const checkBody = (body: string) => {
 };
 
 /** The comment as the caller sees it: one node, no replies. */
-const toNode = (
+const toNode = async (
   row: Awaited<ReturnType<typeof commentRepo.insertComment>>,
   viewer: { userId: string; role: Parameters<typeof toCommentTree>[1]['role'] },
   targetAuthorId: string | null,
 ) => {
-  return toCommentTree([row], { ...viewer, targetAuthorId }).comments[0];
+  const users = await commentRepo.findUserNames(row.mentionIds);
+  return toCommentTree([row], { ...viewer, targetAuthorId }, users).comments[0];
+};
+
+/** The ids sent with a comment, once each, without the author, kept only for project members. */
+const keepProjectMembers = async (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  authorId: string,
+  ids: string[],
+) => {
+  const wanted = [...new Set(ids)].filter((id) => id !== authorId);
+  if (wanted.length === 0) return [];
+  const members = await commentRepo.findMentionableMembers(
+    tx,
+    projectId,
+    wanted,
+  );
+  return members.map((member) => member.user.id);
 };
 
 /** The whole tree of comments on a ticket, with the live count. Any member may read. */
 export const listItemComments = async (itemId: string, userId: string) => {
   const { item, role } = await loadItem(itemId, userId);
   const rows = await commentRepo.findComments({ itemId });
-  return toCommentTree(rows, {
-    userId,
-    role,
-    targetAuthorId: item.createdById,
-  });
+  const users = await commentRepo.findUserNames([
+    ...new Set(rows.flatMap((row) => row.mentionIds)),
+  ]);
+  return toCommentTree(
+    rows,
+    { userId, role, targetAuthorId: item.createdById },
+    users,
+  );
 };
 
 /** Adds a comment, or a reply when `parentId` is a live comment on the same ticket. */
 export const createItemComment = async (
   itemId: string,
   userId: string,
-  input: { body: string; parentId?: string | null },
+  input: { body: string; parentId?: string | null; mentions?: string[] },
 ) => {
   const { item, role } = await loadItem(itemId, userId);
   const body = checkBody(input.body);
@@ -52,12 +76,30 @@ export const createItemComment = async (
     if (!parent || parent.itemId !== itemId)
       throw apiError(404, 'not_found', 'Comment not found');
   }
-  const row = await commentRepo.insertComment({
-    projectId: item.projectId,
-    itemId,
-    parentId: input.parentId ?? null,
-    authorId: userId,
-    body,
+  const row = await prisma.$transaction(async (tx) => {
+    const mentionIds = await keepProjectMembers(
+      tx,
+      item.projectId,
+      userId,
+      input.mentions ?? [],
+    );
+    const row = await commentRepo.insertComment(
+      {
+        projectId: item.projectId,
+        itemId,
+        parentId: input.parentId ?? null,
+        authorId: userId,
+        body,
+        mentionIds,
+      },
+      tx,
+    );
+    await recordMentionNotifications(
+      tx,
+      { projectId: item.projectId, itemId, commentId: row.id },
+      mentionIds,
+    );
+    return row;
   });
   return toNode(row, { userId, role }, item.createdById);
 };
@@ -127,15 +169,38 @@ const loadComment = async (id: string, userId: string) => {
 export const updateComment = async (
   id: string,
   userId: string,
-  input: { body: string },
+  input: { body: string; mentions?: string[] },
 ) => {
   const { comment, role } = await loadComment(id, userId);
   if (comment.authorId !== userId)
     throw apiError(403, 'forbidden', 'Only the author can edit a comment');
   const body = checkBody(input.body);
-  const row = await commentRepo.updateCommentRow(id, {
-    body,
-    editedAt: new Date(),
+  const row = await prisma.$transaction(async (tx) => {
+    // Mentions only exist on ticket comments; omitted keeps the current ones.
+    if (!comment.itemId || input.mentions === undefined)
+      return commentRepo.updateCommentRow(
+        id,
+        { body, editedAt: new Date() },
+        tx,
+      );
+    const mentionIds = await keepProjectMembers(
+      tx,
+      comment.projectId,
+      userId,
+      input.mentions,
+    );
+    const row = await commentRepo.updateCommentRow(
+      id,
+      { body, mentionIds, editedAt: new Date() },
+      tx,
+    );
+    // The unique key (comment, person) skips whoever was already notified.
+    await recordMentionNotifications(
+      tx,
+      { projectId: comment.projectId, itemId: comment.itemId, commentId: id },
+      mentionIds,
+    );
+    return row;
   });
   return toNode(
     row,

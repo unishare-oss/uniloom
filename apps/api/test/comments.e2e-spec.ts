@@ -438,4 +438,143 @@ describe('ticket comments (e2e)', () => {
         .status,
     ).toBe(404);
   });
+
+  describe('mentions', () => {
+    const idOf = async (who: { email: string }) =>
+      (await prisma.user.findFirstOrThrow({ where: { email: who.email } })).id;
+    const mentionRows = (itemId: string) =>
+      prisma.notification.findMany({
+        where: { itemId, kind: 'MENTION' },
+        select: { recipientId: true, readAt: true, commentId: true },
+      });
+
+    it('notifies only the members who are mentioned, never the author or people outside the project', async () => {
+      const w = await setup();
+      const managerId = await idOf(w.manager);
+      const memberId = await idOf(w.member);
+      const strangerId = await idOf(w.stranger);
+      // Someone who belongs to another project, but not this one.
+      const elsewhere = await person();
+      const elsewhereId = await idOf(elsewhere);
+      await api.send('POST', '/api/projects', elsewhere.cookie, {
+        name: 'Elsewhere',
+        keyPrefix: freshPrefix(),
+        mode: 'STANDARD',
+      });
+
+      const res = await w.post(w.member.cookie, {
+        body: 'Hi @Mya',
+        mentions: [managerId, managerId, memberId, strangerId, elsewhereId],
+      });
+      expect(res.status).toBe(201);
+      const comment = await read<Node & { mentions: { id: string }[] }>(res);
+      expect(comment.mentions.map((m) => m.id)).toEqual([managerId]);
+
+      const rows = await mentionRows(w.item.id);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        recipientId: managerId,
+        readAt: null,
+        commentId: comment.id,
+      });
+      const stored = await prisma.comment.findUniqueOrThrow({
+        where: { id: comment.id },
+      });
+      expect(stored.mentionIds).toEqual([managerId]);
+
+      const listed = await w.tree(w.owner.cookie);
+      expect(listed.comments[0]).toMatchObject({
+        mentions: [{ id: managerId, name: expect.any(String) }],
+      });
+    });
+
+    it('notifies only people newly added by an edit, and nobody on an identical re-save', async () => {
+      const w = await setup();
+      const managerId = await idOf(w.manager);
+      const ownerId = await idOf(w.owner);
+      const c = await read<Node>(
+        await w.post(w.member.cookie, { body: 'a', mentions: [managerId] }),
+      );
+      // The manager reads it; an edit must not bring it back.
+      await prisma.notification.updateMany({
+        where: { itemId: w.item.id },
+        data: { readAt: new Date() },
+      });
+
+      const edit = (mentions?: string[]) =>
+        api.send('PATCH', `/api/comments/${c.id}`, w.member.cookie, {
+          body: 'b',
+          mentions,
+        });
+      const edited = await read<{ mentions: { id: string }[] }>(
+        await edit([managerId, ownerId]),
+      );
+      expect(edited.mentions.map((m) => m.id).sort()).toEqual(
+        [managerId, ownerId].sort(),
+      );
+      let rows = await mentionRows(w.item.id);
+      expect(rows.map((r) => r.recipientId).sort()).toEqual(
+        [managerId, ownerId].sort(),
+      );
+      expect(
+        rows.find((r) => r.recipientId === managerId)!.readAt,
+      ).not.toBeNull();
+      expect(rows.find((r) => r.recipientId === ownerId)!.readAt).toBeNull();
+
+      // The same mentions again, and an edit without `mentions`: nothing new.
+      await edit([ownerId, managerId]);
+      await edit(undefined);
+      rows = await mentionRows(w.item.id);
+      expect(rows).toHaveLength(2);
+      const kept = await prisma.comment.findUniqueOrThrow({
+        where: { id: c.id },
+      });
+      expect(kept.mentionIds.sort()).toEqual([managerId, ownerId].sort());
+
+      // An empty list clears the mentions and notifies nobody.
+      const cleared = await read<{ mentions: unknown[] }>(await edit([]));
+      expect(cleared.mentions).toEqual([]);
+      expect(await mentionRows(w.item.id)).toHaveLength(2);
+    });
+
+    it('leaves out a mentioned person whose account is gone', async () => {
+      const w = await setup();
+      const managerId = await idOf(w.manager);
+      await w.post(w.member.cookie, { body: 'hi', mentions: [managerId] });
+      await prisma.user.delete({ where: { id: managerId } });
+      const listed = await w.tree(w.owner.cookie);
+      expect(listed.comments[0]).toMatchObject({ mentions: [] });
+    });
+
+    it('rejects a bad mentions list and ignores mentions on document comments', async () => {
+      // Guided, so the ticket can own a document.
+      const w = await setup(true);
+      const managerId = await idOf(w.manager);
+      expect(
+        (await w.post(w.member.cookie, { body: 'x', mentions: [''] })).status,
+      ).toBe(400);
+      const many = Array.from({ length: 21 }, () => randomUUID());
+      expect(
+        (await w.post(w.member.cookie, { body: 'x', mentions: many })).status,
+      ).toBe(400);
+
+      const doc = await read(
+        await api.send(
+          'POST',
+          `/api/items/${w.item.id}/documents/new`,
+          w.owner.cookie,
+          { kind: 'REFERENCE', title: 'Owned' },
+        ),
+      );
+      const res = await api.send(
+        'POST',
+        `/api/documents/${doc.id}/comments`,
+        w.member.cookie,
+        { body: 'hello', mentions: [managerId] },
+      );
+      expect(res.status).toBe(201);
+      expect((await read<{ mentions: unknown[] }>(res)).mentions).toEqual([]);
+      expect(await mentionRows(w.item.id)).toHaveLength(0);
+    });
+  });
 });

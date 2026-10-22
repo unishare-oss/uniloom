@@ -20,6 +20,8 @@ export const notificationGroupSchema = z.object({
   latestSubmittedAt: z.iso.datetime(),
   totalCount: z.number().int(),
   unreadCount: z.number().int(),
+  /** How many of the unread ones are mentions. */
+  mentionUnreadCount: z.number().int(),
   needsReview: z.boolean(),
 });
 export const notificationPageSchema = z.object({
@@ -32,11 +34,17 @@ export const notificationHistorySchema = z.object({
   items: z.array(
     z.object({
       id: z.uuid(),
-      eventId: z.uuid(),
-      submittedAt: z.iso.datetime(),
+      kind: z.enum(['REVIEW', 'MENTION']),
+      /** Set on a REVIEW row. */
+      eventId: z.uuid().nullable(),
+      /** Set on a MENTION row: the comment that mentions the person. */
+      commentId: z.uuid().nullable(),
+      /** When it was submitted (REVIEW) or commented (MENTION). */
+      at: z.iso.datetime(),
       readAt: z.iso.datetime().nullable(),
       fromStateKey: z.string().nullable(),
-      toStateKey: z.string(),
+      toStateKey: z.string().nullable(),
+      /** The submitter (REVIEW) or the comment's author (MENTION). */
       actor: z
         .object({
           id: z.string(),

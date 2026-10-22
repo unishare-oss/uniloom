@@ -312,7 +312,10 @@ export const ItemDetail = ({
 
           <ItemActivity itemId={item.id} itemKey={item.key} states={states} />
 
-          <CommentSection target={{ kind: "item", id: item.id }} />
+          <CommentSection
+            target={{ kind: "item", id: item.id }}
+            projectId={item.projectId}
+          />
 
           {children.length > 0 && (
             <CollapsibleSection

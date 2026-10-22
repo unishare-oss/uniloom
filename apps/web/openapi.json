@@ -52,6 +52,24 @@
               }
             ]
           },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
           "isTargetAuthor": {
             "type": "boolean"
           },
@@ -92,6 +110,7 @@
           "id",
           "body",
           "author",
+          "mentions",
           "isTargetAuthor",
           "createdAt",
           "editedAt",
@@ -6073,6 +6092,11 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "mentionUnreadCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "needsReview": {
                             "type": "boolean"
                           }
@@ -6082,6 +6106,7 @@
                           "latestSubmittedAt",
                           "totalCount",
                           "unreadCount",
+                          "mentionUnreadCount",
                           "needsReview"
                         ]
                       }
@@ -6194,12 +6219,38 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
-                          "eventId": {
+                          "kind": {
                             "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            "enum": [
+                              "REVIEW",
+                              "MENTION"
+                            ]
                           },
-                          "submittedAt": {
+                          "eventId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "commentId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "at": {
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
@@ -6223,7 +6274,10 @@
                             ]
                           },
                           "toStateKey": {
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "actor": {
                             "anyOf": [
@@ -6257,8 +6311,10 @@
                         },
                         "required": [
                           "id",
+                          "kind",
                           "eventId",
-                          "submittedAt",
+                          "commentId",
+                          "at",
                           "readAt",
                           "fromStateKey",
                           "toStateKey",
@@ -9728,6 +9784,14 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "mentions": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
                   }
                 },
                 "required": [
@@ -9837,6 +9901,14 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "mentions": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
                   }
                 },
                 "required": [
@@ -9887,6 +9959,14 @@
                 "properties": {
                   "body": {
                     "type": "string"
+                  },
+                  "mentions": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
                   }
                 },
                 "required": [

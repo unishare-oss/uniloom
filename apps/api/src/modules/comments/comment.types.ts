@@ -17,6 +17,7 @@ export interface CommentNode {
   body: string;
   /** Null for a deleted comment or when the person's account is gone. */
   author: { id: string; name: string; image: string | null } | null;
+  mentions: { id: string; name: string }[];
   isTargetAuthor: boolean;
   createdAt: string;
   editedAt: string | null;
