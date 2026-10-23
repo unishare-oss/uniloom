@@ -88,6 +88,16 @@ export const insertMentionNotifications = (
   });
 };
 
+/** Wakes the open streams of these people. Sent on commit, from whichever process wrote the rows. */
+export const notifyRecipients = async (
+  tx: Prisma.TransactionClient,
+  recipientIds: string[],
+) => {
+  const ids = [...new Set(recipientIds)];
+  if (ids.length === 0) return;
+  await tx.$executeRaw`SELECT pg_notify('notification_changed', id) FROM unnest(${ids}::text[]) AS id`;
+};
+
 export const markEventProcessed = (
   tx: Prisma.TransactionClient,
   id: string,

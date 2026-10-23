@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { describe } from '@/openapi.js';
 import {
   getNotifications,
+  getNotificationStream,
   getItemNotifications,
   postReadNotifications,
   postUnreadNotifications,
@@ -16,6 +17,8 @@ import {
 } from './notification.schema.js';
 
 export const notificationRoutes = new Hono();
+// Server-sent events, not JSON: the browser opens it with EventSource, so it stays out of the OpenAPI spec.
+notificationRoutes.get('/notifications/stream', getNotificationStream);
 notificationRoutes.get(
   '/notifications',
   describe({
