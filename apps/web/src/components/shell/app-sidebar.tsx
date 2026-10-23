@@ -34,6 +34,7 @@ import {
 import { ProjectChip } from "@/components/projects/project-chip";
 import { useGetReviews } from "@/lib/api/generated/reviews/reviews";
 import { useGetNotifications } from "@/lib/api/generated/notifications/notifications";
+import { useNotificationStream } from "@/lib/use-notification-stream";
 import { useGetMe } from "@/lib/api/generated/users/users";
 import {
   useGetProject,
@@ -60,6 +61,9 @@ export const AppSidebar = () => {
   const { data: me } = useGetMe({
     query: { select: (r) => r.data, retry: false },
   });
+  useNotificationStream(
+    me?.unicorpTermsVersion === 1 && !!me.unicorpTermsAcceptedAt,
+  );
   const reviews = useGetReviews(
     { limit: 1 },
     {
