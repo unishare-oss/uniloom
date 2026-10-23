@@ -98,10 +98,10 @@ A function never gets its own document.
    write code until the user moves the slice to Ready. Re-read it with `get_item` before
    starting. If a SPEC changes after Ready, tell the user: they review it again.
 7. **Build**: `save_item` with `state: "In Progress"`. Tick each item with
-   `check_criterion` **the moment it is met**, with evidence (a commit SHA, test name or
-   link). A dropped session then leaves real progress recorded. There is no un-tick tool,
-   and `set_criteria` resets every tick: if a ticked item stops being true, tell the user
-   instead of rewriting the checklist.
+   `check_criterion` **the moment it is met**, with evidence: the test that proves it and
+   the commit SHA. A dropped session then leaves real progress recorded. There is no
+   un-tick tool, and `set_criteria` resets every tick: if a ticked item stops being true,
+   tell the user instead of rewriting the checklist.
 8. **Blocked**: if you cannot finish without the user, `save_item` with
    `state: "Blocked"` and add the reason at the end of the description. Then tell them.
 9. **Finish**:

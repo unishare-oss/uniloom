@@ -66,18 +66,20 @@ Don't split when:
 
 ## Done-when items
 
-Each item is one result someone can check, derived from what the user asked for.
+Each item is one result an automated test can prove, derived from what the user asked for.
 
-| Good                                                             | Bad                    |
-| ---------------------------------------------------------------- | ---------------------- |
-| `POST /api/rooms/:id/messages` saves the message and returns 201 | Implement messages API |
-| A non-member posting to a room gets 404                          | Handle errors          |
-| The room page shows new messages without a reload                | Frontend works         |
-| `test_post_message_requires_membership` passes                   | Tests written          |
+| Good                                                              | Bad                                               |
+| ----------------------------------------------------------------- | ------------------------------------------------- |
+| `POST /api/rooms/:id/messages` saves the message and returns 201  | Implement messages API                            |
+| A non-member posting to a room gets 404                           | Handle errors                                     |
+| A new message sends `changed` on the room's open stream within 3s | The room page shows new messages without a reload |
+| `test_post_message_requires_membership` passes                    | Tests written                                     |
 
-- One behaviour per item, proved by one test. Its edge cases go in the SPEC, unless they
-  guard security, privacy or data, or are a rule users will notice.
-- Name the route, screen, rule or test it is about.
+- One behaviour per item.
+- Name the route, rule, function or test it is about.
+- A unit or end-to-end test proves every item. Never write an item that only a person
+  clicking through the app can check. Put what is only visible in the browser in the
+  slice's description under "Try it yourself" instead.
 - No generic items (`code reviewed`, `lint passes`, `docs updated`): checks run on every
   slice anyway.
 
