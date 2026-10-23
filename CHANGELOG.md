@@ -1,3 +1,33 @@
+# [1.20.0](https://github.com/unishare-oss/uniloom/compare/v1.19.0...v1.20.0) (2026-10-23)
+
+
+### Features
+
+* push live inbox updates over SSE (UN-9) ([4c266aa](https://github.com/unishare-oss/uniloom/commit/4c266aade47a20400e92bcace3c1c3314aaed717))
+
+# [1.19.0](https://github.com/unishare-oss/uniloom/compare/v1.18.0...v1.19.0) (2026-10-22)
+
+
+### Features
+
+* mention project members in ticket comments (UN-7) ([55088ee](https://github.com/unishare-oss/uniloom/commit/55088ee38d46e966a5643568ba706436f80ef31e))
+
+# [1.18.0](https://github.com/unishare-oss/uniloom/compare/v1.17.2...v1.18.0) (2026-10-21)
+
+
+### Features
+
+* **api:** enforce verified shared acceptance for REST and MCP ([c7a6c08](https://github.com/unishare-oss/uniloom/commit/c7a6c08721c958f7e1a7e43d0fd172080133d305))
+* **web:** refresh shared acceptance through UniAuth ([e5607bd](https://github.com/unishare-oss/uniloom/commit/e5607bd7fae7d9ed6f184cc718e2c4cfef820deb))
+* **web:** show the agent's logo and wordmark in activity rows ([b05c0ec](https://github.com/unishare-oss/uniloom/commit/b05c0eccb731cdc11e95c76e62d4411e5871c66c))
+
+## [1.17.2](https://github.com/unishare-oss/uniloom/compare/v1.17.1...v1.17.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **web:** stop the board scrolling vertically in Firefox ([e08bb03](https://github.com/unishare-oss/uniloom/commit/e08bb0383dea86e0f034e02210fead625fc20b03))
+
 ## [1.17.1](https://github.com/unishare-oss/uniloom/compare/v1.17.0...v1.17.1) (2026-10-21)
 
 

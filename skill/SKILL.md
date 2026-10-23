@@ -83,7 +83,8 @@ A function never gets its own document.
    one-slice change with a single obvious option may skip it if the user says so.
 3. **Propose the feature** (see [FEATURES.md](FEATURES.md)): its title, whether and how
    it splits into small slices (one behaviour and at most one new piece of
-   infrastructure each), each slice's title, its 3–4 done-when items, and which slices
+   infrastructure each), each slice's title, its 3 to 6 done-when items (one behaviour
+   each), and which slices
    wait on which. Confirm with the user before creating anything.
 4. **Create** the feature, then each slice with `parent` set to the feature, all in
    `Aligning`, `assignee: "me"`. Give each slice its checklist with `set_criteria`. When a
@@ -97,10 +98,10 @@ A function never gets its own document.
    write code until the user moves the slice to Ready. Re-read it with `get_item` before
    starting. If a SPEC changes after Ready, tell the user: they review it again.
 7. **Build**: `save_item` with `state: "In Progress"`. Tick each item with
-   `check_criterion` **the moment it is met**, with evidence (a commit SHA, test name or
-   link). A dropped session then leaves real progress recorded. There is no un-tick tool,
-   and `set_criteria` resets every tick: if a ticked item stops being true, tell the user
-   instead of rewriting the checklist.
+   `check_criterion` **the moment it is met**, with evidence: the test that proves it and
+   the commit SHA. A dropped session then leaves real progress recorded. There is no
+   un-tick tool, and `set_criteria` resets every tick: if a ticked item stops being true,
+   tell the user instead of rewriting the checklist.
 8. **Blocked**: if you cannot finish without the user, `save_item` with
    `state: "Blocked"` and add the reason at the end of the description. Then tell them.
 9. **Finish**:
