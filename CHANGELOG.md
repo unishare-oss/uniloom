@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/unishare-oss/uniloom/compare/v1.19.0...v1.20.0) (2026-10-23)
+
+
+### Features
+
+* push live inbox updates over SSE (UN-9) ([4c266aa](https://github.com/unishare-oss/uniloom/commit/4c266aade47a20400e92bcace3c1c3314aaed717))
+
 # [1.19.0](https://github.com/unishare-oss/uniloom/compare/v1.18.0...v1.19.0) (2026-10-22)
 
 
