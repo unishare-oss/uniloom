@@ -74,6 +74,7 @@ const SEED_PROJECTS = {
   TU: 'Seed · Delete as manager',
   TK: 'Seed · Already deleted',
   TN: 'Seed · Mentions',
+  TH: 'Seed · GitHub',
 };
 
 /** Shared-account cases use real UniAuth sign-in; the seed must never fabricate acceptance. */
@@ -1762,6 +1763,147 @@ const seedDeleteProject = async (ownerId: string) => {
   );
 };
 
+/** GitHub (UN-10): a fake installation with a mapped and an unmapped repo, and a linked pull request. */
+const seedGithub = async (ownerId: string) => {
+  const { project, item } = await seedProject('TH', 'STANDARD', ownerId, []);
+  const installationId = 900_000_001;
+  const mappedId = 900_000_011;
+  await prisma.githubInstallation.upsert({
+    where: { id: installationId },
+    create: { id: installationId, accountLogin: 'seed-org' },
+    update: { deletedAt: null },
+  });
+  for (const [id, fullName] of [
+    [mappedId, 'seed-org/uniloom'],
+    [900_000_012, 'seed-org/unishare'],
+  ] as const)
+    await prisma.githubRepository.upsert({
+      where: { id },
+      create: { id, installationId, fullName },
+      update: { fullName, removedAt: null },
+    });
+  await prisma.projectRepository.create({
+    data: { projectId: project.id, repositoryId: mappedId },
+  });
+
+  const linked = await item({
+    kind: 'TASK',
+    title:
+      'Task. This ticket lists PR #12 (merged, checks passed) under Pull requests',
+  });
+  await item({
+    kind: 'TASK',
+    title:
+      'Task. No pull requests: the ticket page has no Pull requests section',
+  });
+  const data = {
+    title: `feat: add login (${linked.key})`,
+    headRef: 'feat/login',
+    headSha: 'seed0000000000000000000000000000000012',
+    baseRef: 'main',
+    state: 'MERGED' as const,
+    mergedAt: new Date(),
+    mergedByLogin: 'seed-ko',
+    authorLogin: 'seed-mya',
+    url: 'https://github.com/seed-org/uniloom/pull/12',
+    githubUpdatedAt: new Date(),
+  };
+  const pr = await prisma.pullRequest.upsert({
+    where: { repositoryId_number: { repositoryId: mappedId, number: 12 } },
+    create: { repositoryId: mappedId, number: 12, ...data },
+    update: data,
+  });
+  await prisma.pullRequestItem.create({
+    data: { pullRequestId: pr.id, itemId: linked.id, closes: true },
+  });
+  await prisma.checkSuite.upsert({
+    where: { id: 900_000_021 },
+    create: {
+      id: 900_000_021,
+      repositoryId: mappedId,
+      headSha: data.headSha,
+      appName: 'CI',
+      status: 'completed',
+      conclusion: 'success',
+    },
+    update: { conclusion: 'success', status: 'completed' },
+  });
+  note(
+    linked.key,
+    'ticket page: Pull requests lists PR #12, Merged, checks passed',
+  );
+
+  // UN-11: the switch is on, and two tickets show what GitHub did after a merge.
+  await prisma.project.update({
+    where: { id: project.id },
+    data: { doneOnMerge: true },
+  });
+  const github = { clientId: 'github', agentName: 'GitHub' };
+  const moved = await item({
+    kind: 'TASK',
+    title:
+      'Task. History shows GitHub moved it IN REVIEW → DONE, with "PR #12 merged into dev by @seed-ko" and the GitHub mark',
+    state: 'Done',
+  });
+  await prisma.activity.create({
+    data: {
+      ...github,
+      action: 'item.move',
+      projectId: project.id,
+      itemId: moved.id,
+      detail: {
+        from: 'In Review',
+        to: 'Done',
+        pullRequests: [
+          {
+            number: 12,
+            url: 'https://github.com/seed-org/uniloom/pull/12',
+            base: 'dev',
+            mergedBy: 'seed-ko',
+          },
+        ],
+        checksAfterMerge: false,
+      },
+    },
+  });
+  const skipped = await item({
+    kind: 'TASK',
+    title:
+      'Task. History shows GitHub did not move it to DONE, with the reasons in red: checks failed and an unticked entry',
+    state: 'In Progress',
+  });
+  await prisma.activity.create({
+    data: {
+      ...github,
+      action: 'github.done_skipped',
+      projectId: project.id,
+      itemId: skipped.id,
+      detail: {
+        pullRequests: [
+          {
+            number: 13,
+            url: 'https://github.com/seed-org/uniloom/pull/13',
+            base: 'dev',
+            mergedBy: 'seed-ko',
+          },
+        ],
+        reasons: [
+          'Checks failed on PR #13',
+          'Tick every checklist entry first: "Write the migration"',
+        ],
+      },
+    },
+  });
+  note(
+    'TH',
+    'Settings → GitHub: "Move to Done when merged into dev or main" is on (Owner can switch it off)',
+  );
+  note(
+    'TH',
+    'Settings → GitHub: seed-org/uniloom is Mapped, seed-org/unishare is Not mapped; Map and Unmap work (needs GITHUB_APP_SLUG for the Install button)',
+  );
+};
+
 const [owner, ...others] = await findOwners();
 for (const user of SEED_USERS)
   await prisma.user.upsert({
@@ -1792,6 +1934,7 @@ await seedInvites(owner.id);
 await seedJoinRequests(owner.id);
 await seedMyRequests(owner.id);
 await seedDeleteProject(owner.id);
+await seedGithub(owner.id);
 await addOtherOwners(
   owner.id,
   others.map((user) => user.id),

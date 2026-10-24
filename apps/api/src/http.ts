@@ -45,3 +45,11 @@ export const idParam = (c: Context, name: string) => {
     throw apiError(404, 'not_found', 'Not found');
   return value;
 };
+
+/** A path parameter that must be a whole number id, such as a GitHub id; anything else is 404. */
+export const numberIdParam = (c: Context, name: string) => {
+  const value = c.req.param(name);
+  if (!value || !/^\d{1,18}$/.test(value))
+    throw apiError(404, 'not_found', 'Not found');
+  return BigInt(value);
+};
