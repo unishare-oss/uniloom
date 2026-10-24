@@ -114,7 +114,7 @@ export const addMember = async (
   if (!member)
     throw apiError(409, 'already_member', 'They are already a member');
   // If they had asked to join through an invite link, that request is answered now.
-  await memberRepo.settleJoinRequest(prisma, projectId, targetId);
+  await memberRepo.settleJoinRequest(projectId, targetId);
   return view(member);
 };
 
@@ -130,7 +130,7 @@ export const joinAsMember = async (
   userId: string,
 ) => {
   await memberRepo.createMember(tx, projectId, userId, 'MEMBER');
-  await memberRepo.settleJoinRequest(tx, projectId, userId);
+  await memberRepo.settleJoinRequest(projectId, userId, tx);
 };
 
 /**
@@ -143,7 +143,7 @@ export const approveAsMember = async (
   userId: string,
 ) => {
   await memberRepo.createMemberIfMissing(tx, projectId, userId, 'MEMBER');
-  await memberRepo.settleJoinRequest(tx, projectId, userId);
+  await memberRepo.settleJoinRequest(projectId, userId, tx);
 };
 
 /**
