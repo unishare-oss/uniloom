@@ -102,6 +102,19 @@ A function never gets its own document.
    the commit SHA. A dropped session then leaves real progress recorded. There is no
    un-tick tool, and `set_criteria` resets every tick: if a ticked item stops being true,
    tell the user instead of rewriting the checklist.
+
+   **Keep Uniloom in step with the code.** Whenever the code moves away from the SPEC
+   during the build (the user asks for a change, a review fix, a refactor, a rename or a
+   moved file), update Uniloom in the same turn, before reporting back:
+   1. the SPEC (`save_document` with its id): function tables, file names, edge cases,
+      acceptance and diagrams, so it describes the code as it is now;
+   2. the ticket's Changes section (`save_item` description): one line per change,
+      planned vs actual;
+   3. if a ticked done-when item is no longer true, tell the user (there is no un-tick).
+
+   The slice was already Ready, so tell the user the SPEC changed and give its URL, so
+   they review it again.
+
 8. **Blocked**: if you cannot finish without the user, `save_item` with
    `state: "Blocked"` and add the reason at the end of the description. Then tell them.
 9. **Finish**:
