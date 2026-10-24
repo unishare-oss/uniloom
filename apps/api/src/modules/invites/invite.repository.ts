@@ -22,11 +22,11 @@ export const findByToken = (token: string) => {
   });
 };
 
-/** Pass `prisma` outside a transaction. */
+/** Pass `db` only inside a transaction. */
 export const revokeCurrent = (
-  db: Prisma.TransactionClient,
   projectId: string,
   now: Date,
+  db: Prisma.TransactionClient = prisma,
 ) => {
   return db.invite.updateMany({
     where: { projectId, revokedAt: null },

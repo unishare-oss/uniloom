@@ -5,9 +5,9 @@ const withUser = { user: { select: { name: true, email: true, image: true } } };
 
 /** The person's waiting request in the project, whichever link it came through. */
 export const findPending = (
-  db: Prisma.TransactionClient,
   projectId: string,
   userId: string,
+  db: Prisma.TransactionClient = prisma,
 ) => {
   return db.joinRequest.findFirst({
     where: { projectId, userId, status: 'PENDING' },
@@ -16,9 +16,9 @@ export const findPending = (
 
 /** The person's request through this link, decided or not: they already hold its slot. */
 export const findForInvite = (
-  db: Prisma.TransactionClient,
   inviteId: string,
   userId: string,
+  db: Prisma.TransactionClient = prisma,
 ) => {
   return db.joinRequest.findUnique({
     where: { inviteId_userId: { inviteId, userId } },

@@ -52,7 +52,7 @@ export const createInvite = async (
   const invite = await prisma.$transaction(async (tx) => {
     // Locked, so two people creating at once end with one live link.
     await inviteRepo.lockProject(tx, projectId);
-    await inviteRepo.revokeCurrent(tx, projectId, now);
+    await inviteRepo.revokeCurrent(projectId, now, tx);
     // Old links go here instead of in a scheduled job: a project only piles them up by
     // creating new ones.
     await inviteRepo.deleteOldRevoked(
@@ -84,7 +84,7 @@ export const getInvite = async (projectId: string, userId: string) => {
 /** Owner or manager. The link stops working at once; with no link, nothing happens. */
 export const deleteInvite = async (projectId: string, userId: string) => {
   await requireRole(projectId, userId, CREATORS);
-  await inviteRepo.revokeCurrent(prisma, projectId, new Date());
+  await inviteRepo.revokeCurrent(projectId, new Date());
 };
 
 /** A declined or canceled request through this link: the join page offers "Ask again". */
@@ -103,8 +103,8 @@ export const previewInvite = async (token: string, userId: string) => {
   if (!invite) throw deadLinkError('revoked');
   const [isMember, pending, mine] = await Promise.all([
     isProjectMember(invite.projectId, userId),
-    requestRepo.findPending(prisma, invite.projectId, userId),
-    requestRepo.findForInvite(prisma, invite.id, userId),
+    requestRepo.findPending(invite.projectId, userId),
+    requestRepo.findForInvite(invite.id, userId),
   ]);
   const state = linkState(invite, new Date());
   const usable = state === 'live' || (state === 'full' && mine !== null);
@@ -135,8 +135,8 @@ const askToJoin = async (
   // A replaced or expired link lets nobody ask, whatever requests they already have.
   const state = linkState(invite, now);
   if (state === 'revoked' || state === 'expired') return false;
-  if (await requestRepo.findPending(tx, invite.projectId, userId)) return true;
-  const mine = await requestRepo.findForInvite(tx, invite.id, userId);
+  if (await requestRepo.findPending(invite.projectId, userId, tx)) return true;
+  const mine = await requestRepo.findForInvite(invite.id, userId, tx);
   if (mine) {
     await requestRepo.reopenIfDecided(tx, mine.id, now);
     return true;

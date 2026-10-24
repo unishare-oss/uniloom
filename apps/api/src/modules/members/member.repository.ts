@@ -56,9 +56,9 @@ export const createMember = (
  * as APPROVED, so the link they asked through still knows they used a slot.
  */
 export const settleJoinRequest = (
-  db: Prisma.TransactionClient,
   projectId: string,
   userId: string,
+  db: Prisma.TransactionClient = prisma,
 ) => {
   return db.joinRequest.updateMany({
     where: { projectId, userId, status: 'PENDING' },
