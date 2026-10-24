@@ -10019,6 +10019,267 @@
           }
         }
       }
+    },
+    "/api/items/{id}/pull-requests": {
+      "get": {
+        "operationId": "listItemPullRequests",
+        "tags": [
+          "github"
+        ],
+        "summary": "The GitHub pull requests that name this ticket (any member)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The GitHub pull requests that name this ticket (any member)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "number": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "OPEN",
+                          "CLOSED",
+                          "MERGED"
+                        ]
+                      },
+                      "headRef": {
+                        "type": "string"
+                      },
+                      "baseRef": {
+                        "type": "string"
+                      },
+                      "authorLogin": {
+                        "type": "string"
+                      },
+                      "mergedByLogin": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "checks": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "pending",
+                          "failure",
+                          "success"
+                        ]
+                      },
+                      "closes": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "number",
+                      "title",
+                      "url",
+                      "repository",
+                      "state",
+                      "headRef",
+                      "baseRef",
+                      "authorLogin",
+                      "mergedByLogin",
+                      "checks",
+                      "closes"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/github/repositories": {
+      "get": {
+        "operationId": "listGithubRepositories",
+        "tags": [
+          "github"
+        ],
+        "summary": "The repos the GitHub App can see, and which are mapped (Owner)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The repos the GitHub App can see, and which are mapped (Owner)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "installUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "repositories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "fullName": {
+                            "type": "string"
+                          },
+                          "mapped": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fullName",
+                          "mapped"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "installUrl",
+                    "repositories"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/github/repositories/{repositoryId}": {
+      "put": {
+        "operationId": "mapGithubRepository",
+        "tags": [
+          "github"
+        ],
+        "summary": "Link pull requests of this repo to the project (Owner)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "repositoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Link pull requests of this repo to the project (Owner)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "fullName": {
+                      "type": "string"
+                    },
+                    "mapped": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "fullName",
+                    "mapped"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unmapGithubRepository",
+        "tags": [
+          "github"
+        ],
+        "summary": "Stop linking pull requests of this repo; links made stay (Owner)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "repositoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stop linking pull requests of this repo; links made stay (Owner)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
