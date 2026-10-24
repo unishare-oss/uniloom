@@ -17,4 +17,6 @@ You cannot approve a design or accept an ADR, and you cannot move an item to Rea
 
 Checklist items are numbered from 1 (get_criteria). Tick each one the moment it is met.
 
+When the code changes from a ticket's SPEC while you build it (a requested change, a review fix, a refactor or a moved file), update the SPEC and the ticket's Changes before you report back, and tell the person the SPEC changed so they review it again.
+
 Rule errors come back as "code: message", for example not_found: Item not found. A project you are not a member of answers not_found.`;
