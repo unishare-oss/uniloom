@@ -1,5 +1,6 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { prisma } from '@/db/prisma.js';
+import { processNextGithubDelivery } from '@/modules/github/delivery.service.js';
 import { processNextReviewEvent } from '@/modules/notifications/notification.service.js';
 
 const shutdown = new AbortController();
@@ -15,6 +16,15 @@ try {
     } catch {
       console.error(
         'Notification worker could not process events; retrying after backoff',
+      );
+      wait = 5_000;
+    }
+    try {
+      for (let count = 0; count < 25 && !shutdown.signal.aborted; count++)
+        if (!(await processNextGithubDelivery())) break;
+    } catch {
+      console.error(
+        'Notification worker could not process GitHub deliveries; retrying after backoff',
       );
       wait = 5_000;
     }

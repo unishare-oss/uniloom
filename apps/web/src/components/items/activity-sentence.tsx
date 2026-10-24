@@ -79,6 +79,18 @@ export const ActivitySentence = ({
           moved it <ActivityState name={row.detail.from} states={states} />{" "}
           <span className="text-muted-foreground">→</span>{" "}
           <ActivityState name={row.detail.to} states={states} />
+          {row.detail.checksAfterMerge && (
+            <span className="text-muted-foreground">
+              {" "}
+              · checks passed after merge
+            </span>
+          )}
+        </>
+      );
+    case "github.done_skipped":
+      return (
+        <>
+          didn&apos;t move it to <ActivityState name="Done" states={states} />
         </>
       );
     case "item.delete":

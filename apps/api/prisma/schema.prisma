@@ -128,6 +128,8 @@ model Project {
   plannedVsActual   Boolean
   /// When off, a member can't claim a free ticket; they can still unclaim their own.
   selfClaimAllowed  Boolean     @default(true)
+  /// When on, GitHub moves a ticket from In Review to Done once its closing PR merges into dev or main with green checks.
+  doneOnMerge       Boolean     @default(false)
   /// Next item number. Increment it in the same transaction that creates the item.
   nextItemNumber    Int         @default(1)
   /// Soft delete (ADR-0020): set when an Owner deletes the project; every lookup skips it.
@@ -147,6 +149,8 @@ model Project {
   invites      Invite[]
   joinRequests JoinRequest[]
   comments     Comment[]
+
+  repositories ProjectRepository[]
 
   @@map("project")
 }
@@ -246,6 +250,8 @@ model Item {
   blocking  ItemBlock[]      @relation("BlockerItem")
   checklist ChecklistEntry[]
   labels    ItemLabel[]
+
+  pullRequests PullRequestItem[]
 
   /// Documents that belong to this ticket (e.g. a feature's spec).
   homeDocuments    Document[]     @relation("DocumentHome")
@@ -614,4 +620,123 @@ model IdentityReconcile {
   updatedAt DateTime @updatedAt
 
   @@map("identity_reconcile")
+}
+
+// ---------------------------------------------------------------------------
+// GitHub: the App's installations, the repos mapped to projects, pull requests
+
+/// A place the Uniloom GitHub App is installed. `id` is GitHub's installation id.
+model GithubInstallation {
+  id           BigInt             @id
+  accountLogin String
+  /// Set when GitHub reports the installation deleted: its repos stop linking.
+  deletedAt    DateTime?
+  repositories GithubRepository[]
+
+  @@map("github_installation")
+}
+
+/// A repo the App can see. `id` is GitHub's repository id.
+model GithubRepository {
+  id             BigInt             @id
+  installationId BigInt
+  installation   GithubInstallation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  fullName       String
+  /// Set when the repo is taken off the installation.
+  removedAt      DateTime?
+
+  projects     ProjectRepository[]
+  pullRequests PullRequest[]
+  checkSuites  CheckSuite[]
+
+  @@index([installationId])
+  @@map("github_repository")
+}
+
+/// A repo mapped to a project by its Owner.
+model ProjectRepository {
+  projectId    String           @db.Uuid
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  repositoryId BigInt
+  repository   GithubRepository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, repositoryId])
+  @@index([repositoryId])
+  @@map("project_repository")
+}
+
+/// One webhook delivery: the receipt (deduplicated by GitHub's delivery id) and the queue.
+model GithubDelivery {
+  id            String    @id
+  event         String
+  payload       Json
+  receivedAt    DateTime  @default(now())
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  processedAt   DateTime?
+  failedAt      DateTime?
+  lastError     String?
+
+  @@index([processedAt, failedAt, nextAttemptAt, id])
+  @@map("github_delivery")
+}
+
+enum PullRequestState {
+  OPEN
+  CLOSED
+  MERGED
+}
+
+/// A pull request in a mapped repo. The description is not kept, only the keys found in it.
+model PullRequest {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  repositoryId    BigInt
+  repository      GithubRepository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  number          Int
+  title           String
+  headRef         String
+  headSha         String
+  baseRef         String
+  state           PullRequestState
+  mergedAt        DateTime?
+  mergedByLogin   String?
+  authorLogin     String
+  url             String
+  /// `pull_request.updated_at` of the newest event applied: an older event is skipped.
+  githubUpdatedAt DateTime
+  updatedAt       DateTime         @updatedAt
+
+  items PullRequestItem[]
+
+  @@unique([repositoryId, number])
+  @@map("pull_request")
+}
+
+/// A pull request that names a ticket. `closes` is true when it says it closes it.
+model PullRequestItem {
+  pullRequestId String      @db.Uuid
+  pullRequest   PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  itemId        String      @db.Uuid
+  item          Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  closes        Boolean
+  /// Set once this PR has moved the ticket to Done, or found it already finished; a settled link never moves it again.
+  settledAt     DateTime?
+
+  @@id([pullRequestId, itemId])
+  @@index([itemId])
+  @@map("pull_request_item")
+}
+
+/// A check suite of a commit, matched to pull requests by `headSha`.
+model CheckSuite {
+  id           BigInt           @id
+  repositoryId BigInt
+  repository   GithubRepository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  headSha      String
+  appName      String
+  status       String
+  conclusion   String?
+
+  @@index([repositoryId, headSha])
+  @@map("check_suite")
 }

@@ -98,6 +98,7 @@ export const updateProject = async (
     approverNotAuthor?: boolean;
     plannedVsActual?: boolean;
     selfClaimAllowed?: boolean;
+    doneOnMerge?: boolean;
   },
 ) => {
   await requireRole(projectId, userId, ['OWNER']);

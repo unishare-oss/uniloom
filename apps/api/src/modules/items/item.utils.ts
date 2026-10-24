@@ -61,13 +61,21 @@ export const toListRow = (row: ItemRow, role: Role, userId: string) => {
 export const toActivity = (
   row: Awaited<ReturnType<typeof findActivity>>[number],
 ) => {
+  // A change GitHub made has no user.
+  const github = !row.userId && row.clientId === 'github';
   return {
     id: row.id,
     action: row.action,
     detail: row.detail,
-    by: { name: row.user?.name ?? null, image: row.user?.image ?? null },
+    by: github
+      ? { name: 'GitHub', image: null }
+      : { name: row.user?.name ?? null, image: row.user?.image ?? null },
     // An agent row has a client id even when the client sent no name.
-    agent: row.clientId || row.agentName ? { name: row.agentName } : null,
+    agent: github
+      ? { name: 'GitHub' }
+      : row.clientId || row.agentName
+        ? { name: row.agentName }
+        : null,
     at: row.createdAt.toISOString(),
   } as Activity;
 };

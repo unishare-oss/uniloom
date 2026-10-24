@@ -21,8 +21,13 @@ import * as itemRules from './item.rules.js';
 import { toItem, toListRow } from './item.utils.js';
 import { toRelated } from './item-document.utils.js';
 import * as itemDocumentRepo from './item-document.repository.js';
-import type { ActivityChange, ItemAgent, ItemRow } from './item.types.js';
-import { insertActivity } from './activity.repository.js';
+import type {
+  ActivityChange,
+  GithubPullRequestLine,
+  ItemAgent,
+  ItemRow,
+} from './item.types.js';
+import { findLatestActivity, insertActivity } from './activity.repository.js';
 import * as itemRepo from './item.repository.js';
 
 /**
@@ -402,6 +407,85 @@ export const moveItem = async (
     return { row: updated, role };
   });
   return toItem(result.row, result.role, userId);
+};
+
+const GITHUB_AGENT = { clientId: 'github', clientName: 'GitHub' };
+
+/**
+ * Moves an item for GitHub, with no user: no role checks, but the checklist gate holds. Runs in
+ * the caller's transaction, so a failed gate fails the whole GitHub delivery, which is retried.
+ * False when a person moved it out of In Review since GitHub read it.
+ */
+export const moveItemBySystem = async (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  targetStateId: string,
+  github: { pullRequests: GithubPullRequestLine[]; checksAfterMerge: boolean },
+) => {
+  await itemRepo.lockItem(tx, itemId);
+  const item = await itemRepo.findItemForMove(tx, itemId);
+  if (!item) throw apiError(404, 'not_found', 'Item not found');
+  if (item.state.key !== 'in_review') return false;
+  const target = await itemRepo.findStateInTransaction(tx, targetStateId);
+  const error = itemRules.checklistError(
+    item.project,
+    item.kind,
+    await itemRepo.findChecklist(tx, itemId),
+    target,
+  );
+  if (error) throw apiError(409, 'criteria_incomplete', error);
+  const updated = await itemRepo.updateItem(tx, itemId, {
+    stateId: targetStateId,
+  });
+  await insertActivity(tx, {
+    userId: null,
+    agent: GITHUB_AGENT,
+    projectId: item.projectId,
+    itemId,
+    action: 'item.move',
+    detail: {
+      from: item.state.name,
+      to: target.name,
+      pullRequests: github.pullRequests,
+      checksAfterMerge: github.checksAfterMerge,
+    },
+  });
+  await finishFeature(tx, updated);
+  return true;
+};
+
+/**
+ * Records that GitHub did not move the item to Done, and why. Skipped when the item's newest row
+ * already says the same, so later events for the same merge (labels, more suites) add no rows.
+ */
+export const recordDoneSkipped = async (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  itemId: string,
+  pullRequests: GithubPullRequestLine[],
+  reasons: string[],
+) => {
+  const latest = await findLatestActivity(tx, itemId);
+  // jsonb reorders object keys, so compare the reasons and PR numbers, not the whole detail.
+  const before = latest?.detail as {
+    pullRequests?: GithubPullRequestLine[];
+    reasons?: string[];
+  } | null;
+  if (
+    latest?.action === 'github.done_skipped' &&
+    JSON.stringify(before?.reasons) === JSON.stringify(reasons) &&
+    JSON.stringify(before?.pullRequests?.map((line) => line.number)) ===
+      JSON.stringify(pullRequests.map((line) => line.number))
+  )
+    return;
+  await insertActivity(tx, {
+    userId: null,
+    agent: GITHUB_AGENT,
+    projectId,
+    itemId,
+    action: 'github.done_skipped',
+    detail: { pullRequests, reasons },
+  });
 };
 
 /** Deletes an item. One with children can't be deleted: move or delete them first. */
