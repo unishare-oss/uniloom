@@ -2,16 +2,13 @@
 
 import {
   ArrowRight,
-  CircleCheck,
-  CircleX,
-  Clock,
   GitMerge,
   GitPullRequest,
   GitPullRequestClosed,
 } from "lucide-react";
 import { CollapsibleSection } from "@/components/collapsible-section";
+import { CheckIcon } from "@/components/items/check-icon";
 import { useListItemPullRequests } from "@/lib/api/generated/github/github";
-import type { ListItemPullRequests200Item } from "@/lib/api/generated/uniloomAPI.schemas";
 
 const STATE_ICONS = {
   OPEN: GitPullRequest,
@@ -19,27 +16,6 @@ const STATE_ICONS = {
   CLOSED: GitPullRequestClosed,
 };
 const STATE_LABELS = { OPEN: "Open", MERGED: "Merged", CLOSED: "Closed" };
-
-const CheckIcon = ({
-  checks,
-}: {
-  checks: ListItemPullRequests200Item["checks"];
-}) => {
-  if (checks === "success")
-    return <CircleCheck className="size-4" aria-label="Checks passed" />;
-  if (checks === "failure")
-    return (
-      <CircleX className="size-4 text-destructive" aria-label="Checks failed" />
-    );
-  if (checks === "pending")
-    return (
-      <Clock
-        className="size-4 text-muted-foreground"
-        aria-label="Checks running"
-      />
-    );
-  return null;
-};
 
 /** The GitHub pull requests that name this ticket. Shows nothing until one is linked. */
 export const PullRequestList = ({ itemId }: { itemId: string }) => {

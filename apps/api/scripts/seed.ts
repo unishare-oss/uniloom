@@ -1832,6 +1832,72 @@ const seedGithub = async (ownerId: string) => {
     linked.key,
     'ticket page: Pull requests lists PR #12, Merged, checks passed',
   );
+
+  // UN-11: the switch is on, and two tickets show what GitHub did after a merge.
+  await prisma.project.update({
+    where: { id: project.id },
+    data: { doneOnMerge: true },
+  });
+  const github = { clientId: 'github', agentName: 'GitHub' };
+  const moved = await item({
+    kind: 'TASK',
+    title:
+      'Task. History shows GitHub moved it IN REVIEW → DONE, with "PR #12 merged into dev by @seed-ko" and the GitHub mark',
+    state: 'Done',
+  });
+  await prisma.activity.create({
+    data: {
+      ...github,
+      action: 'item.move',
+      projectId: project.id,
+      itemId: moved.id,
+      detail: {
+        from: 'In Review',
+        to: 'Done',
+        pullRequests: [
+          {
+            number: 12,
+            url: 'https://github.com/seed-org/uniloom/pull/12',
+            base: 'dev',
+            mergedBy: 'seed-ko',
+          },
+        ],
+        checksAfterMerge: false,
+      },
+    },
+  });
+  const skipped = await item({
+    kind: 'TASK',
+    title:
+      'Task. History shows GitHub did not move it to DONE, with the reasons in red: checks failed and an unticked entry',
+    state: 'In Progress',
+  });
+  await prisma.activity.create({
+    data: {
+      ...github,
+      action: 'github.done_skipped',
+      projectId: project.id,
+      itemId: skipped.id,
+      detail: {
+        pullRequests: [
+          {
+            number: 13,
+            url: 'https://github.com/seed-org/uniloom/pull/13',
+            base: 'dev',
+            mergedBy: 'seed-ko',
+          },
+        ],
+        reasons: [
+          'Checks failed on PR #13',
+          'Tick every checklist entry first: "Write the migration"',
+        ],
+      },
+    },
+  });
+  note(
+    'TH',
+    'Settings → GitHub: "Move to Done when merged into dev or main" is on (Owner can switch it off)',
+  );
   note(
     'TH',
     'Settings → GitHub: seed-org/uniloom is Mapped, seed-org/unishare is Not mapped; Map and Unmap work (needs GITHUB_APP_SLUG for the Install button)',

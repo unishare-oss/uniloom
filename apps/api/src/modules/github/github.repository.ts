@@ -221,12 +221,15 @@ export const findItemPullRequests = (itemId: string) =>
     orderBy: { pullRequest: { githubUpdatedAt: 'desc' } },
   });
 
+/** Pass `prisma`, or the worker's `tx` to see suites it just wrote. */
+/** Pass `db` only inside a transaction, so suites written earlier in it are seen. */
 export const findCheckSuites = (
   commits: { repositoryId: bigint; headSha: string }[],
+  db: Prisma.TransactionClient = prisma,
 ) =>
   commits.length === 0
     ? []
-    : prisma.checkSuite.findMany({
+    : db.checkSuite.findMany({
         where: { OR: commits },
         select: {
           repositoryId: true,
@@ -262,3 +265,126 @@ export const mapRepository = (projectId: string, repositoryId: bigint) =>
 
 export const unmapRepository = (projectId: string, repositoryId: bigint) =>
   prisma.projectRepository.deleteMany({ where: { projectId, repositoryId } });
+
+/** Unsettled closing links of this pull request whose project moves tickets to Done on merge. */
+export const findDoneCandidates = (
+  tx: Prisma.TransactionClient,
+  pullRequestId: string,
+) =>
+  tx.pullRequestItem.findMany({
+    where: {
+      pullRequestId,
+      closes: true,
+      settledAt: null,
+      item: {
+        deletedAt: null,
+        project: { deletedAt: null, doneOnMerge: true },
+      },
+    },
+    select: {
+      item: {
+        select: {
+          id: true,
+          projectId: true,
+          kind: true,
+          state: { select: { key: true, category: true } },
+          project: {
+            select: { checklistRequired: true, checklistMin: true },
+          },
+        },
+      },
+    },
+  });
+
+/** Every closing pull request of the ticket, with its repository for the check lookup. */
+export const findClosingPullRequests = (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+) =>
+  tx.pullRequestItem.findMany({
+    where: { itemId, closes: true },
+    select: {
+      pullRequestId: true,
+      pullRequest: {
+        select: {
+          number: true,
+          url: true,
+          repositoryId: true,
+          headRef: true,
+          headSha: true,
+          baseRef: true,
+          state: true,
+          mergedByLogin: true,
+        },
+      },
+    },
+    orderBy: { pullRequest: { number: 'asc' } },
+  });
+
+export const findChecklist = (tx: Prisma.TransactionClient, itemId: string) =>
+  tx.checklistEntry.findMany({
+    where: { itemId },
+    select: { text: true, done: true },
+    orderBy: { position: 'asc' },
+  });
+
+/** Keys of the blockers that are not finished yet. */
+export const findOpenBlockerKeys = async (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+) => {
+  const links = await tx.itemBlock.findMany({
+    where: {
+      blockedId: itemId,
+      blocker: { state: { category: { notIn: ['DONE', 'CANCELED'] } } },
+    },
+    select: {
+      blocker: {
+        select: { number: true, project: { select: { keyPrefix: true } } },
+      },
+    },
+  });
+  return links.map(
+    ({ blocker }) => `${blocker.project.keyPrefix}-${blocker.number}`,
+  );
+};
+
+export const findFirstDoneState = (
+  tx: Prisma.TransactionClient,
+  projectId: string,
+) =>
+  tx.state.findFirst({
+    where: { projectId, category: 'DONE' },
+    orderBy: { position: 'asc' },
+    select: { id: true },
+  });
+
+/** Marks the ticket's links to merged pull requests as spent: they never move it again. */
+export const settleLinks = (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  pullRequestIds: string[],
+) =>
+  tx.pullRequestItem.updateMany({
+    where: { itemId, pullRequestId: { in: pullRequestIds }, settledAt: null },
+    data: { settledAt: new Date() },
+  });
+
+/** Merged pull requests into dev or main with this commit; the ones a finished check suite can release. */
+export const findMergedPullRequestIds = async (
+  tx: Prisma.TransactionClient,
+  repositoryId: number,
+  headSha: string,
+  baseRefs: string[],
+) => {
+  const rows = await tx.pullRequest.findMany({
+    where: {
+      repositoryId,
+      headSha,
+      state: 'MERGED',
+      baseRef: { in: baseRefs },
+    },
+    select: { id: true },
+  });
+  return rows.map((row) => row.id);
+};

@@ -178,6 +178,14 @@ export const findState = (id: string) => {
   return prisma.state.findUnique({ where: { id } });
 };
 
+/** The state inside a transaction, for a move made without a user. */
+export const findStateInTransaction = (
+  tx: Prisma.TransactionClient,
+  id: string,
+) => {
+  return tx.state.findUniqueOrThrow({ where: { id } });
+};
+
 /** The first column on the board: where a new item starts. */
 export const findFirstState = (projectId: string) => {
   return prisma.state.findFirstOrThrow({

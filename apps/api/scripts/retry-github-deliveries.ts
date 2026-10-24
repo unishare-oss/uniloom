@@ -1,5 +1,5 @@
 import { prisma } from '../src/db/prisma.js';
-import { retryFailedGithubDeliveries } from '../src/modules/github/github.service.js';
+import { retryFailedGithubDeliveries } from '../src/modules/github/delivery.service.js';
 
 try {
   const count = await retryFailedGithubDeliveries();

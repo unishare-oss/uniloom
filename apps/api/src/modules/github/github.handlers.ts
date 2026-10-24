@@ -1,5 +1,5 @@
 import type { Context } from 'hono';
-import { apiError, apiSuccess, idParam } from '@/http.js';
+import { apiError, apiSuccess, idParam, numberIdParam } from '@/http.js';
 import type { Prisma } from '@/generated/prisma/client.js';
 import {
   listItemPullRequests,
@@ -30,16 +30,7 @@ export const receiveWebhook = async (c: Context) => {
     throw apiError(400, 'invalid_input', 'Body is not JSON');
   }
   await receiveDelivery(id, event, payload);
-  console.log('GitHub delivery received', { id, event });
   return apiSuccess(c, null, 'Accepted', 202);
-};
-
-/** A GitHub repository id from the path: digits only, anything else can't exist, so 404. */
-const repositoryIdParam = (c: Context) => {
-  const value = c.req.param('repositoryId');
-  if (!value || !/^\d{1,18}$/.test(value))
-    throw apiError(404, 'not_found', 'Not found');
-  return BigInt(value);
 };
 
 export const getItemPullRequests = async (c: Context) =>
@@ -57,7 +48,7 @@ export const putRepository = async (c: Context) =>
     await mapRepository(
       idParam(c, 'projectId'),
       c.var.user.id,
-      repositoryIdParam(c),
+      numberIdParam(c, 'repositoryId'),
     ),
     'Repository mapped',
   );
@@ -66,7 +57,7 @@ export const deleteRepository = async (c: Context) => {
   await unmapRepository(
     idParam(c, 'projectId'),
     c.var.user.id,
-    repositoryIdParam(c),
+    numberIdParam(c, 'repositoryId'),
   );
   return apiSuccess(c, null, 'Repository unmapped');
 };

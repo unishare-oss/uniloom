@@ -35,7 +35,12 @@ export const SettingsPage = ({ projectId }: { projectId: string }) => {
           canEditSettings={project.canEditSettings}
         />
       )}
-      {project?.canEditSettings && <GithubSettings projectId={project.id} />}
+      {project?.canEditSettings && (
+        <GithubSettings
+          projectId={project.id}
+          doneOnMerge={project.doneOnMerge}
+        />
+      )}
       {project?.canDeleteProject && (
         <DeleteProjectSection
           projectId={project.id}

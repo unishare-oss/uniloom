@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { PullRequestState } from '@/generated/prisma/enums.js';
 import type { FoundKey } from './github.types.js';
 
 /** True when `header` (`sha256=<hex>`) is the HMAC-SHA256 of the raw `body` made with `secret`. */
@@ -37,3 +38,20 @@ export const findKeys = (text: string, prefixes: string[]): FoundKey[] => {
   }
   return [...found].map(([key, closes]) => ({ key, closes }));
 };
+
+/** The stored state of a pull request from its payload: merged wins over closed. */
+export const prState = (pr: {
+  merged?: boolean;
+  state: string;
+}): PullRequestState =>
+  pr.merged ? 'MERGED' : pr.state === 'closed' ? 'CLOSED' : 'OPEN';
+
+/** Pull requests from one repository and head branch are one piece of work. */
+export const branchKey = (pr: { repositoryId: bigint; headRef: string }) =>
+  `${pr.repositoryId}/${pr.headRef}`;
+
+/** Where an Owner installs the App for this project; null when GITHUB_APP_SLUG is not set. */
+export const installUrl = (slug: string | undefined, projectId: string) =>
+  slug
+    ? `https://github.com/apps/${slug}/installations/new?state=${projectId}`
+    : null;

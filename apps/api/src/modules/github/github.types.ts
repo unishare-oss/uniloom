@@ -65,3 +65,19 @@ export interface PullRequestData {
   url: string;
   githubUpdatedAt: Date;
 }
+
+/** One closing pull request of a ticket, as `doneBlockers` reads it. */
+export interface DonePullRequest {
+  number: number;
+  repositoryId: bigint;
+  headRef: string;
+  baseRef: string;
+  state: PullRequestState;
+  checks: CheckResult;
+}
+
+export interface DoneBlocker {
+  reason: string;
+  /** True when time alone may fix it (another branch open, checks running); nothing is logged. */
+  waiting: boolean;
+}

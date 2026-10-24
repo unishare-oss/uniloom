@@ -128,6 +128,8 @@ model Project {
   plannedVsActual   Boolean
   /// When off, a member can't claim a free ticket; they can still unclaim their own.
   selfClaimAllowed  Boolean     @default(true)
+  /// When on, GitHub moves a ticket from In Review to Done once its closing PR merges into dev or main with green checks.
+  doneOnMerge       Boolean     @default(false)
   /// Next item number. Increment it in the same transaction that creates the item.
   nextItemNumber    Int         @default(1)
   /// Soft delete (ADR-0020): set when an Owner deletes the project; every lookup skips it.
@@ -717,6 +719,8 @@ model PullRequestItem {
   itemId        String      @db.Uuid
   item          Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
   closes        Boolean
+  /// Set once this PR has moved the ticket to Done, or found it already finished; a settled link never moves it again.
+  settledAt     DateTime?
 
   @@id([pullRequestId, itemId])
   @@index([itemId])

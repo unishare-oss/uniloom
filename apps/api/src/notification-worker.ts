@@ -1,6 +1,6 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { prisma } from '@/db/prisma.js';
-import { processNextGithubDelivery } from '@/modules/github/github.service.js';
+import { processNextGithubDelivery } from '@/modules/github/delivery.service.js';
 import { processNextReviewEvent } from '@/modules/notifications/notification.service.js';
 
 const shutdown = new AbortController();

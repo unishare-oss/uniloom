@@ -6,7 +6,7 @@ import type { ActivityDetail, ItemAgent } from './item.types.js';
 export const insertActivity = (
   tx: Prisma.TransactionClient,
   row: {
-    userId: string;
+    userId: string | null;
     projectId: string;
     itemId: string;
     agent?: ItemAgent;
@@ -22,6 +22,18 @@ export const insertActivity = (
       itemId: row.itemId,
       detail: row.detail,
     },
+  });
+};
+
+/** The item's newest row, read inside the caller's transaction. */
+export const findLatestActivity = (
+  tx: Prisma.TransactionClient,
+  itemId: string,
+) => {
+  return tx.activity.findFirst({
+    where: { itemId },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    select: { action: true, detail: true },
   });
 };
 

@@ -75,7 +75,7 @@ describe('github webhook (e2e)', () => {
   /** Applies every due delivery, as the worker would. */
   const drain = async () => {
     const { processNextGithubDelivery } =
-      await import('@/modules/github/github.service.js');
+      await import('@/modules/github/delivery.service.js');
     while (await processNextGithubDelivery());
   };
 
