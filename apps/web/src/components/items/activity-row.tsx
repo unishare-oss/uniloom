@@ -1,5 +1,7 @@
 import { AgentBadge, AgentMark } from "@/components/agent/agent-brand";
 import { ActivitySentence } from "@/components/items/activity-sentence";
+import { GithubActivityDetail } from "@/components/items/github-activity-detail";
+import { GithubMark } from "@/components/items/github-mark";
 import type { StateCategory } from "@/components/items/item-meta";
 import { Avatar } from "@/components/user/avatar";
 import type { ListItemActivity200Item } from "@/lib/api/generated/uniloomAPI.schemas";
@@ -16,16 +18,22 @@ export const ActivityRow = ({
   states: { name: string; key: string | null; category: StateCategory }[];
 }) => {
   const person = row.by.name ?? "Someone";
+  // A change GitHub made has no user; the API names it GitHub.
+  const github = row.by.name === "GitHub" && row.agent?.name === "GitHub";
   return (
     <div className="relative grid grid-cols-[28px_1fr] items-start gap-x-3 py-2 sm:grid-cols-[28px_1fr_auto]">
       <span className="relative">
-        <Avatar
-          name={person}
-          image={row.by.image}
-          size={28}
-          className="ring-4 ring-background"
-        />
-        {row.agent && (
+        {github ? (
+          <GithubMark size={28} />
+        ) : (
+          <Avatar
+            name={person}
+            image={row.by.image}
+            size={28}
+            className="ring-4 ring-background"
+          />
+        )}
+        {row.agent && !github && (
           <span
             title="Made by an agent"
             className="absolute -right-1.5 -bottom-1.5 inline-flex size-4 items-center justify-center rounded-full border bg-card text-primary"
@@ -37,6 +45,7 @@ export const ActivityRow = ({
       <div className="min-w-0 pt-1 text-sm leading-6">
         <span className="font-semibold">{person}</span>
         {row.agent &&
+          !github &&
           (row.agent.name ? (
             <>
               {" "}
@@ -46,6 +55,11 @@ export const ActivityRow = ({
             "'s agent"
           ))}{" "}
         <ActivitySentence row={row} itemKey={itemKey} states={states} />
+        {github &&
+          (row.action === "item.move" ||
+            row.action === "github.done_skipped") && (
+            <GithubActivityDetail row={row} />
+          )}
         {row.action === "checklist.tick" && row.detail.evidence && (
           <p className="mt-1.5 border-l-2 pl-2.5 text-sm break-words text-muted-foreground">
             Evidence: {row.detail.evidence}

@@ -19,6 +19,7 @@ export const updateProjectSchema = z.object({
   approverNotAuthor: z.boolean().optional(),
   plannedVsActual: z.boolean().optional(),
   selfClaimAllowed: z.boolean().optional(),
+  doneOnMerge: z.boolean().optional(),
 });
 
 export const projectSchema = z.object({
@@ -35,6 +36,8 @@ export const projectSchema = z.object({
   plannedVsActual: z.boolean(),
   /** When off, members can't claim a free ticket (they can still unclaim their own). */
   selfClaimAllowed: z.boolean(),
+  /** When on, GitHub moves a ticket from In Review to Done once its closing PR merges into dev or main with green checks. */
+  doneOnMerge: z.boolean(),
   nextItemNumber: z.number().int(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

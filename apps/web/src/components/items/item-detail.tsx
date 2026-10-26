@@ -64,6 +64,7 @@ import { LabelPicker } from "@/components/items/label-picker";
 import { AssigneeField } from "@/components/items/assignee-field";
 import { Description } from "@/components/items/description";
 import { Checklist } from "@/components/items/checklist";
+import { PullRequestList } from "@/components/items/pull-request-list";
 import { RelatedDocuments } from "@/components/items/related-documents";
 import { ItemActivity } from "@/components/items/item-activity";
 import { CommentSection } from "@/components/comments/comment-section";
@@ -309,6 +310,8 @@ export const ItemDetail = ({
             refresh={refresh}
             onError={onError}
           />
+
+          <PullRequestList itemId={item.id} />
 
           <ItemActivity itemId={item.id} itemKey={item.key} states={states} />
 
