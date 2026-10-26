@@ -221,13 +221,18 @@ describe('notification stream (e2e)', () => {
 
   it('holds no database connection per open stream', async () => {
     const person = await api.signInReady();
+    // Only this worker's connections (test/support/name-connections.ts): other e2e files
+    // open and close their own at the same time.
     const count = async () => {
       const rows = await prisma.$queryRaw<{ n: bigint }[]>`
-        SELECT count(*) AS n FROM pg_stat_activity WHERE usename = current_user`;
+        SELECT count(*) AS n FROM pg_stat_activity
+        WHERE application_name = current_setting('application_name')`;
       return Number(rows[0].n);
     };
     await count();
     const before = await count();
+    // At least this query's own connection, so the name is really applied.
+    expect(before).toBeGreaterThan(0);
     // One after another: opening them all at once makes the sign-in checks briefly use more pool connections.
     const streams = [];
     for (let i = 0; i < 20; i++) streams.push(await openStream(person.cookie));
