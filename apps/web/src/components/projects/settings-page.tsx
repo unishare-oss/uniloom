@@ -1,6 +1,7 @@
 "use client";
 
 import { DeleteProjectSection } from "@/components/projects/delete-project-section";
+import { GithubSettings } from "@/components/projects/github-settings";
 import { LabelsSection } from "@/components/projects/labels-section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetProject } from "@/lib/api/generated/projects/projects";
@@ -32,6 +33,12 @@ export const SettingsPage = ({ projectId }: { projectId: string }) => {
           projectId={project.id}
           canCreateLabels={project.canCreateLabels}
           canEditSettings={project.canEditSettings}
+        />
+      )}
+      {project?.canEditSettings && (
+        <GithubSettings
+          projectId={project.id}
+          doneOnMerge={project.doneOnMerge}
         />
       )}
       {project?.canDeleteProject && (

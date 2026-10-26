@@ -22,7 +22,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "api:spec": "bun scripts/openapi.ts",
     "notifications:worker": "bun src/notification-worker.ts",
-    "notifications:retry": "bun scripts/retry-review-event.ts"
+    "notifications:retry": "bun scripts/retry-review-event.ts",
+    "github:retry": "bun scripts/retry-github-deliveries.ts"
   },
   "dependencies": {
     "@hono/otel": "^1.2.0",

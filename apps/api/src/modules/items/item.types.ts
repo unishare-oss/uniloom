@@ -27,3 +27,11 @@ export interface ItemAgent {
   clientId: string | null;
   clientName: string | null;
 }
+
+/** The pull requests behind a move or a skipped move that GitHub made. */
+export interface GithubPullRequestLine {
+  number: number;
+  url: string;
+  base: string;
+  mergedBy: string | null;
+}

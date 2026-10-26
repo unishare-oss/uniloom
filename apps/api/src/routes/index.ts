@@ -5,6 +5,10 @@ import { Hono } from 'hono';
 import { auth } from '@/auth/auth.js';
 import { requireConsent, requireSession } from '@/auth/middleware.js';
 import { documentRoutes } from '@/modules/documents/document.routes.js';
+import {
+  githubRoutes,
+  githubWebhookRoutes,
+} from '@/modules/github/github.routes.js';
 import { inviteRoutes } from '@/modules/invites/invite.routes.js';
 import { itemRoutes } from '@/modules/items/item.routes.js';
 import { labelRoutes } from '@/modules/labels/label.routes.js';
@@ -19,6 +23,7 @@ export const apiRoutes = new Hono();
 // Public.
 apiRoutes.on(['GET', 'POST'], '/auth/*', (c) => auth.handler(c.req.raw));
 apiRoutes.route('/uniauth', uniauthRoutes);
+apiRoutes.route('/github', githubWebhookRoutes);
 
 // Signed in, before consent.
 apiRoutes.use(requireSession);
@@ -36,3 +41,4 @@ apiRoutes.route('/', labelRoutes);
 apiRoutes.route('/', documentRoutes);
 apiRoutes.route('/', inviteRoutes);
 apiRoutes.route('/', commentRoutes);
+apiRoutes.route('/', githubRoutes);

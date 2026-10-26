@@ -352,6 +352,9 @@
                     "selfClaimAllowed": {
                       "type": "boolean"
                     },
+                    "doneOnMerge": {
+                      "type": "boolean"
+                    },
                     "nextItemNumber": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -381,6 +384,7 @@
                     "approverNotAuthor",
                     "plannedVsActual",
                     "selfClaimAllowed",
+                    "doneOnMerge",
                     "nextItemNumber",
                     "createdAt",
                     "updatedAt"
@@ -468,6 +472,9 @@
                       "selfClaimAllowed": {
                         "type": "boolean"
                       },
+                      "doneOnMerge": {
+                        "type": "boolean"
+                      },
                       "nextItemNumber": {
                         "type": "integer",
                         "minimum": -9007199254740991,
@@ -497,6 +504,7 @@
                       "approverNotAuthor",
                       "plannedVsActual",
                       "selfClaimAllowed",
+                      "doneOnMerge",
                       "nextItemNumber",
                       "createdAt",
                       "updatedAt"
@@ -593,6 +601,9 @@
                       "type": "boolean"
                     },
                     "selfClaimAllowed": {
+                      "type": "boolean"
+                    },
+                    "doneOnMerge": {
                       "type": "boolean"
                     },
                     "nextItemNumber": {
@@ -754,6 +765,7 @@
                     "approverNotAuthor",
                     "plannedVsActual",
                     "selfClaimAllowed",
+                    "doneOnMerge",
                     "nextItemNumber",
                     "createdAt",
                     "updatedAt",
@@ -850,6 +862,9 @@
                   },
                   "selfClaimAllowed": {
                     "type": "boolean"
+                  },
+                  "doneOnMerge": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -924,6 +939,9 @@
                     "selfClaimAllowed": {
                       "type": "boolean"
                     },
+                    "doneOnMerge": {
+                      "type": "boolean"
+                    },
                     "nextItemNumber": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -953,6 +971,7 @@
                     "approverNotAuthor",
                     "plannedVsActual",
                     "selfClaimAllowed",
+                    "doneOnMerge",
                     "nextItemNumber",
                     "createdAt",
                     "updatedAt"
@@ -4621,11 +4640,160 @@
                               },
                               "to": {
                                 "type": "string"
+                              },
+                              "pullRequests": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "number": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "url": {
+                                      "type": "string"
+                                    },
+                                    "base": {
+                                      "type": "string"
+                                    },
+                                    "mergedBy": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "number",
+                                    "url",
+                                    "base",
+                                    "mergedBy"
+                                  ]
+                                }
+                              },
+                              "checksAfterMerge": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
                               "from",
                               "to"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "by",
+                          "agent",
+                          "at",
+                          "action",
+                          "detail"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "by": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "image": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "image"
+                            ]
+                          },
+                          "agent": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "action": {
+                            "type": "string",
+                            "const": "github.done_skipped"
+                          },
+                          "detail": {
+                            "type": "object",
+                            "properties": {
+                              "pullRequests": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "number": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "url": {
+                                      "type": "string"
+                                    },
+                                    "base": {
+                                      "type": "string"
+                                    },
+                                    "mergedBy": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "number",
+                                    "url",
+                                    "base",
+                                    "mergedBy"
+                                  ]
+                                }
+                              },
+                              "reasons": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "pullRequests",
+                              "reasons"
                             ]
                           }
                         },
@@ -10009,6 +10177,267 @@
         "responses": {
           "200": {
             "description": "Delete a comment (author, owner or manager); replies stay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/pull-requests": {
+      "get": {
+        "operationId": "listItemPullRequests",
+        "tags": [
+          "github"
+        ],
+        "summary": "The GitHub pull requests that name this ticket (any member)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The GitHub pull requests that name this ticket (any member)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "number": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "OPEN",
+                          "CLOSED",
+                          "MERGED"
+                        ]
+                      },
+                      "headRef": {
+                        "type": "string"
+                      },
+                      "baseRef": {
+                        "type": "string"
+                      },
+                      "authorLogin": {
+                        "type": "string"
+                      },
+                      "mergedByLogin": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "checks": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "pending",
+                          "failure",
+                          "success"
+                        ]
+                      },
+                      "closes": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "number",
+                      "title",
+                      "url",
+                      "repository",
+                      "state",
+                      "headRef",
+                      "baseRef",
+                      "authorLogin",
+                      "mergedByLogin",
+                      "checks",
+                      "closes"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/github/repositories": {
+      "get": {
+        "operationId": "listGithubRepositories",
+        "tags": [
+          "github"
+        ],
+        "summary": "The repos the GitHub App can see, and which are mapped (Owner)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The repos the GitHub App can see, and which are mapped (Owner)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "installUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "repositories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "fullName": {
+                            "type": "string"
+                          },
+                          "mapped": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fullName",
+                          "mapped"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "installUrl",
+                    "repositories"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/github/repositories/{repositoryId}": {
+      "put": {
+        "operationId": "mapGithubRepository",
+        "tags": [
+          "github"
+        ],
+        "summary": "Link pull requests of this repo to the project (Owner)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "repositoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Link pull requests of this repo to the project (Owner)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "fullName": {
+                      "type": "string"
+                    },
+                    "mapped": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "fullName",
+                    "mapped"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unmapGithubRepository",
+        "tags": [
+          "github"
+        ],
+        "summary": "Stop linking pull requests of this repo; links made stay (Owner)",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "repositoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stop linking pull requests of this repo; links made stay (Owner)",
             "content": {
               "application/json": {
                 "schema": {

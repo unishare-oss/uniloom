@@ -53,6 +53,12 @@ Each feature is a folder `src/modules/<features>/` with files named after the si
 A module may split its service and repository by sub-feature (`items/checklist.service.ts`,
 `items/checklist.repository.ts`); all files stay in the module folder.
 
+`<feature>.service.ts` holds only what the module's handlers call, each function reading top to
+bottom without calling other functions in that file. Code that no handler calls (a worker, a
+script, the steps of a background flow) goes in its own `<sub-feature>.service.ts`
+(`github/delivery.service.ts`), with its functions in the order they run. Pure helpers go to
+`<feature>.utils.ts` or `<feature>.rules.ts`, and HTTP helpers to `src/http.ts`.
+
 Code used by three or more modules moves to `src/utils/` (functions, one file per topic)
 or `src/types/` (types); code used by one or two modules stays in its module. See
 [ADR-0009](../../docs/adr/0009-module-types-and-utils.md).

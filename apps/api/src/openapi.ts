@@ -78,6 +78,7 @@ export const specOptions: Partial<GenerateSpecOptions> = {
   exclude: [
     /^\/api\/auth\//,
     /^\/api\/uniauth\//,
+    /^\/api\/github\/webhook$/,
     /health$/,
     /^\/api\/openapi\.json$/,
     /^\/api\/docs$/,

@@ -159,6 +159,14 @@ const activityRow = {
   at: z.iso.datetime(),
 };
 
+/** A pull request behind a GitHub move: the number links to GitHub. */
+const githubPullRequest = z.object({
+  number: z.number().int(),
+  url: z.string(),
+  base: z.string(),
+  mergedBy: z.string().nullable(),
+});
+
 const activityChange = z.object({
   field: z.enum(['title', 'description', 'priority', 'assignee', 'parent']),
   /** Left out for long text (description). Names for people and states, codes for enums. */
@@ -182,7 +190,22 @@ export const activitySchema = z.discriminatedUnion('action', [
   z.object({
     ...activityRow,
     action: z.literal('item.move'),
-    detail: z.object({ from: z.string(), to: z.string() }),
+    detail: z.object({
+      from: z.string(),
+      to: z.string(),
+      /** Only when GitHub moved it: the merged pull requests. */
+      pullRequests: z.array(githubPullRequest).optional(),
+      /** Only when GitHub moved it: the checks passed after the merge. */
+      checksAfterMerge: z.boolean().optional(),
+    }),
+  }),
+  z.object({
+    ...activityRow,
+    action: z.literal('github.done_skipped'),
+    detail: z.object({
+      pullRequests: z.array(githubPullRequest),
+      reasons: z.array(z.string()),
+    }),
   }),
   z.object({
     ...activityRow,
