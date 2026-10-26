@@ -1,3 +1,11 @@
+# [1.21.0](https://github.com/unishare-oss/uniloom/compare/v1.20.0...v1.21.0) (2026-10-26)
+
+
+### Features
+
+* link GitHub pull requests to tickets (UN-10) ([a543e42](https://github.com/unishare-oss/uniloom/commit/a543e42cc6eede8061171ed489802a9ff297a829))
+* move tickets to Done when their PR merges (UN-11) ([5eb87eb](https://github.com/unishare-oss/uniloom/commit/5eb87eb8534a0e960735722d90bc2db5c4d31a16))
+
 # [1.20.0](https://github.com/unishare-oss/uniloom/compare/v1.19.0...v1.20.0) (2026-10-23)
 
 
