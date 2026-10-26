@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/unishare-oss/uniloom/compare/v1.21.0...v1.21.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **github:** only mapped repos move tickets, and drop processed payloads ([53ea9d5](https://github.com/unishare-oss/uniloom/commit/53ea9d5b3071e3dacc51df18e58c88025394d345))
+
 # [1.21.0](https://github.com/unishare-oss/uniloom/compare/v1.20.0...v1.21.0) (2026-10-26)
 
 
