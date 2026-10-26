@@ -53,7 +53,11 @@ describe('github moves a ticket to Done on merge (e2e)', () => {
   const sign = (body: string) =>
     `sha256=${createHmac('sha256', SECRET).update(body).digest('hex')}`;
 
-  /** Posts a signed webhook and applies every due delivery, as the worker would. */
+  /**
+   * Posts a signed webhook and applies due deliveries, as the worker would, until this one is
+   * processed. Another test file may hold a delivery's row lock (SKIP LOCKED), so one pass can
+   * stop early.
+   */
   const accepted = async (
     event: string,
     payload: unknown,
@@ -74,7 +78,13 @@ describe('github moves a ticket to Done on merge (e2e)', () => {
     expect(res.status).toBe(202);
     const { processNextGithubDelivery } =
       await import('@/modules/github/delivery.service.js');
-    while (await processNextGithubDelivery());
+    for (let tries = 0; tries < 50; tries++) {
+      while (await processNextGithubDelivery());
+      const row = await prisma.githubDelivery.findUnique({ where: { id } });
+      if (row?.processedAt) return;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    throw new Error(`GitHub delivery ${id} was not applied`);
   };
 
   /** A Guided project with the switch on, one mapped repo, and slices to try things on. */
@@ -329,6 +339,35 @@ describe('github moves a ticket to Done on merge (e2e)', () => {
     const move = rows.find((r) => r.action === 'item.move')!;
     expect(move.detail.checksAfterMerge).toBe(true);
     expect(move.detail.pullRequests).toHaveLength(2);
+  });
+
+  it('moves nothing when the repo was unmapped before a late green check', async () => {
+    const s = await setup();
+    const item = await slice(s);
+    await accepted('pull_request', pr(s, 1, item.key));
+    const suiteId = freshId();
+    await accepted(
+      'check_suite',
+      suite(s, 'sha1', 'in_progress', null, suiteId),
+    );
+    await accepted('pull_request', pr(s, 1, item.key, { merged: true }));
+    expect(await stateKeyOf(item.id)).toBe('in_review');
+
+    expect(
+      (
+        await api.send(
+          'DELETE',
+          `/api/projects/${s.project}/github/repositories/${s.repo.id}`,
+          s.owner,
+        )
+      ).status,
+    ).toBe(200);
+    await accepted(
+      'check_suite',
+      suite(s, 'sha1', 'completed', 'success', suiteId),
+    );
+    expect(await stateKeyOf(item.id)).toBe('in_review');
+    expect(await activity(s, item.id)).toHaveLength(1);
   });
 
   it('completes the work on the first merge of two PRs from one branch, and ignores a merge into another base', async () => {

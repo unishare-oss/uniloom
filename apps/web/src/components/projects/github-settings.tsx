@@ -16,14 +16,17 @@ import { GithubRepositoryRow } from "@/components/projects/github-repository-row
 /**
  * Owner only (the page shows it for `canEditSettings`): install the Uniloom GitHub App and map
  * repos to this project. Pull requests of a mapped repo link to tickets by the key in their
- * title, branch or description.
+ * title, branch or description. The Done switch shows only in Guided projects: Standard ones
+ * have no In Review state, so it could never move anything.
  */
 export const GithubSettings = ({
   projectId,
   doneOnMerge,
+  guided,
 }: {
   projectId: string;
   doneOnMerge: boolean;
+  guided: boolean;
 }) => {
   const queryClient = useQueryClient();
   const update = useUpdateProject({
@@ -60,26 +63,28 @@ export const GithubSettings = ({
           </a>
         )}
       </div>
-      <label className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3">
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-medium">
-            Move to Done when merged into dev or main
+      {guided && (
+        <label className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3">
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="font-medium">
+              Move to Done when merged into dev or main
+            </span>
+            <span className="text-sm text-muted-foreground">
+              A ticket in In Review moves to Done when its pull request merges
+              into dev or main, its checks passed, its checklist is ticked and
+              nothing blocks it.
+            </span>
           </span>
-          <span className="text-sm text-muted-foreground">
-            A ticket in In Review moves to Done when its pull request merges
-            into dev or main, its checks passed, its checklist is ticked and
-            nothing blocks it.
-          </span>
-        </span>
-        <Switch
-          aria-label="Move to Done when merged into dev or main"
-          checked={doneOnMerge}
-          disabled={update.isPending}
-          onCheckedChange={(checked) =>
-            update.mutate({ projectId, data: { doneOnMerge: checked } })
-          }
-        />
-      </label>
+          <Switch
+            aria-label="Move to Done when merged into dev or main"
+            checked={doneOnMerge}
+            disabled={update.isPending}
+            onCheckedChange={(checked) =>
+              update.mutate({ projectId, data: { doneOnMerge: checked } })
+            }
+          />
+        </label>
+      )}
       {error && <p role="alert">{error.message}</p>}
       {!data && !error && <Skeleton className="h-24 w-full rounded-xl" />}
       {data && data.repositories.length === 0 && (

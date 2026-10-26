@@ -151,7 +151,7 @@ const applyPullRequest = async (
   );
   await linkPullRequest(tx, saved.id, pr, projects);
   if (mergedIntoRelease({ state, baseRef: pr.base.ref }))
-    await evaluateDone(tx, saved.id, false);
+    await evaluateDone(tx, saved.id, payload.repository.id, false);
 };
 
 /**
@@ -224,7 +224,8 @@ const applyCheckSuite = async (
     suite.head_sha,
     RELEASE_BRANCHES,
   );
-  for (const id of merged) await evaluateDone(tx, id, true);
+  for (const id of merged)
+    await evaluateDone(tx, id, payload.repository.id, true);
 };
 
 /**
@@ -235,9 +236,14 @@ const applyCheckSuite = async (
 const evaluateDone = async (
   tx: Prisma.TransactionClient,
   pullRequestId: string,
+  repositoryId: number,
   checksAfterMerge: boolean,
 ) => {
-  const candidates = await githubRepo.findDoneCandidates(tx, pullRequestId);
+  const candidates = await githubRepo.findDoneCandidates(
+    tx,
+    pullRequestId,
+    repositoryId,
+  );
   for (const { item } of candidates) {
     // Done or Canceled by a person already: this link is spent.
     if (['DONE', 'CANCELED'].includes(item.state.category)) {

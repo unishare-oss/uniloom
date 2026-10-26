@@ -30,7 +30,8 @@ export const markDeliveryProcessed = (
 ) =>
   tx.githubDelivery.update({
     where: { id },
-    data: { processedAt: new Date(), lastError: null },
+    // The payload is emptied once applied: PR descriptions and other GitHub data aren't kept.
+    data: { processedAt: new Date(), lastError: null, payload: {} },
   });
 
 export const lockDelivery = async (
@@ -266,10 +267,15 @@ export const mapRepository = (projectId: string, repositoryId: bigint) =>
 export const unmapRepository = (projectId: string, repositoryId: bigint) =>
   prisma.projectRepository.deleteMany({ where: { projectId, repositoryId } });
 
-/** Unsettled closing links of this pull request whose project moves tickets to Done on merge. */
+/**
+ * Unsettled closing links of this pull request whose project moves tickets to Done on merge and
+ * still maps its repository, while that repository is live. An unmapped or uninstalled repo moves
+ * nothing, whichever event asks.
+ */
 export const findDoneCandidates = (
   tx: Prisma.TransactionClient,
   pullRequestId: string,
+  repositoryId: number,
 ) =>
   tx.pullRequestItem.findMany({
     where: {
@@ -278,7 +284,19 @@ export const findDoneCandidates = (
       settledAt: null,
       item: {
         deletedAt: null,
-        project: { deletedAt: null, doneOnMerge: true },
+        project: {
+          deletedAt: null,
+          doneOnMerge: true,
+          repositories: {
+            some: {
+              repositoryId,
+              repository: {
+                removedAt: null,
+                installation: { deletedAt: null },
+              },
+            },
+          },
+        },
       },
     },
     select: {

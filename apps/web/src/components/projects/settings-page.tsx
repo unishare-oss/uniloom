@@ -39,6 +39,7 @@ export const SettingsPage = ({ projectId }: { projectId: string }) => {
         <GithubSettings
           projectId={project.id}
           doneOnMerge={project.doneOnMerge}
+          guided={project.mode === "GUIDED"}
         />
       )}
       {project?.canDeleteProject && (
