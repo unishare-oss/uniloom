@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    setupFiles: ['./test/support/name-connections.ts'],
     // e2e tests talk to a real database (the dev one over Tailscale): allow for latency.
     testTimeout: 30_000,
     hookTimeout: 30_000,

@@ -84,6 +84,20 @@ When you finish implementing something, end with a summary that always includes:
     one-line description and its main error codes;
   - frontend: every new or changed page or feature (route, what the user sees and can do);
   - which ones to build on next (e.g. which the web app or MCP tools need first).
+- **Features and dependencies:** every feature the work adds (there can be more than
+  one), each with:
+  - **depends on:** the existing code it calls or reads (modules, shared functions,
+    tables, rules), e.g. `items.moveItemBySystem`, `members.requireRole`, `activity`;
+  - **changes:** the existing code it edits, or that now calls into it;
+  - **review depth:** **deep** when it touches existing shared code (uniAuth sign-in,
+    membership and role checks, workflow rules and gates, item moves, existing tables or
+    a migration that changes rows), **skim** when it is new and self-contained (a new
+    module, new tables only, UI behind a new route). Say why in one line.
+
+  A short text or Mermaid diagram per feature is enough. Then name the **most important
+  part to review**, the one where a mistake costs the most, as a `file:line` link with one
+  line on why, so I know where to read closely first.
+
 - **Status:** checks run and their results, what is committed or pushed, and anything
   still open.
 - **Proof per done-when item:** each done-when item of the plan, with the test or check

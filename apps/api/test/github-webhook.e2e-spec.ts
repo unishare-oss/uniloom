@@ -73,16 +73,26 @@ describe('github webhook (e2e)', () => {
   };
 
   /** Applies every due delivery, as the worker would. */
-  const drain = async () => {
+  /**
+   * Applies due deliveries until delivery `id` is processed. Another test file may hold a
+   * delivery's row lock at that moment (SKIP LOCKED), so one pass can stop early.
+   */
+  const drain = async (id: string) => {
     const { processNextGithubDelivery } =
       await import('@/modules/github/delivery.service.js');
-    while (await processNextGithubDelivery());
+    for (let tries = 0; tries < 50; tries++) {
+      while (await processNextGithubDelivery());
+      const row = await prisma.githubDelivery.findUnique({ where: { id } });
+      if (row?.processedAt) return;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    throw new Error(`GitHub delivery ${id} was not applied`);
   };
 
   const accepted = async (event: string, payload: unknown) => {
-    const { res } = await deliver(event, payload);
+    const { res, id } = await deliver(event, payload);
     expect(res.status).toBe(202);
-    await drain();
+    await drain(id);
   };
 
   /** An owner, a manager and an outsider; a project with two tasks and an App installation with two repos. */
@@ -208,11 +218,17 @@ describe('github webhook (e2e)', () => {
     expect(await prisma.githubDelivery.count({ where: { id: first.id } })).toBe(
       1,
     );
-    await drain();
+    await drain(first.id);
     expect(
       await prisma.pullRequestItem.count({ where: { itemId: s.tasks[0].id } }),
     ).toBe(1);
     expect(await listPullRequests(s.owner, s.tasks[0].id)).toHaveLength(1);
+    // Once applied, the stored payload (with the PR description) is emptied.
+    const stored = await prisma.githubDelivery.findUnique({
+      where: { id: first.id },
+    });
+    expect(stored?.processedAt).not.toBeNull();
+    expect(stored?.payload).toEqual({});
   });
 
   it('links a PR in a mapped repo to the ticket named in its title, and nothing else', async () => {
