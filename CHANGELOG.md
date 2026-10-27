@@ -1,3 +1,11 @@
+## [1.21.2](https://github.com/unishare-oss/uniloom/compare/v1.21.1...v1.21.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* **github:** say Installed from a live installation, not the repo count ([3896d26](https://github.com/unishare-oss/uniloom/commit/3896d26321cd133dc49ded6772086b5d60d8eb63))
+* **web:** show Installed and Manage on GitHub once the App is installed ([b40d014](https://github.com/unishare-oss/uniloom/commit/b40d0148d7b29d14a8b8e239a4d4a1526b306da5))
+
 ## [1.21.1](https://github.com/unishare-oss/uniloom/compare/v1.21.0...v1.21.1) (2026-10-26)
 
 
