@@ -252,6 +252,9 @@ export const findProjectRepositories = (projectId: string) =>
     orderBy: [{ fullName: 'asc' }, { id: 'asc' }],
   });
 
+export const hasLiveInstallation = async () =>
+  (await prisma.githubInstallation.count({ where: { deletedAt: null } })) > 0;
+
 export const findLiveRepository = (id: bigint) =>
   prisma.githubRepository.findFirst({
     where: { id, removedAt: null, installation: { deletedAt: null } },

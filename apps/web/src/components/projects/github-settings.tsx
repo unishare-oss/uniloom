@@ -43,12 +43,20 @@ export const GithubSettings = ({
   const { data, error } = useListGithubRepositories(projectId, {
     query: { select: (r) => r.data },
   });
+  const installed = data?.installed ?? false;
 
   return (
     <section id="github" className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold tracking-tight">GitHub</h2>
+          <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+            GitHub
+            {installed && (
+              <span className="text-sm font-normal text-muted-foreground">
+                Installed
+              </span>
+            )}
+          </h2>
           <p className="text-sm text-muted-foreground">
             Pull requests in a mapped repo link to a ticket when their title,
             branch or description names its key, like UN-42.
@@ -59,7 +67,7 @@ export const GithubSettings = ({
             href={data.installUrl}
             className={buttonVariants({ variant: "outline" })}
           >
-            Install on GitHub
+            {installed ? "Manage on GitHub" : "Install on GitHub"}
           </a>
         )}
       </div>
