@@ -394,8 +394,10 @@ describe('github webhook (e2e)', () => {
 
     const list = await read<{
       installUrl: string | null;
+      installed: boolean;
       repositories: { id: string; fullName: string; mapped: boolean }[];
     }>(await api.send('GET', listUrl, s.owner));
+    expect(list.installed).toBe(true);
     expect(
       list.repositories.find((r) => r.id === String(s.otherRepo.id)),
     ).toMatchObject({ mapped: false });

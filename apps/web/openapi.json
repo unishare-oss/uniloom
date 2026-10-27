@@ -10319,6 +10319,9 @@
                         "null"
                       ]
                     },
+                    "installed": {
+                      "type": "boolean"
+                    },
                     "repositories": {
                       "type": "array",
                       "items": {
@@ -10344,6 +10347,7 @@
                   },
                   "required": [
                     "installUrl",
+                    "installed",
                     "repositories"
                   ]
                 }

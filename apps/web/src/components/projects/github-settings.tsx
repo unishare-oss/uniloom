@@ -43,8 +43,7 @@ export const GithubSettings = ({
   const { data, error } = useListGithubRepositories(projectId, {
     query: { select: (r) => r.data },
   });
-  // Each listed repo comes from a live installation, so one is enough to know it's installed.
-  const installed = (data?.repositories.length ?? 0) > 0;
+  const installed = data?.installed ?? false;
 
   return (
     <section id="github" className="flex flex-col gap-3">

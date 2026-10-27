@@ -25,5 +25,7 @@ export const githubRepositorySchema = z.object({
 export const githubSettingsSchema = z.object({
   /** Where the Owner installs the App for this project; null when GITHUB_APP_SLUG is not set. */
   installUrl: z.string().nullable(),
+  /** True when the App has a live installation, even one with no repos selected. */
+  installed: z.boolean(),
   repositories: z.array(githubRepositorySchema),
 });
