@@ -45,7 +45,8 @@
                   "id",
                   "name",
                   "image"
-                ]
+                ],
+                "additionalProperties": false
               },
               {
                 "type": "null"
@@ -67,7 +68,8 @@
               "required": [
                 "id",
                 "name"
-              ]
+              ],
+              "additionalProperties": false
             }
           },
           "isTargetAuthor": {
@@ -118,7 +120,8 @@
           "canEdit",
           "canDelete",
           "replies"
-        ]
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -203,7 +206,8 @@
                     "consentGivenAt",
                     "unicorpTermsVersion",
                     "unicorpTermsAcceptedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -235,7 +239,8 @@
                   },
                   "required": [
                     "consentGivenAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -388,7 +393,8 @@
                     "nextItemNumber",
                     "createdAt",
                     "updatedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -508,7 +514,8 @@
                       "nextItemNumber",
                       "createdAt",
                       "updatedAt"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -662,7 +669,8 @@
                           "key",
                           "category",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "role": {
@@ -785,7 +793,8 @@
                     "canClaim",
                     "canMoveToDone",
                     "assignableRoles"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -975,7 +984,8 @@
                     "nextItemNumber",
                     "createdAt",
                     "updatedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -1076,7 +1086,8 @@
                         "required": [
                           "id",
                           "name"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       "priority": {
                         "type": "string",
@@ -1140,7 +1151,8 @@
                             "id",
                             "name",
                             "color"
-                          ]
+                          ],
+                          "additionalProperties": false
                         }
                       }
                     },
@@ -1155,7 +1167,8 @@
                       "canMove",
                       "parentId",
                       "labels"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -1321,7 +1334,8 @@
                         "name",
                         "key",
                         "category"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "priority": {
                       "type": "string",
@@ -1405,7 +1419,8 @@
                           "done",
                           "evidence",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "labels": {
@@ -1439,7 +1454,8 @@
                           "id",
                           "name",
                           "color"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "createdAt": {
@@ -1472,7 +1488,8 @@
                     "labels",
                     "createdAt",
                     "updatedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -1543,7 +1560,8 @@
                         "required": [
                           "id",
                           "name"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       "priority": {
                         "type": "string",
@@ -1607,7 +1625,8 @@
                             "id",
                             "name",
                             "color"
-                          ]
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "deletedAt": {
@@ -1628,7 +1647,8 @@
                       "parentId",
                       "labels",
                       "deletedAt"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -1724,7 +1744,8 @@
                         "name",
                         "key",
                         "category"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "priority": {
                       "type": "string",
@@ -1808,7 +1829,8 @@
                           "done",
                           "evidence",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "labels": {
@@ -1842,7 +1864,8 @@
                           "id",
                           "name",
                           "color"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "createdAt": {
@@ -1949,7 +1972,8 @@
                           "archived",
                           "home",
                           "from"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -1974,7 +1998,8 @@
                     "updatedAt",
                     "ticketDocumentKinds",
                     "related"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -2130,7 +2155,8 @@
                         "name",
                         "key",
                         "category"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "priority": {
                       "type": "string",
@@ -2214,7 +2240,8 @@
                           "done",
                           "evidence",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "labels": {
@@ -2248,7 +2275,8 @@
                           "id",
                           "name",
                           "color"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "createdAt": {
@@ -2281,7 +2309,8 @@
                     "labels",
                     "createdAt",
                     "updatedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -2426,7 +2455,8 @@
                         "name",
                         "key",
                         "category"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "priority": {
                       "type": "string",
@@ -2510,7 +2540,8 @@
                           "done",
                           "evidence",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "labels": {
@@ -2544,7 +2575,8 @@
                           "id",
                           "name",
                           "color"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "createdAt": {
@@ -2577,7 +2609,8 @@
                     "labels",
                     "createdAt",
                     "updatedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -2672,7 +2705,8 @@
                         "name",
                         "key",
                         "category"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "priority": {
                       "type": "string",
@@ -2756,7 +2790,8 @@
                           "done",
                           "evidence",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "labels": {
@@ -2790,7 +2825,8 @@
                           "id",
                           "name",
                           "color"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "createdAt": {
@@ -2823,7 +2859,8 @@
                     "labels",
                     "createdAt",
                     "updatedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -2938,7 +2975,8 @@
                         "name",
                         "key",
                         "category"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "priority": {
                       "type": "string",
@@ -3022,7 +3060,8 @@
                           "done",
                           "evidence",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "labels": {
@@ -3056,7 +3095,8 @@
                           "id",
                           "name",
                           "color"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "createdAt": {
@@ -3089,7 +3129,8 @@
                     "labels",
                     "createdAt",
                     "updatedAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -3296,7 +3337,8 @@
                             "id",
                             "name",
                             "image"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -3369,7 +3411,8 @@
                             "id",
                             "title",
                             "archivedAt"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -3396,7 +3439,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -3420,7 +3464,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -3470,7 +3515,8 @@
                                 "required": [
                                   "id",
                                   "key"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -3482,7 +3528,8 @@
                           "id",
                           "title",
                           "homeItem"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "supersededBy": {
@@ -3515,7 +3562,8 @@
                             "id",
                             "number",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -3543,7 +3591,8 @@
                             "id",
                             "key",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -3589,7 +3638,8 @@
                             "required": [
                               "name",
                               "category"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -3597,7 +3647,8 @@
                           "key",
                           "title",
                           "state"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -3625,7 +3676,8 @@
                     "homeItem",
                     "canArchive",
                     "items"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -3740,7 +3792,8 @@
                         "name",
                         "key",
                         "category"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "priority": {
                       "type": "string",
@@ -3824,7 +3877,8 @@
                           "done",
                           "evidence",
                           "position"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "labels": {
@@ -3858,7 +3912,8 @@
                           "id",
                           "name",
                           "color"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "createdAt": {
@@ -3965,7 +4020,8 @@
                           "archived",
                           "home",
                           "from"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -3990,7 +4046,8 @@
                     "updatedAt",
                     "ticketDocumentKinds",
                     "related"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -4114,7 +4171,8 @@
                     "done",
                     "evidence",
                     "position"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -4202,7 +4260,8 @@
                       "done",
                       "evidence",
                       "position"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -4306,7 +4365,8 @@
                     "done",
                     "evidence",
                     "position"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -4407,7 +4467,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -4423,7 +4484,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -4451,7 +4513,8 @@
                             },
                             "required": [
                               "parent"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -4461,7 +4524,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -4490,7 +4554,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -4506,7 +4571,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -4555,13 +4621,15 @@
                                   },
                                   "required": [
                                     "field"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 }
                               }
                             },
                             "required": [
                               "changes"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -4571,7 +4639,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -4600,7 +4669,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -4616,7 +4686,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -4669,7 +4740,8 @@
                                     "url",
                                     "base",
                                     "mergedBy"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "checksAfterMerge": {
@@ -4679,7 +4751,8 @@
                             "required": [
                               "from",
                               "to"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -4689,7 +4762,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -4718,7 +4792,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -4734,7 +4809,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -4781,7 +4857,8 @@
                                     "url",
                                     "base",
                                     "mergedBy"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "reasons": {
@@ -4794,7 +4871,8 @@
                             "required": [
                               "pullRequests",
                               "reasons"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -4804,7 +4882,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -4833,7 +4912,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -4849,7 +4929,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -4867,7 +4948,8 @@
                           },
                           "detail": {
                             "type": "object",
-                            "properties": {}
+                            "properties": {},
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -4877,7 +4959,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -4906,7 +4989,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -4922,7 +5006,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -4940,7 +5025,8 @@
                           },
                           "detail": {
                             "type": "object",
-                            "properties": {}
+                            "properties": {},
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -4950,7 +5036,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -4979,7 +5066,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -4995,7 +5083,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5020,7 +5109,8 @@
                             },
                             "required": [
                               "text"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5030,7 +5120,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -5059,7 +5150,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -5075,7 +5167,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5104,7 +5197,8 @@
                             "required": [
                               "from",
                               "to"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5114,7 +5208,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -5143,7 +5238,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -5159,7 +5255,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5191,7 +5288,8 @@
                             "required": [
                               "text",
                               "evidence"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5201,7 +5299,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -5230,7 +5329,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -5246,7 +5346,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5271,7 +5372,8 @@
                             },
                             "required": [
                               "text"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5281,7 +5383,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -5310,7 +5413,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -5326,7 +5430,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5351,7 +5456,8 @@
                             },
                             "required": [
                               "text"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5361,7 +5467,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       {
                         "type": "object",
@@ -5390,7 +5497,8 @@
                             "required": [
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "agent": {
                             "anyOf": [
@@ -5406,7 +5514,8 @@
                                 },
                                 "required": [
                                   "name"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5433,7 +5542,8 @@
                             },
                             "required": [
                               "count"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5443,7 +5553,8 @@
                           "at",
                           "action",
                           "detail"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   }
@@ -5518,7 +5629,8 @@
                       "image",
                       "role",
                       "createdAt"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -5616,7 +5728,8 @@
                     "image",
                     "role",
                     "createdAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -5717,7 +5830,8 @@
                     "image",
                     "role",
                     "createdAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -5852,7 +5966,8 @@
                               "id",
                               "name",
                               "keyPrefix"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "kind": {
                             "anyOf": [
@@ -5922,7 +6037,8 @@
                                   "name",
                                   "key",
                                   "category"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5951,7 +6067,8 @@
                                   "id",
                                   "name",
                                   "image"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -5972,7 +6089,8 @@
                           "state",
                           "assignee",
                           "available"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "projects": {
@@ -5996,7 +6114,8 @@
                           "id",
                           "name",
                           "keyPrefix"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "nextCursor": {
@@ -6010,7 +6129,8 @@
                     "items",
                     "projects",
                     "nextCursor"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6123,7 +6243,8 @@
                                   "id",
                                   "name",
                                   "keyPrefix"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "kind": {
                                 "anyOf": [
@@ -6193,7 +6314,8 @@
                                       "name",
                                       "key",
                                       "category"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   {
                                     "type": "null"
@@ -6222,7 +6344,8 @@
                                       "id",
                                       "name",
                                       "image"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   {
                                     "type": "null"
@@ -6243,7 +6366,8 @@
                               "state",
                               "assignee",
                               "available"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "latestSubmittedAt": {
                             "type": "string",
@@ -6276,7 +6400,8 @@
                           "unreadCount",
                           "mentionUnreadCount",
                           "needsReview"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "projects": {
@@ -6300,7 +6425,8 @@
                           "id",
                           "name",
                           "keyPrefix"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "unreadCount": {
@@ -6320,7 +6446,8 @@
                     "projects",
                     "unreadCount",
                     "nextCursor"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6469,7 +6596,8 @@
                                   "id",
                                   "name",
                                   "image"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -6487,7 +6615,8 @@
                           "fromStateKey",
                           "toStateKey",
                           "actor"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "nextCursor": {
@@ -6500,7 +6629,8 @@
                   "required": [
                     "items",
                     "nextCursor"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6566,7 +6696,8 @@
                   "required": [
                     "ids",
                     "read"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6632,7 +6763,8 @@
                   "required": [
                     "ids",
                     "read"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6713,7 +6845,8 @@
                       "color",
                       "group",
                       "createdAt"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -6837,7 +6970,8 @@
                     "color",
                     "group",
                     "createdAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6958,7 +7092,8 @@
                     "color",
                     "group",
                     "createdAt"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -7161,7 +7296,8 @@
                               "id",
                               "name",
                               "image"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           {
                             "type": "null"
@@ -7234,7 +7370,8 @@
                               "id",
                               "title",
                               "archivedAt"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           {
                             "type": "null"
@@ -7261,7 +7398,8 @@
                             "required": [
                               "id",
                               "key"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           {
                             "type": "null"
@@ -7285,7 +7423,8 @@
                             "required": [
                               "id",
                               "key"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           {
                             "type": "null"
@@ -7321,7 +7460,8 @@
                       "fixedBy",
                       "createdAt",
                       "updatedAt"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -7490,7 +7630,8 @@
                             "id",
                             "name",
                             "image"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -7563,7 +7704,8 @@
                             "id",
                             "title",
                             "archivedAt"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -7590,7 +7732,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -7614,7 +7757,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -7664,7 +7808,8 @@
                                 "required": [
                                   "id",
                                   "key"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -7676,7 +7821,8 @@
                           "id",
                           "title",
                           "homeItem"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "supersededBy": {
@@ -7709,7 +7855,8 @@
                             "id",
                             "number",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -7737,7 +7884,8 @@
                             "id",
                             "key",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -7783,7 +7931,8 @@
                             "required": [
                               "name",
                               "category"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -7791,7 +7940,8 @@
                           "key",
                           "title",
                           "state"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -7819,7 +7969,8 @@
                     "homeItem",
                     "canArchive",
                     "items"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -7935,7 +8086,8 @@
                             "id",
                             "name",
                             "image"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8008,7 +8160,8 @@
                             "id",
                             "title",
                             "archivedAt"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8035,7 +8188,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8059,7 +8213,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8109,7 +8264,8 @@
                                 "required": [
                                   "id",
                                   "key"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -8121,7 +8277,8 @@
                           "id",
                           "title",
                           "homeItem"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "supersededBy": {
@@ -8154,7 +8311,8 @@
                             "id",
                             "number",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8182,7 +8340,8 @@
                             "id",
                             "key",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8228,7 +8387,8 @@
                             "required": [
                               "name",
                               "category"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -8236,7 +8396,8 @@
                           "key",
                           "title",
                           "state"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -8264,7 +8425,8 @@
                     "homeItem",
                     "canArchive",
                     "items"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -8418,7 +8580,8 @@
                             "id",
                             "name",
                             "image"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8491,7 +8654,8 @@
                             "id",
                             "title",
                             "archivedAt"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8518,7 +8682,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8542,7 +8707,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8592,7 +8758,8 @@
                                 "required": [
                                   "id",
                                   "key"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -8604,7 +8771,8 @@
                           "id",
                           "title",
                           "homeItem"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "supersededBy": {
@@ -8637,7 +8805,8 @@
                             "id",
                             "number",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8665,7 +8834,8 @@
                             "id",
                             "key",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8711,7 +8881,8 @@
                             "required": [
                               "name",
                               "category"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -8719,7 +8890,8 @@
                           "key",
                           "title",
                           "state"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -8747,7 +8919,8 @@
                     "homeItem",
                     "canArchive",
                     "items"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -8900,7 +9073,8 @@
                             "id",
                             "name",
                             "image"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -8973,7 +9147,8 @@
                             "id",
                             "title",
                             "archivedAt"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -9000,7 +9175,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -9024,7 +9200,8 @@
                           "required": [
                             "id",
                             "key"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -9074,7 +9251,8 @@
                                 "required": [
                                   "id",
                                   "key"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               {
                                 "type": "null"
@@ -9086,7 +9264,8 @@
                           "id",
                           "title",
                           "homeItem"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "supersededBy": {
@@ -9119,7 +9298,8 @@
                             "id",
                             "number",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -9147,7 +9327,8 @@
                             "id",
                             "key",
                             "title"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         {
                           "type": "null"
@@ -9193,7 +9374,8 @@
                             "required": [
                               "name",
                               "category"
-                            ]
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -9201,7 +9383,8 @@
                           "key",
                           "title",
                           "state"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -9229,7 +9412,8 @@
                     "homeItem",
                     "canArchive",
                     "items"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -9322,7 +9506,8 @@
                         "createdAt",
                         "createdBy",
                         "state"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     {
                       "type": "null"
@@ -9457,7 +9642,8 @@
                     "createdAt",
                     "createdBy",
                     "state"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -9576,7 +9762,8 @@
                     "joinApproval",
                     "request",
                     "requestId"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -9625,7 +9812,8 @@
                   "required": [
                     "result",
                     "projectId"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -9694,7 +9882,8 @@
                       "email",
                       "image",
                       "requestedAt"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -9825,7 +10014,8 @@
                       "projectName",
                       "keyPrefix",
                       "requestedAt"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -9907,7 +10097,8 @@
                   "required": [
                     "count",
                     "comments"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -10024,7 +10215,8 @@
                   "required": [
                     "count",
                     "comments"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -10278,7 +10470,8 @@
                       "mergedByLogin",
                       "checks",
                       "closes"
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -10319,6 +10512,9 @@
                         "null"
                       ]
                     },
+                    "installed": {
+                      "type": "boolean"
+                    },
                     "repositories": {
                       "type": "array",
                       "items": {
@@ -10338,14 +10534,17 @@
                           "id",
                           "fullName",
                           "mapped"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     }
                   },
                   "required": [
                     "installUrl",
+                    "installed",
                     "repositories"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -10402,7 +10601,8 @@
                     "id",
                     "fullName",
                     "mapped"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }

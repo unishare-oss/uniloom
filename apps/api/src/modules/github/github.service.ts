@@ -49,6 +49,7 @@ export const listProjectRepositories = async (
   const repositories = await githubRepo.findProjectRepositories(projectId);
   return {
     installUrl: installUrl(process.env.GITHUB_APP_SLUG, projectId),
+    installed: await githubRepo.hasLiveInstallation(),
     repositories: repositories.map((repository) => ({
       id: String(repository.id),
       fullName: repository.fullName,
