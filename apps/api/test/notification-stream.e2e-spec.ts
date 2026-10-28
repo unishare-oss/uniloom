@@ -39,6 +39,7 @@ const freshPrefix = () =>
 const openStream = async (cookie: string) => {
   const res = await api.call('/api/notifications/stream', { cookie });
   expect(res.status).toBe(200);
+  expect(res.headers.get('cache-control')).toContain('no-transform');
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let received = '';
