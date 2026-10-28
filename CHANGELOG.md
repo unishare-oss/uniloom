@@ -1,3 +1,10 @@
+## [1.21.3](https://github.com/unishare-oss/uniloom/compare/v1.21.2...v1.21.3) (2026-10-28)
+
+
+### Bug Fixes
+
+* **api:** prevent notification stream compression buffering ([f58209c](https://github.com/unishare-oss/uniloom/commit/f58209cdc8eb8e2e69228f1ef8d9f6d917beae65))
+
 ## [1.21.2](https://github.com/unishare-oss/uniloom/compare/v1.21.1...v1.21.2) (2026-10-27)
 
 
