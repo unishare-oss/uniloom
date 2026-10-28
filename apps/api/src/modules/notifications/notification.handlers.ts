@@ -53,10 +53,9 @@ interface BunServerEnv {
 export const getNotificationStream = (c: Context) => {
   // A quiet stream is not idle: switch off Bun's idle timeout for this request.
   (c.env as BunServerEnv | undefined)?.server?.timeout(c.req.raw, 0);
-  c.header('Cache-Control', 'no-cache');
   c.header('X-Accel-Buffering', 'no');
   const userId = c.var.user.id;
-  return streamSSE(c, async (stream) => {
+  const response = streamSSE(c, async (stream) => {
     const unregister = registerStream(userId, () => {
       void stream
         .writeSSE({ event: 'changed', data: '' })
@@ -70,4 +69,7 @@ export const getNotificationStream = (c: Context) => {
     }
     unregister();
   });
+  // streamSSE sets no-cache itself; prevent proxy compression after it runs.
+  response.headers.set('Cache-Control', 'no-cache, no-transform');
+  return response;
 };
