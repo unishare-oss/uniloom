@@ -46,7 +46,7 @@
     "@types/bun": "^1.4.4",
     "@types/pg": "^8.16.0",
     "@vitest/coverage-v8": "^5.0.5",
-    "oxlint": "^1.89.0",
+    "oxlint": "^1.90.0",
     "oxlint-tsgolint": "^7.0.2005",
     "prettier": "^3.9.10",
     "prisma": "^7.10.1",
