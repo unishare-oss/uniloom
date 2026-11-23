@@ -43,9 +43,9 @@
     "@semantic-release/git": "^11.0.1",
     "concurrently": "^10.0.7",
     "kill-port": "^2.0.1",
-    "lint-staged": "^17.6.0",
+    "lint-staged": "^17.6.1",
     "prettier": "^3.10.1",
-    "semantic-release": "^25.0.9",
+    "semantic-release": "^26.0.1",
     "simple-git-hooks": "^2.13.1"
   },
   "simple-git-hooks": {
