@@ -188,7 +188,7 @@ export const buildServer = (agent: Agent) => {
     'check_criterion',
     {
       description:
-        'Tick one done-when entry, by its number from get_criteria or its exact text, with optional evidence (a commit SHA, test name or link). Answers the updated checklist.',
+        'Tick one done-when entry, by its number from get_criteria or its exact text, with optional evidence (a commit SHA, test name or link). Answers the ticked entry and the numbers still open; get_criteria has the full list.',
       inputSchema: checkCriterionSchema,
     },
     async ({ key, which, evidence }) => {

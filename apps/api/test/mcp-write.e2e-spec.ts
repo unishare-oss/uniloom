@@ -620,26 +620,38 @@ describe('mcp write tools (e2e)', () => {
         which: 2,
         evidence: 'commit 1a2b3c4',
       });
-      expect(byNumber[1]).toEqual({
+      expect(byNumber).toEqual({
         number: 2,
         text: 'B',
         done: true,
-        evidence: 'commit 1a2b3c4',
+        remaining: [1, 3],
       });
       const byText = await ok(w.ownerToken, 'check_criterion', {
         key: w.slice.key,
         which: 'C',
       });
-      expect(byText.map((e: { done: boolean }) => e.done)).toEqual([
-        false,
-        true,
-        true,
-      ]);
+      expect(byText).toEqual({
+        number: 3,
+        text: 'C',
+        done: true,
+        remaining: [1],
+      });
       const asString = await ok(w.ownerToken, 'check_criterion', {
         key: w.slice.key,
         which: '1',
       });
-      expect(asString[0].done).toBe(true);
+      expect(asString).toEqual({
+        number: 1,
+        text: 'A',
+        done: true,
+        remaining: [],
+      });
+      const full = await ok(w.ownerToken, 'get_criteria', { key: w.slice.key });
+      expect(full).toEqual([
+        { number: 1, text: 'A', done: true, evidence: null },
+        { number: 2, text: 'B', done: true, evidence: 'commit 1a2b3c4' },
+        { number: 3, text: 'C', done: true, evidence: null },
+      ]);
       for (const which of [9, 4, 'c']) {
         expect(
           await tool(w.ownerToken, 'check_criterion', {
@@ -697,7 +709,7 @@ describe('mcp write tools (e2e)', () => {
         key: w.slice.key,
         which: 1,
       });
-      expect(ticked[0].done).toBe(true);
+      expect(ticked).toMatchObject({ number: 1, done: true });
     });
   });
 

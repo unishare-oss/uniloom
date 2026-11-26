@@ -390,9 +390,15 @@ export const checkCriterion = async (
     { done: true, evidence },
     agent,
   );
-  return toCriteria(
-    (await itemService.getItem(itemId, agent.userId)).checklist,
-  );
+  const reread = (await itemService.getItem(itemId, agent.userId)).checklist;
+  const criteria = toCriteria(reread);
+  const ticked = criteria[reread.findIndex((e) => e.id === entry.id)];
+  return {
+    number: ticked.number,
+    text: ticked.text,
+    done: ticked.done,
+    remaining: criteria.filter((c) => !c.done).map((c) => c.number),
+  };
 };
 
 /** A Knowledge project's documents as slim rows, newest edit first. */
