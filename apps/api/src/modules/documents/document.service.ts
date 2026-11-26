@@ -15,6 +15,7 @@ import {
 } from '@/modules/items/item.rules.js';
 import { requireMember } from '@/modules/projects/project.service.js';
 import * as documentRepo from './document.repository.js';
+import { MAX_BODY_LENGTH } from './document.schema.js';
 import { nextStatusError, sourceProposalError } from './document.rules.js';
 import { applyEdits, toDocument, toDocumentSummary } from './document.utils.js';
 
@@ -239,6 +240,9 @@ export const updateDocumentById = async (
   return toDocument(updated, true);
 };
 
+/** Edits queue on the row lock, so the wait for a connection and for the lock is longer than Prisma's 5s default. */
+const EDIT_TRANSACTION = { maxWait: 20_000, timeout: 20_000 };
+
 /**
  * Edits part of a document's body: same permission as `updateDocumentById`. The row is
  * locked and the body read after the lock, so two edits at once both land. Each edit's
@@ -261,14 +265,14 @@ export const editDocumentBody = async (
     await documentRepo.lockDocument(tx, id);
     const { body } = await documentRepo.findBody(tx, id);
     const edited = applyEdits(body, edits);
-    if (edited.length > 100_000)
+    if (edited.length > MAX_BODY_LENGTH)
       throw apiError(
         400,
         'invalid_input',
-        'The edited body would exceed 100000 characters',
+        `The edited body would exceed ${MAX_BODY_LENGTH} characters`,
       );
     return documentRepo.updateDocument(id, { body: edited }, tx);
-  });
+  }, EDIT_TRANSACTION);
   return toDocument(updated, true);
 };
 

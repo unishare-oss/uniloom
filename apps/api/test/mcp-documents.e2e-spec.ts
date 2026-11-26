@@ -801,22 +801,32 @@ describe('mcp document tools (e2e)', () => {
       ).toEqual({ isError: true, text: 'not_found: Document not found' });
     });
 
-    it('keeps both of two simultaneous edits to different parts', async () => {
-      const w = await withBrief('first A\nsecond B');
-      const results = await Promise.all([
-        tool(w.ownerToken, 'edit_document', {
-          id: w.doc.id,
-          edits: [{ old: 'A', new: 'one' }],
-        }),
-        tool(w.ownerToken, 'edit_document', {
-          id: w.doc.id,
-          edits: [{ old: 'B', new: 'two' }],
-        }),
-      ]);
-      expect(results.map((r) => r.isError)).toEqual([false, false]);
-      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe(
-        'first one\nsecond two',
+    it('keeps every one of six simultaneous edits to different parts', async () => {
+      const parts = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const w = await withBrief(parts.map((p) => `part ${p}`).join('\n'));
+      const results = await Promise.all(
+        parts.map((p) =>
+          tool(w.ownerToken, 'edit_document', {
+            id: w.doc.id,
+            edits: [{ old: `part ${p}`, new: `done ${p}` }],
+          }),
+        ),
       );
+      expect(results.filter((r) => r.isError).map((r) => r.text)).toEqual([]);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe(
+        parts.map((p) => `done ${p}`).join('\n'),
+      );
+    });
+
+    it('refuses an edit that would pass the body limit and saves nothing', async () => {
+      const w = await withBrief('start end');
+      const result = await tool(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [{ old: 'start', new: 'x'.repeat(100_001) }],
+      });
+      expect(result.isError).toBe(true);
+      expect(result.text).toMatch(/^invalid_input:/);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe('start end');
     });
   });
 });
