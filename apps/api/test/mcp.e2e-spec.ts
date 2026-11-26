@@ -112,13 +112,12 @@ describe('mcp (e2e)', () => {
     expect(spec.sourceProposalId).toBe(proposal.id);
     const detail = JSON.parse(
       (await tool(w.token, 'get_document', { id: spec.id })).text,
-    ) as { sourceProposal: { url: string } };
-    expect(detail.sourceProposal.url).toContain(`/docs/${proposal.id}`);
+    ) as { sourceProposal: { id: string; title: string } };
+    expect(detail.sourceProposal).toEqual({ id: proposal.id, title: 'Source' });
     const inverse = JSON.parse(
       (await tool(w.token, 'get_document', { id: proposal.id })).text,
-    ) as { derivedSpecs: { id: string; url: string }[] };
-    expect(inverse.derivedSpecs[0].id).toBe(spec.id);
-    expect(inverse.derivedSpecs[0].url).toContain(`/docs/${spec.id}`);
+    ) as { derivedSpecs: { id: string; title: string }[] };
+    expect(inverse.derivedSpecs).toEqual([{ id: spec.id, title: 'Derived' }]);
     expect(
       JSON.parse(
         (
@@ -313,6 +312,7 @@ describe('mcp (e2e)', () => {
       expect(names.sort()).toEqual([
         'check_criterion',
         'delete_item',
+        'edit_document',
         'get_criteria',
         'get_document',
         'get_item',
@@ -401,6 +401,211 @@ describe('mcp (e2e)', () => {
         id: doc.id,
         title: 'Stack',
         home: 'project',
+      });
+    });
+
+    it('answers list_items rows with exactly the trimmed shape', async () => {
+      const w = await setup();
+      const labels = (await read(
+        await api.send(
+          'GET',
+          `/api/projects/${w.projectId}/labels`,
+          w.owner.cookie,
+        ),
+      )) as { id: string; name: string; color: string }[];
+      const bug = labels.find((label) => label.name === 'bug')!;
+      await api.send('PATCH', `/api/items/${w.slice.id}`, w.owner.cookie, {
+        labelIds: [bug.id],
+      });
+      const all = JSON.parse(
+        (await tool(w.token, 'list_items', { project: w.keyPrefix })).text,
+      );
+      const row = (key: string) =>
+        all.find((i: { key: string }) => i.key === key);
+      expect(row(w.slice.key)).toEqual({
+        key: w.slice.key,
+        kind: 'SLICE',
+        title: 'Child',
+        state: 'Triage',
+        priority: 'NONE',
+        parent: w.feature.key,
+        assignee: null,
+        canMove: true,
+        labels: [{ name: 'bug', color: bug.color }],
+        url: expect.stringContaining(`/p/${w.projectId}/items/${w.slice.id}`),
+      });
+      expect(row(w.feature.key).parent).toBeNull();
+    });
+
+    it('answers get_item with exactly the trimmed shape', async () => {
+      const w = await setup();
+      const labels = (await read(
+        await api.send(
+          'GET',
+          `/api/projects/${w.projectId}/labels`,
+          w.owner.cookie,
+        ),
+      )) as { id: string; name: string; color: string }[];
+      const bug = labels.find((label) => label.name === 'bug')!;
+      await api.send('PATCH', `/api/items/${w.slice.id}`, w.owner.cookie, {
+        labelIds: [bug.id],
+      });
+      const doc = (await read(
+        await api.send(
+          'POST',
+          `/api/projects/${w.projectId}/documents`,
+          w.owner.cookie,
+          { kind: 'REFERENCE', title: 'Stack' },
+        ),
+      )) as { id: string };
+      await api.send(
+        'POST',
+        `/api/items/${w.slice.id}/documents`,
+        w.owner.cookie,
+        { documentId: doc.id },
+      );
+      const item = JSON.parse(
+        (await tool(w.token, 'get_item', { key: w.slice.key })).text,
+      );
+      expect(item).toEqual({
+        key: w.slice.key,
+        kind: 'SLICE',
+        title: 'Child',
+        description: expect.any(String),
+        state: 'Triage',
+        priority: 'NONE',
+        parent: w.feature.key,
+        assignee: null,
+        canMove: true,
+        canEdit: true,
+        blockedBy: [],
+        labels: [{ name: 'bug', color: bug.color }],
+        checklist: [
+          { number: 1, text: 'It works', done: false, evidence: null },
+        ],
+        related: [
+          {
+            id: doc.id,
+            kind: 'REFERENCE',
+            number: null,
+            title: 'Stack',
+            status: null,
+            home: 'project',
+            from: null,
+          },
+        ],
+        url: expect.stringContaining(`/p/${w.projectId}/items/${w.slice.id}`),
+      });
+    });
+
+    it('answers get_document with exactly the trimmed shape', async () => {
+      const w = await setup();
+      const proposal = JSON.parse(
+        (
+          await tool(w.token, 'save_document', {
+            project: w.keyPrefix,
+            kind: 'PROPOSAL',
+            title: 'Source',
+          })
+        ).text,
+      ) as { id: string };
+      const doc = JSON.parse(
+        (
+          await tool(w.token, 'save_document', {
+            project: w.keyPrefix,
+            ticket: w.feature.key,
+            kind: 'SPEC',
+            title: 'Shape',
+            body: 'Text',
+            sourceProposalId: proposal.id,
+          })
+        ).text,
+      ) as { id: string };
+      await tool(w.token, 'link_document', {
+        key: w.slice.key,
+        id: proposal.id,
+      });
+      const proposalRead = JSON.parse(
+        (await tool(w.token, 'get_document', { id: proposal.id })).text,
+      );
+      expect(proposalRead.items).toEqual([
+        { key: w.slice.key, title: 'Child', state: 'Triage' },
+      ]);
+      expect(proposalRead.derivedSpecs).toEqual([
+        { id: doc.id, title: 'Shape' },
+      ]);
+      const read1 = JSON.parse(
+        (await tool(w.token, 'get_document', { id: doc.id })).text,
+      );
+      expect(read1).toEqual({
+        id: doc.id,
+        kind: 'SPEC',
+        number: null,
+        status: null,
+        title: 'Shape',
+        purpose: expect.any(String),
+        body: 'Text',
+        canEdit: true,
+        url: expect.stringContaining(`/p/${w.projectId}/docs/${doc.id}`),
+        author: w.owner.profile.name,
+        createdFrom: w.feature.key,
+        homeItem: w.feature.key,
+        fixedBy: null,
+        supersededBy: null,
+        sourceProposal: { id: proposal.id, title: 'Source' },
+        derivedSpecs: [],
+        items: [],
+      });
+    });
+
+    it('answers get_document with fixedBy and supersededBy as keys and titles', async () => {
+      const w = await setup();
+      const save = async (kind: string, title: string) =>
+        JSON.parse(
+          (
+            await tool(w.token, 'save_document', {
+              project: w.keyPrefix,
+              ticket: w.slice.key,
+              kind,
+              title,
+            })
+          ).text,
+        ) as { id: string; number: number | null };
+      const debt = await save('TECH_DEBT', 'Slow');
+      const oldAdr = await save('ADR', 'Old');
+      const newAdr = await save('ADR', 'New');
+      await prisma.document.update({
+        where: { id: debt.id },
+        data: { status: 'FIXED', fixedByItemId: w.slice.id },
+      });
+      await prisma.document.update({
+        where: { id: oldAdr.id },
+        data: { status: 'SUPERSEDED', supersededById: newAdr.id },
+      });
+      const get = async (id: string) =>
+        JSON.parse((await tool(w.token, 'get_document', { id })).text);
+      expect(await get(debt.id)).toEqual({
+        id: debt.id,
+        kind: 'TECH_DEBT',
+        number: debt.number,
+        status: 'FIXED',
+        title: 'Slow',
+        purpose: expect.anything(),
+        body: expect.any(String),
+        canEdit: true,
+        url: expect.stringContaining(`/p/${w.projectId}/docs/${debt.id}`),
+        author: w.owner.profile.name,
+        createdFrom: w.slice.key,
+        homeItem: null,
+        fixedBy: w.slice.key,
+        supersededBy: null,
+        sourceProposal: null,
+        derivedSpecs: [],
+        items: [{ key: w.slice.key, title: 'Child', state: 'Triage' }],
+      });
+      expect(await get(oldAdr.id)).toMatchObject({
+        status: 'SUPERSEDED',
+        supersededBy: { id: newAdr.id, title: 'New' },
       });
     });
 

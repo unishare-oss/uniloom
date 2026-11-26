@@ -100,7 +100,8 @@ export const updateChecklistEntry = async (
         action: 'checklist.edit',
         detail: { from: before.text, to: updated.text },
       });
-    if (updated.done && !before.done)
+    // A ticked entry whose evidence changed gets another tick row with the new evidence.
+    if (updated.done && (!before.done || updated.evidence !== before.evidence))
       await insertActivity(tx, {
         ...where,
         action: 'checklist.tick',

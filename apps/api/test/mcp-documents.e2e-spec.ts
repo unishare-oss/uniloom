@@ -229,9 +229,9 @@ describe('mcp document tools (e2e)', () => {
       await ok(w.memberToken, 'get_document', { id: spec.id }),
     ).toMatchObject({
       kind: 'SPEC',
-      homeItem: { key: w.mine.key },
-      createdFrom: { key: w.mine.key },
-      author: { name: w.member.profile.name },
+      homeItem: w.mine.key,
+      createdFrom: w.mine.key,
+      author: w.member.profile.name,
     });
     // It is the ticket's own, so Knowledge does not list it; the member edits it.
     expect(
@@ -412,14 +412,15 @@ describe('mcp document tools (e2e)', () => {
     }
     const item = await ok(w.memberToken, 'get_item', { key: w.mine.key });
     expect(item.related).toHaveLength(1);
-    expect(item.related[0].url).toBe(
-      `http://127.0.0.1:3013/p/${w.id}/docs/${proposal.id}`,
-    );
+    expect(item.related[0].id).toBe(proposal.id);
+    expect(item.related[0].url).toBeUndefined();
     expect(item.assignee).toEqual({
       name: w.member.profile.name,
       email: w.member.profile.email,
     });
-    expect(item.url).toBe(`http://127.0.0.1:3013/p/${w.id}/items/${item.id}`);
+    expect(item.url).toMatch(
+      new RegExp(`^http://127.0.0.1:3013/p/${w.id}/items/[0-9a-f-]{36}$`),
+    );
     expect(
       (
         await tool(w.memberToken, 'link_document', {
@@ -537,8 +538,7 @@ describe('mcp document tools (e2e)', () => {
       expect(
         await ok(w.memberToken, 'get_document', { id: doc.id }),
       ).toMatchObject({
-        homeItemId: null,
-        canArchive: true,
+        homeItem: null,
         body: expect.stringContaining('Draft'),
       });
       expect(
@@ -572,7 +572,7 @@ describe('mcp document tools (e2e)', () => {
         (
           await api.send(
             'POST',
-            `/api/items/${(await ok(w.ownerToken, 'get_item', { key: w.mine.key })).id}/documents/new`,
+            `/api/items/${(await prisma.item.findFirstOrThrow({ where: { project: { keyPrefix: w.keyPrefix }, number: Number(w.mine.key.split('-')[1]) } })).id}/documents/new`,
             w.owner.cookie,
             { kind, title: 'Ticket home' },
           )
@@ -693,4 +693,140 @@ describe('mcp document tools (e2e)', () => {
     },
     60_000,
   );
+
+  describe('edit_document', () => {
+    const bodyOf = async (token: string, id: string) =>
+      (await ok(token, 'get_document', { id })).body;
+
+    const withBrief = async (body: string) => {
+      const w = await setup();
+      const doc = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'BRIEF',
+        title: 'Brief',
+        body,
+      });
+      return { ...w, doc };
+    };
+
+    it('replaces only the old text and answers a compact confirmation', async () => {
+      const w = await withBrief('Route returns 404 here.\nSecond line.');
+      const reply = await ok(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [{ old: 'returns 404', new: 'returns 403' }],
+      });
+      expect(reply).toEqual(w.doc);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe(
+        'Route returns 403 here.\nSecond line.',
+      );
+    });
+
+    it('applies several edits in order, each seeing the earlier result', async () => {
+      const w = await withBrief('alpha beta');
+      await ok(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [
+          { old: 'alpha', new: 'gamma' },
+          { old: 'gamma beta', new: 'done $& ' },
+        ],
+      });
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe('done $& ');
+    });
+
+    it('answers edit_mismatch for 0 or 2+ matches and saves nothing', async () => {
+      const w = await withBrief('one two one');
+      const none = await tool(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [
+          { old: 'two', new: 'x' },
+          { old: 'missing', new: 'y' },
+        ],
+      });
+      expect(none.isError).toBe(true);
+      expect(none.text).toMatch(/^edit_mismatch: Edit 2.*0 times/);
+      const many = await tool(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [{ old: 'one', new: 'x' }],
+      });
+      expect(many.isError).toBe(true);
+      expect(many.text).toMatch(/^edit_mismatch: Edit 1.*2 times/);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe('one two one');
+    });
+
+    it('refuses like save_document and answers not_found for an unknown id', async () => {
+      const w = await withTickets();
+      const knowledge = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'BRIEF',
+        title: 'Brief',
+        body: 'text',
+      });
+      const theirSpec = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'SPEC',
+        title: 'Spec',
+        body: 'text',
+        ticket: w.theirs.key,
+      });
+      const mySpec = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'SPEC',
+        title: 'Spec',
+        body: 'text',
+        ticket: w.mine.key,
+      });
+      const edits = [{ old: 'text', new: 'new' }];
+      expect(
+        await tool(w.memberToken, 'edit_document', {
+          id: knowledge.id,
+          edits,
+        }),
+      ).toEqual({ isError: true, text: FORBIDDEN });
+      expect(
+        (
+          await tool(w.memberToken, 'edit_document', {
+            id: theirSpec.id,
+            edits,
+          })
+        ).text,
+      ).toMatch(/^forbidden:/);
+      expect(
+        await ok(w.memberToken, 'edit_document', { id: mySpec.id, edits }),
+      ).toMatchObject({ id: mySpec.id });
+      expect(
+        await tool(w.ownerToken, 'edit_document', {
+          id: '00000000-0000-4000-8000-000000000000',
+          edits,
+        }),
+      ).toEqual({ isError: true, text: 'not_found: Document not found' });
+    });
+
+    it('keeps every one of six simultaneous edits to different parts', async () => {
+      const parts = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const w = await withBrief(parts.map((p) => `part ${p}`).join('\n'));
+      const results = await Promise.all(
+        parts.map((p) =>
+          tool(w.ownerToken, 'edit_document', {
+            id: w.doc.id,
+            edits: [{ old: `part ${p}`, new: `done ${p}` }],
+          }),
+        ),
+      );
+      expect(results.filter((r) => r.isError).map((r) => r.text)).toEqual([]);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe(
+        parts.map((p) => `done ${p}`).join('\n'),
+      );
+    });
+
+    it('refuses an edit that would pass the body limit and saves nothing', async () => {
+      const w = await withBrief('start end');
+      const result = await tool(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [{ old: 'start', new: 'x'.repeat(100_001) }],
+      });
+      expect(result.isError).toBe(true);
+      expect(result.text).toMatch(/^invalid_input:/);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe('start end');
+    });
+  });
 });
