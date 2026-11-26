@@ -313,6 +313,7 @@ describe('mcp (e2e)', () => {
       expect(names.sort()).toEqual([
         'check_criterion',
         'delete_item',
+        'edit_document',
         'get_criteria',
         'get_document',
         'get_item',

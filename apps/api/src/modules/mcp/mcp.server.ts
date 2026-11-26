@@ -9,6 +9,7 @@ import {
   listItemsSchema,
   projectSchema,
   removeBlockerSchema,
+  editDocumentSchema,
   saveDocumentSchema,
   saveItemSchema,
   setCriteriaSchema,
@@ -244,6 +245,22 @@ export const buildServer = (agent: Agent) => {
     async (input) => {
       try {
         return reply(await mcpService.saveDocument(agent, input));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'edit_document',
+    {
+      description:
+        'Change part of a document body without resending it: each edit swaps exact old text (must occur once) for new text. Returns a compact confirmation; get_document has the body. Same permissions as save_document. Use for small changes; save_document to rewrite.',
+      inputSchema: editDocumentSchema,
+    },
+    async (input) => {
+      try {
+        return reply(await mcpService.editDocument(agent, input));
       } catch (error) {
         return toToolError(error);
       }

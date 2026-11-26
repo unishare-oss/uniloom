@@ -16,7 +16,7 @@ import {
 import { requireMember } from '@/modules/projects/project.service.js';
 import * as documentRepo from './document.repository.js';
 import { nextStatusError, sourceProposalError } from './document.rules.js';
-import { toDocument, toDocumentSummary } from './document.utils.js';
+import { applyEdits, toDocument, toDocumentSummary } from './document.utils.js';
 
 /** The document, or 404 when it doesn't exist. */
 export const loadDocument = async (id: string) => {
@@ -235,6 +235,39 @@ export const updateDocumentById = async (
     ...(archived !== undefined && {
       archivedAt: archived ? (document.archivedAt ?? new Date()) : null,
     }),
+  });
+  return toDocument(updated, true);
+};
+
+/**
+ * Edits part of a document's body: same permission as `updateDocumentById`. The row is
+ * locked and the body read after the lock, so two edits at once both land. Each edit's
+ * `old` text must occur exactly once (see `applyEdits`); on any failure nothing is saved.
+ */
+export const editDocumentBody = async (
+  id: string,
+  userId: string,
+  edits: { old: string; new: string }[],
+) => {
+  const document = await loadDocument(id);
+  if (document.homeItemId) {
+    const { item, role } = await loadItem(document.homeItemId, userId);
+    const message = editError(item.project, role, userId, item.assigneeId);
+    if (message) throw apiError(403, 'forbidden', message);
+  } else {
+    await requireRole(document.projectId, userId, CREATORS);
+  }
+  const updated = await prisma.$transaction(async (tx) => {
+    await documentRepo.lockDocument(tx, id);
+    const { body } = await documentRepo.findBody(tx, id);
+    const edited = applyEdits(body, edits);
+    if (edited.length > 100_000)
+      throw apiError(
+        400,
+        'invalid_input',
+        'The edited body would exceed 100000 characters',
+      );
+    return documentRepo.updateDocument(id, { body: edited }, tx);
   });
   return toDocument(updated, true);
 };

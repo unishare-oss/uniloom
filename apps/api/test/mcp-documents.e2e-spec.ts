@@ -693,4 +693,130 @@ describe('mcp document tools (e2e)', () => {
     },
     60_000,
   );
+
+  describe('edit_document', () => {
+    const bodyOf = async (token: string, id: string) =>
+      (await ok(token, 'get_document', { id })).body;
+
+    const withBrief = async (body: string) => {
+      const w = await setup();
+      const doc = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'BRIEF',
+        title: 'Brief',
+        body,
+      });
+      return { ...w, doc };
+    };
+
+    it('replaces only the old text and answers a compact confirmation', async () => {
+      const w = await withBrief('Route returns 404 here.\nSecond line.');
+      const reply = await ok(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [{ old: 'returns 404', new: 'returns 403' }],
+      });
+      expect(reply).toEqual(w.doc);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe(
+        'Route returns 403 here.\nSecond line.',
+      );
+    });
+
+    it('applies several edits in order, each seeing the earlier result', async () => {
+      const w = await withBrief('alpha beta');
+      await ok(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [
+          { old: 'alpha', new: 'gamma' },
+          { old: 'gamma beta', new: 'done $& ' },
+        ],
+      });
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe('done $& ');
+    });
+
+    it('answers edit_mismatch for 0 or 2+ matches and saves nothing', async () => {
+      const w = await withBrief('one two one');
+      const none = await tool(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [
+          { old: 'two', new: 'x' },
+          { old: 'missing', new: 'y' },
+        ],
+      });
+      expect(none.isError).toBe(true);
+      expect(none.text).toMatch(/^edit_mismatch: Edit 2.*0 times/);
+      const many = await tool(w.ownerToken, 'edit_document', {
+        id: w.doc.id,
+        edits: [{ old: 'one', new: 'x' }],
+      });
+      expect(many.isError).toBe(true);
+      expect(many.text).toMatch(/^edit_mismatch: Edit 1.*2 times/);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe('one two one');
+    });
+
+    it('refuses like save_document and answers not_found for an unknown id', async () => {
+      const w = await withTickets();
+      const knowledge = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'BRIEF',
+        title: 'Brief',
+        body: 'text',
+      });
+      const theirSpec = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'SPEC',
+        title: 'Spec',
+        body: 'text',
+        ticket: w.theirs.key,
+      });
+      const mySpec = await ok(w.ownerToken, 'save_document', {
+        project: w.keyPrefix,
+        kind: 'SPEC',
+        title: 'Spec',
+        body: 'text',
+        ticket: w.mine.key,
+      });
+      const edits = [{ old: 'text', new: 'new' }];
+      expect(
+        await tool(w.memberToken, 'edit_document', {
+          id: knowledge.id,
+          edits,
+        }),
+      ).toEqual({ isError: true, text: FORBIDDEN });
+      expect(
+        (
+          await tool(w.memberToken, 'edit_document', {
+            id: theirSpec.id,
+            edits,
+          })
+        ).text,
+      ).toMatch(/^forbidden:/);
+      expect(
+        await ok(w.memberToken, 'edit_document', { id: mySpec.id, edits }),
+      ).toMatchObject({ id: mySpec.id });
+      expect(
+        await tool(w.ownerToken, 'edit_document', {
+          id: '00000000-0000-4000-8000-000000000000',
+          edits,
+        }),
+      ).toEqual({ isError: true, text: 'not_found: Document not found' });
+    });
+
+    it('keeps both of two simultaneous edits to different parts', async () => {
+      const w = await withBrief('first A\nsecond B');
+      const results = await Promise.all([
+        tool(w.ownerToken, 'edit_document', {
+          id: w.doc.id,
+          edits: [{ old: 'A', new: 'one' }],
+        }),
+        tool(w.ownerToken, 'edit_document', {
+          id: w.doc.id,
+          edits: [{ old: 'B', new: 'two' }],
+        }),
+      ]);
+      expect(results.map((r) => r.isError)).toEqual([false, false]);
+      expect(await bodyOf(w.ownerToken, w.doc.id)).toBe(
+        'first one\nsecond two',
+      );
+    });
+  });
 });

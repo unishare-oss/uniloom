@@ -28,17 +28,19 @@ id. People are `"me"`, `"none"` or a member's email.
 
 ## Tools
 
-| Need                 | Tool                                                            |
-| -------------------- | --------------------------------------------------------------- |
-| Projects             | `list_projects`                                                 |
-| Find and read items  | `list_items`, `get_item` (its `related` lists ticket documents) |
-| Create, update, move | `save_item` (no key = create; `state` = a state name)           |
-| Blocked by           | `save_item` with `blockedBy` (adds), `remove_blocker`           |
-| Delete               | `delete_item` (owners and managers; not with children)          |
-| Done-when checklist  | `set_criteria`, `get_criteria`, `check_criterion`               |
-| States and labels    | `list_states`, `list_labels`                                    |
-| Documents            | `save_document`, `get_document`, `list_documents`               |
-| Knowledge links      | `link_document`, `unlink_document`                              |
+| Need                 | Tool                                                               |
+| -------------------- | ------------------------------------------------------------------ |
+| Projects             | `list_projects`                                                    |
+| Find and read items  | `list_items`, `get_item` (its `related` lists ticket documents)    |
+| Create, update, move | `save_item` (no key = create; `state` = a state name)              |
+| Blocked by           | `save_item` with `blockedBy` (adds), `remove_blocker`              |
+| Delete               | `delete_item` (owners and managers; not with children)             |
+| Done-when checklist  | `set_criteria`, `get_criteria`, `check_criterion`                  |
+| States and labels    | `list_states`, `list_labels`                                       |
+| Documents            | `save_document`, `edit_document`, `get_document`, `list_documents` |
+| Knowledge links      | `link_document`, `unlink_document`                                 |
+
+Small change to a document body: `edit_document` (exact `old` text, once, to `new`). Rewrite: `save_document`.
 
 There is no tool to approve a design, accept an ADR, or move to Ready or Done. People do
 that on the website. There are no comment or commit-link tools yet: record commits as
