@@ -547,7 +547,7 @@ describe('mcp (e2e)', () => {
         body: 'Text',
         canEdit: true,
         url: expect.stringContaining(`/p/${w.projectId}/docs/${doc.id}`),
-        author: expect.any(String),
+        author: w.owner.profile.name,
         createdFrom: w.feature.key,
         homeItem: w.feature.key,
         fixedBy: null,
@@ -555,6 +555,57 @@ describe('mcp (e2e)', () => {
         sourceProposal: { id: proposal.id, title: 'Source' },
         derivedSpecs: [],
         items: [],
+      });
+    });
+
+    it('answers get_document with fixedBy and supersededBy as keys and titles', async () => {
+      const w = await setup();
+      const save = async (kind: string, title: string) =>
+        JSON.parse(
+          (
+            await tool(w.token, 'save_document', {
+              project: w.keyPrefix,
+              ticket: w.slice.key,
+              kind,
+              title,
+            })
+          ).text,
+        ) as { id: string; number: number | null };
+      const debt = await save('TECH_DEBT', 'Slow');
+      const oldAdr = await save('ADR', 'Old');
+      const newAdr = await save('ADR', 'New');
+      await prisma.document.update({
+        where: { id: debt.id },
+        data: { status: 'FIXED', fixedByItemId: w.slice.id },
+      });
+      await prisma.document.update({
+        where: { id: oldAdr.id },
+        data: { status: 'SUPERSEDED', supersededById: newAdr.id },
+      });
+      const get = async (id: string) =>
+        JSON.parse((await tool(w.token, 'get_document', { id })).text);
+      expect(await get(debt.id)).toEqual({
+        id: debt.id,
+        kind: 'TECH_DEBT',
+        number: debt.number,
+        status: 'FIXED',
+        title: 'Slow',
+        purpose: expect.anything(),
+        body: expect.any(String),
+        canEdit: true,
+        url: expect.stringContaining(`/p/${w.projectId}/docs/${debt.id}`),
+        author: w.owner.profile.name,
+        createdFrom: w.slice.key,
+        homeItem: null,
+        fixedBy: w.slice.key,
+        supersededBy: null,
+        sourceProposal: null,
+        derivedSpecs: [],
+        items: [{ key: w.slice.key, title: 'Child', state: 'Triage' }],
+      });
+      expect(await get(oldAdr.id)).toMatchObject({
+        status: 'SUPERSEDED',
+        supersededBy: { id: newAdr.id, title: 'New' },
       });
     });
 
