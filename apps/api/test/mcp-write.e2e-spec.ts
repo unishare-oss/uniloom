@@ -307,7 +307,7 @@ describe('mcp write tools (e2e)', () => {
         expect(result.text).toMatch(/^people_only:/);
       }
       const item = await ok(w.ownerToken, 'get_item', { key: w.slice.key });
-      expect(item).toMatchObject({ title: 'Slice', state: { name: 'Triage' } });
+      expect(item).toMatchObject({ title: 'Slice', state: 'Triage' });
       const created = await tool(w.ownerToken, 'save_item', {
         project: w.keyPrefix,
         kind: 'FEATURE',

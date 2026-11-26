@@ -229,9 +229,9 @@ describe('mcp document tools (e2e)', () => {
       await ok(w.memberToken, 'get_document', { id: spec.id }),
     ).toMatchObject({
       kind: 'SPEC',
-      homeItem: { key: w.mine.key },
-      createdFrom: { key: w.mine.key },
-      author: { name: w.member.profile.name },
+      homeItem: w.mine.key,
+      createdFrom: w.mine.key,
+      author: w.member.profile.name,
     });
     // It is the ticket's own, so Knowledge does not list it; the member edits it.
     expect(
@@ -412,14 +412,15 @@ describe('mcp document tools (e2e)', () => {
     }
     const item = await ok(w.memberToken, 'get_item', { key: w.mine.key });
     expect(item.related).toHaveLength(1);
-    expect(item.related[0].url).toBe(
-      `http://127.0.0.1:3013/p/${w.id}/docs/${proposal.id}`,
-    );
+    expect(item.related[0].id).toBe(proposal.id);
+    expect(item.related[0].url).toBeUndefined();
     expect(item.assignee).toEqual({
       name: w.member.profile.name,
       email: w.member.profile.email,
     });
-    expect(item.url).toBe(`http://127.0.0.1:3013/p/${w.id}/items/${item.id}`);
+    expect(item.url).toMatch(
+      new RegExp(`^http://127.0.0.1:3013/p/${w.id}/items/[0-9a-f-]{36}$`),
+    );
     expect(
       (
         await tool(w.memberToken, 'link_document', {
@@ -537,8 +538,7 @@ describe('mcp document tools (e2e)', () => {
       expect(
         await ok(w.memberToken, 'get_document', { id: doc.id }),
       ).toMatchObject({
-        homeItemId: null,
-        canArchive: true,
+        homeItem: null,
         body: expect.stringContaining('Draft'),
       });
       expect(
@@ -572,7 +572,7 @@ describe('mcp document tools (e2e)', () => {
         (
           await api.send(
             'POST',
-            `/api/items/${(await ok(w.ownerToken, 'get_item', { key: w.mine.key })).id}/documents/new`,
+            `/api/items/${(await prisma.item.findFirstOrThrow({ where: { project: { keyPrefix: w.keyPrefix }, number: Number(w.mine.key.split('-')[1]) } })).id}/documents/new`,
             w.owner.cookie,
             { kind, title: 'Ticket home' },
           )

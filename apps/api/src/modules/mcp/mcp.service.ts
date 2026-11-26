@@ -124,7 +124,8 @@ export const listItems = async (
   },
 ) => {
   const projectId = await findProjectId(input.project);
-  let items = await itemService.listProjectItems(projectId, userId);
+  const all = await itemService.listProjectItems(projectId, userId);
+  let items = all;
   if (input.parent) {
     // Looked up among this project's items only, so a key from a private
     // project answers the same not_found as a key that doesn't exist.
@@ -149,8 +150,18 @@ export const listItems = async (
   return items.map((item) => {
     const profile = profiles.find((person) => person.id === item.assigneeId);
     return {
-      ...item,
+      key: item.key,
+      kind: item.kind,
+      title: item.title,
+      state: item.state.name,
+      priority: item.priority,
+      parent: all.find((other) => other.id === item.parentId)?.key ?? null,
       assignee: profile ? { name: profile.name, email: profile.email } : null,
+      canMove: item.canMove,
+      labels: item.labels.map((label) => ({
+        name: label.name,
+        color: label.color,
+      })),
       url: toWebsiteUrl(`/p/${projectId}/items/${item.id}`),
     };
   });
@@ -161,15 +172,34 @@ export const getItem = async (userId: string, key: string) => {
   const [profile] = await mcpRepo.findAssigneeProfiles(
     item.assigneeId ? [item.assigneeId] : [],
   );
+  const [parent] = await findKeys(item.parentId ? [item.parentId] : []);
   return {
-    ...item,
-    blockedBy: await findKeys(item.blockedBy),
+    key: item.key,
+    kind: item.kind,
+    title: item.title,
+    description: item.description,
+    state: item.state.name,
+    priority: item.priority,
+    parent: parent ?? null,
     assignee: profile ? { name: profile.name, email: profile.email } : null,
-    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
-    related: item.related.map((document) => ({
-      ...document,
-      url: toWebsiteUrl(`/p/${item.projectId}/docs/${document.id}`),
+    canMove: item.canMove,
+    canEdit: item.canEdit,
+    blockedBy: await findKeys(item.blockedBy),
+    labels: item.labels.map((label) => ({
+      name: label.name,
+      color: label.color,
     })),
+    checklist: toCriteria(item.checklist),
+    related: item.related.map((document) => ({
+      id: document.id,
+      kind: document.kind,
+      number: document.number,
+      title: document.title,
+      status: document.status,
+      home: document.home,
+      from: document.from,
+    })),
+    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
   };
 };
 
@@ -447,18 +477,36 @@ export const getDocument = async (userId: string, id: string) => {
     throw apiError(404, 'not_found', 'Document not found');
   const document = await documentService.getDocument(id, userId);
   return {
-    ...document,
+    id: document.id,
+    kind: document.kind,
+    number: document.number,
+    status: document.status,
+    title: document.title,
+    purpose: document.purpose,
+    body: document.body,
+    canEdit: document.canEdit,
+    url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
+    author: document.author?.name ?? null,
+    createdFrom: document.createdFrom?.key ?? null,
+    homeItem: document.homeItem?.key ?? null,
+    fixedBy: document.fixedBy?.key ?? null,
+    supersededBy: document.supersededBy && {
+      id: document.supersededBy.id,
+      title: document.supersededBy.title,
+    },
     sourceProposal: document.sourceProposal && {
-      ...document.sourceProposal,
-      url: toWebsiteUrl(
-        `/p/${document.projectId}/docs/${document.sourceProposal.id}`,
-      ),
+      id: document.sourceProposal.id,
+      title: document.sourceProposal.title,
     },
     derivedSpecs: document.derivedSpecs.map((spec) => ({
-      ...spec,
-      url: toWebsiteUrl(`/p/${document.projectId}/docs/${spec.id}`),
+      id: spec.id,
+      title: spec.title,
     })),
-    url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
+    items: document.items.map((item) => ({
+      key: item.key,
+      title: item.title,
+      state: item.state.name,
+    })),
   };
 };
 
