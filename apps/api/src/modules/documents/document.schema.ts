@@ -5,7 +5,9 @@ const kind = z.enum(DocumentKind);
 export const status = z.enum(DocumentStatus);
 const title = z.string().trim().min(1).max(200);
 const purpose = z.string().trim().max(300);
-const body = z.string().max(100_000);
+/** The longest a document body may be. */
+export const MAX_BODY_LENGTH = 100_000;
+const body = z.string().max(MAX_BODY_LENGTH);
 
 export const createDocumentSchema = z.object({
   kind,

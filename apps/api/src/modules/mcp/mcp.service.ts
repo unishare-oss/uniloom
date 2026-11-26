@@ -557,6 +557,18 @@ export const saveDocument = async (
   );
 };
 
+/** Replaces parts of a document's body; the document service decides who may. */
+export const editDocument = async (
+  agent: Agent,
+  input: { id: string; edits: { old: string; new: string }[] },
+) => {
+  if (!z.uuid().safeParse(input.id).success)
+    throw apiError(404, 'not_found', 'Document not found');
+  return toDocumentConfirmation(
+    await documentService.editDocumentBody(input.id, agent.userId, input.edits),
+  );
+};
+
 /** Link an existing Knowledge document using the website's ticket edit rules. */
 export const linkDocument = async (agent: Agent, key: string, id: string) => {
   if (!z.uuid().safeParse(id).success)

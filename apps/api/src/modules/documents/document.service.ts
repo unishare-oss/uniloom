@@ -15,8 +15,9 @@ import {
 } from '@/modules/items/item.rules.js';
 import { requireMember } from '@/modules/projects/project.service.js';
 import * as documentRepo from './document.repository.js';
+import { MAX_BODY_LENGTH } from './document.schema.js';
 import { nextStatusError, sourceProposalError } from './document.rules.js';
-import { toDocument, toDocumentSummary } from './document.utils.js';
+import { applyEdits, toDocument, toDocumentSummary } from './document.utils.js';
 
 /** The document, or 404 when it doesn't exist. */
 export const loadDocument = async (id: string) => {
@@ -236,6 +237,42 @@ export const updateDocumentById = async (
       archivedAt: archived ? (document.archivedAt ?? new Date()) : null,
     }),
   });
+  return toDocument(updated, true);
+};
+
+/** Edits queue on the row lock, so the wait for a connection and for the lock is longer than Prisma's 5s default. */
+const EDIT_TRANSACTION = { maxWait: 20_000, timeout: 20_000 };
+
+/**
+ * Edits part of a document's body: same permission as `updateDocumentById`. The row is
+ * locked and the body read after the lock, so two edits at once both land. Each edit's
+ * `old` text must occur exactly once (see `applyEdits`); on any failure nothing is saved.
+ */
+export const editDocumentBody = async (
+  id: string,
+  userId: string,
+  edits: { old: string; new: string }[],
+) => {
+  const document = await loadDocument(id);
+  if (document.homeItemId) {
+    const { item, role } = await loadItem(document.homeItemId, userId);
+    const message = editError(item.project, role, userId, item.assigneeId);
+    if (message) throw apiError(403, 'forbidden', message);
+  } else {
+    await requireRole(document.projectId, userId, CREATORS);
+  }
+  const updated = await prisma.$transaction(async (tx) => {
+    await documentRepo.lockDocument(tx, id);
+    const { body } = await documentRepo.findBody(tx, id);
+    const edited = applyEdits(body, edits);
+    if (edited.length > MAX_BODY_LENGTH)
+      throw apiError(
+        400,
+        'invalid_input',
+        `The edited body would exceed ${MAX_BODY_LENGTH} characters`,
+      );
+    return documentRepo.updateDocument(id, { body: edited }, tx);
+  }, EDIT_TRANSACTION);
   return toDocument(updated, true);
 };
 
