@@ -1,5 +1,10 @@
+import { apiError } from '@/http.js';
 import { isArchivable } from './document.rules.js';
-import type { DocumentRow, SummaryRow } from './document.types.js';
+import type {
+  DocumentEdit,
+  DocumentRow,
+  SummaryRow,
+} from './document.types.js';
 
 /** A ticket's key as people read it: TG-12. */
 const keyOf = (item: { number: number; project: { keyPrefix: string } }) =>
@@ -65,4 +70,32 @@ export const toDocument = (row: DocumentRow, canEdit: boolean) => {
       state: link.item.state,
     })),
   };
+};
+
+/**
+ * Swaps each edit's `old` text for its `new` text, in order, on one string. Each `old` must
+ * occur exactly once in the text as it is then (case and whitespace exact); otherwise
+ * `edit_mismatch` names the edit and how many matches it had. Slices instead of
+ * `String.replace`, so `$&` in `new` stays literal.
+ */
+export const applyEdits = (body: string, edits: DocumentEdit[]) => {
+  let text = body;
+  for (const [index, edit] of edits.entries()) {
+    let count = 0;
+    let at = text.indexOf(edit.old);
+    const first = at;
+    while (at !== -1) {
+      count += 1;
+      at = text.indexOf(edit.old, at + 1);
+    }
+    if (count !== 1)
+      throw apiError(
+        400,
+        'edit_mismatch',
+        `Edit ${index + 1}: old text matched ${count} times, it must match exactly once. ${count === 0 ? 'Check the text, case and whitespace' : 'Add surrounding text to make it unique'}`,
+      );
+    text =
+      text.slice(0, first) + edit.new + text.slice(first + edit.old.length);
+  }
+  return text;
 };

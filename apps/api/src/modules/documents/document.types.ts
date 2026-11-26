@@ -5,3 +5,6 @@ export type DocumentRow = NonNullable<Awaited<ReturnType<typeof findDocument>>>;
 
 /** A list row: no body. */
 export type SummaryRow = Awaited<ReturnType<typeof findDocuments>>[number];
+
+/** One find-and-replace in a document body. */
+export type DocumentEdit = { old: string; new: string };

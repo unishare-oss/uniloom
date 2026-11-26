@@ -2,6 +2,7 @@ import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { apiError } from '@/http.js';
 import * as documentService from '@/modules/documents/document.service.js';
+import type { DocumentEdit } from '@/modules/documents/document.types.js';
 import * as blockerService from '@/modules/items/blocker.service.js';
 import * as checklistService from '@/modules/items/checklist.service.js';
 import * as itemDocumentService from '@/modules/items/item-document.service.js';
@@ -124,7 +125,8 @@ export const listItems = async (
   },
 ) => {
   const projectId = await findProjectId(input.project);
-  let items = await itemService.listProjectItems(projectId, userId);
+  const all = await itemService.listProjectItems(projectId, userId);
+  let items = all;
   if (input.parent) {
     // Looked up among this project's items only, so a key from a private
     // project answers the same not_found as a key that doesn't exist.
@@ -149,8 +151,18 @@ export const listItems = async (
   return items.map((item) => {
     const profile = profiles.find((person) => person.id === item.assigneeId);
     return {
-      ...item,
+      key: item.key,
+      kind: item.kind,
+      title: item.title,
+      state: item.state.name,
+      priority: item.priority,
+      parent: all.find((other) => other.id === item.parentId)?.key ?? null,
       assignee: profile ? { name: profile.name, email: profile.email } : null,
+      canMove: item.canMove,
+      labels: item.labels.map((label) => ({
+        name: label.name,
+        color: label.color,
+      })),
       url: toWebsiteUrl(`/p/${projectId}/items/${item.id}`),
     };
   });
@@ -161,15 +173,34 @@ export const getItem = async (userId: string, key: string) => {
   const [profile] = await mcpRepo.findAssigneeProfiles(
     item.assigneeId ? [item.assigneeId] : [],
   );
+  const [parent] = await findKeys(item.parentId ? [item.parentId] : []);
   return {
-    ...item,
-    blockedBy: await findKeys(item.blockedBy),
+    key: item.key,
+    kind: item.kind,
+    title: item.title,
+    description: item.description,
+    state: item.state.name,
+    priority: item.priority,
+    parent: parent ?? null,
     assignee: profile ? { name: profile.name, email: profile.email } : null,
-    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
-    related: item.related.map((document) => ({
-      ...document,
-      url: toWebsiteUrl(`/p/${item.projectId}/docs/${document.id}`),
+    canMove: item.canMove,
+    canEdit: item.canEdit,
+    blockedBy: await findKeys(item.blockedBy),
+    labels: item.labels.map((label) => ({
+      name: label.name,
+      color: label.color,
     })),
+    checklist: toCriteria(item.checklist),
+    related: item.related.map((document) => ({
+      id: document.id,
+      kind: document.kind,
+      number: document.number,
+      title: document.title,
+      status: document.status,
+      home: document.home,
+      from: document.from,
+    })),
+    url: toWebsiteUrl(`/p/${item.projectId}/items/${item.id}`),
   };
 };
 
@@ -379,8 +410,8 @@ export const checkCriterion = async (
   const number =
     typeof which === 'number' ? which : /^\d+$/.test(which) ? Number(which) : 0;
   const entry =
-    typeof which === 'string' && checklist.some((e) => e.text === which)
-      ? checklist.find((e) => e.text === which)
+    typeof which === 'string' && checklist.some((row) => row.text === which)
+      ? checklist.find((row) => row.text === which)
       : checklist[number - 1];
   if (!entry) throw apiError(404, 'not_found', 'Checklist entry not found');
   await checklistService.updateChecklistEntry(
@@ -390,9 +421,18 @@ export const checkCriterion = async (
     { done: true, evidence },
     agent,
   );
-  return toCriteria(
-    (await itemService.getItem(itemId, agent.userId)).checklist,
-  );
+  const updatedChecklist = (await itemService.getItem(itemId, agent.userId))
+    .checklist;
+  const criteria = toCriteria(updatedChecklist);
+  const ticked =
+    criteria[updatedChecklist.findIndex((row) => row.id === entry.id)];
+  if (!ticked) throw apiError(404, 'not_found', 'Checklist entry not found');
+  return {
+    number: ticked.number,
+    text: ticked.text,
+    done: ticked.done,
+    remaining: criteria.filter((c) => !c.done).map((c) => c.number),
+  };
 };
 
 /** A Knowledge project's documents as slim rows, newest edit first. */
@@ -441,18 +481,36 @@ export const getDocument = async (userId: string, id: string) => {
     throw apiError(404, 'not_found', 'Document not found');
   const document = await documentService.getDocument(id, userId);
   return {
-    ...document,
+    id: document.id,
+    kind: document.kind,
+    number: document.number,
+    status: document.status,
+    title: document.title,
+    purpose: document.purpose,
+    body: document.body,
+    canEdit: document.canEdit,
+    url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
+    author: document.author?.name ?? null,
+    createdFrom: document.createdFrom?.key ?? null,
+    homeItem: document.homeItem?.key ?? null,
+    fixedBy: document.fixedBy?.key ?? null,
+    supersededBy: document.supersededBy && {
+      id: document.supersededBy.id,
+      title: document.supersededBy.title,
+    },
     sourceProposal: document.sourceProposal && {
-      ...document.sourceProposal,
-      url: toWebsiteUrl(
-        `/p/${document.projectId}/docs/${document.sourceProposal.id}`,
-      ),
+      id: document.sourceProposal.id,
+      title: document.sourceProposal.title,
     },
     derivedSpecs: document.derivedSpecs.map((spec) => ({
-      ...spec,
-      url: toWebsiteUrl(`/p/${document.projectId}/docs/${spec.id}`),
+      id: spec.id,
+      title: spec.title,
     })),
-    url: toWebsiteUrl(`/p/${document.projectId}/docs/${document.id}`),
+    items: document.items.map((item) => ({
+      key: item.key,
+      title: item.title,
+      state: item.state.name,
+    })),
   };
 };
 
@@ -548,6 +606,18 @@ export const saveDocument = async (
         kind: kind.data,
       },
     ),
+  );
+};
+
+/** Replaces parts of a document's body; the document service decides who may. */
+export const editDocument = async (
+  agent: Agent,
+  input: { id: string; edits: DocumentEdit[] },
+) => {
+  if (!z.uuid().safeParse(input.id).success)
+    throw apiError(404, 'not_found', 'Document not found');
+  return toDocumentConfirmation(
+    await documentService.editDocumentBody(input.id, agent.userId, input.edits),
   );
 };
 

@@ -126,6 +126,31 @@ describe('item activity (e2e)', () => {
     ]);
   });
 
+  it('records evidence changes on a ticked entry, not same evidence', async () => {
+    const w = await setup();
+    const path = `/api/items/${w.feature.id}/checklist`;
+    const entry = (await w.send('POST', path, { text: 'It works' })) as {
+      id: string;
+    };
+    const patch = (body: object) =>
+      w.send('PATCH', `${path}/${entry.id}`, body);
+    const ticks = async () =>
+      (await w.activity())
+        .reverse()
+        .filter((row) => row.action === 'checklist.tick')
+        .map((row) => row.detail.evidence);
+    await patch({ done: true, evidence: 'abc' });
+    await patch({ done: true, evidence: 'abc' });
+    expect(await ticks()).toEqual(['abc']);
+    await patch({ done: true, evidence: 'def' });
+    expect(await ticks()).toEqual(['abc', 'def']);
+    await patch({ evidence: '' });
+    expect(await ticks()).toEqual(['abc', 'def', null]);
+    await patch({ evidence: '' });
+    await patch({ done: true });
+    expect(await ticks()).toEqual(['abc', 'def', null]);
+  });
+
   it('stores the agent of a change: client id and name', async () => {
     const w = await setup();
     const { moveItem } = await import('@/modules/items/item.service.js');

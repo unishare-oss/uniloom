@@ -188,6 +188,22 @@ export const linkItem = (
   });
 };
 
+/**
+ * Locks the document row until the transaction ends, so two edits to its body run one at a
+ * time. Call it first, before reading the body you change.
+ */
+export const lockDocument = (tx: Prisma.TransactionClient, id: string) => {
+  return tx.$queryRaw`SELECT 1 FROM "document" WHERE "id" = ${id}::uuid FOR UPDATE`;
+};
+
+/** The document's current body. Call it in a transaction, after `lockDocument`. */
+export const findBody = (tx: Prisma.TransactionClient, id: string) => {
+  return tx.document.findUniqueOrThrow({
+    where: { id },
+    select: { body: true },
+  });
+};
+
 export const updateDocument = (
   id: string,
   data: {
@@ -199,6 +215,7 @@ export const updateDocument = (
     status?: DocumentStatus;
     supersededById?: string | null;
   },
+  db: Prisma.TransactionClient = prisma,
 ) => {
-  return prisma.document.update({ where: { id }, data, include: documentView });
+  return db.document.update({ where: { id }, data, include: documentView });
 };

@@ -359,6 +359,18 @@ const seedGuided = async (ownerId: string) => {
     state: 'In Progress',
   });
   await addEntries(tooMany.id, ownerId, ['Old one', 'Old two', 'Old three'], 0);
+  const reTick = await item({
+    kind: 'SLICE',
+    title:
+      'Agent: re-tick #1 with new evidence → activity shows a second tick with it',
+    parentId: board.id,
+    state: 'In Progress',
+  });
+  await addEntries(reTick.id, ownerId, ['First entry', 'Second entry'], 1);
+  note(
+    reTick.key,
+    'agent: check_criterion 1 with new evidence → second tick row',
+  );
   note(toDone.key, 'agent: move to Done → people_only');
   note(toReview.key, 'agent: tick all three, move to In Review → works');
   note(tooMany.key, 'agent: set_criteria with 7 → checklist_max_exceeded');

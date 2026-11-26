@@ -125,3 +125,24 @@ export const saveDocumentSchema = z.object({
     .optional()
     .describe('Not accepted: statuses are for people on the website'),
 });
+
+export const editDocumentSchema = z.object({
+  id: documentId,
+  edits: z
+    .array(
+      z.object({
+        old: z
+          .string()
+          .min(1)
+          .describe(
+            'Exact text to replace, case and whitespace included. Must occur exactly once in the body',
+          ),
+        new: z.string().describe('Its replacement; empty deletes the text'),
+      }),
+    )
+    .min(1)
+    .max(20)
+    .describe(
+      'Applied in order, each on the result of the one before. If any fails nothing is saved',
+    ),
+});

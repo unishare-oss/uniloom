@@ -9,6 +9,7 @@ import {
   listItemsSchema,
   projectSchema,
   removeBlockerSchema,
+  editDocumentSchema,
   saveDocumentSchema,
   saveItemSchema,
   setCriteriaSchema,
@@ -188,7 +189,7 @@ export const buildServer = (agent: Agent) => {
     'check_criterion',
     {
       description:
-        'Tick one done-when entry, by its number from get_criteria or its exact text, with optional evidence (a commit SHA, test name or link). Answers the updated checklist.',
+        'Tick one done-when entry, by its number from get_criteria or its exact text, with optional evidence (a commit SHA, test name or link). Answers the ticked entry and the numbers still open; get_criteria has the full list.',
       inputSchema: checkCriterionSchema,
     },
     async ({ key, which, evidence }) => {
@@ -244,6 +245,22 @@ export const buildServer = (agent: Agent) => {
     async (input) => {
       try {
         return reply(await mcpService.saveDocument(agent, input));
+      } catch (error) {
+        return toToolError(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    'edit_document',
+    {
+      description:
+        'Change part of a document body without resending it: each edit swaps exact old text (must occur once) for new text. Returns a compact confirmation; get_document has the body. Same permissions as save_document. Use for small changes; save_document to rewrite.',
+      inputSchema: editDocumentSchema,
+    },
+    async (input) => {
+      try {
+        return reply(await mcpService.editDocument(agent, input));
       } catch (error) {
         return toToolError(error);
       }
