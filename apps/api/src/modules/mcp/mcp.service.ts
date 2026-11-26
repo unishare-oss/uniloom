@@ -2,6 +2,7 @@ import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { apiError } from '@/http.js';
 import * as documentService from '@/modules/documents/document.service.js';
+import type { DocumentEdit } from '@/modules/documents/document.types.js';
 import * as blockerService from '@/modules/items/blocker.service.js';
 import * as checklistService from '@/modules/items/checklist.service.js';
 import * as itemDocumentService from '@/modules/items/item-document.service.js';
@@ -409,8 +410,8 @@ export const checkCriterion = async (
   const number =
     typeof which === 'number' ? which : /^\d+$/.test(which) ? Number(which) : 0;
   const entry =
-    typeof which === 'string' && checklist.some((e) => e.text === which)
-      ? checklist.find((e) => e.text === which)
+    typeof which === 'string' && checklist.some((row) => row.text === which)
+      ? checklist.find((row) => row.text === which)
       : checklist[number - 1];
   if (!entry) throw apiError(404, 'not_found', 'Checklist entry not found');
   await checklistService.updateChecklistEntry(
@@ -420,9 +421,12 @@ export const checkCriterion = async (
     { done: true, evidence },
     agent,
   );
-  const reread = (await itemService.getItem(itemId, agent.userId)).checklist;
-  const criteria = toCriteria(reread);
-  const ticked = criteria[reread.findIndex((e) => e.id === entry.id)];
+  const updatedChecklist = (await itemService.getItem(itemId, agent.userId))
+    .checklist;
+  const criteria = toCriteria(updatedChecklist);
+  const ticked =
+    criteria[updatedChecklist.findIndex((row) => row.id === entry.id)];
+  if (!ticked) throw apiError(404, 'not_found', 'Checklist entry not found');
   return {
     number: ticked.number,
     text: ticked.text,
@@ -608,7 +612,7 @@ export const saveDocument = async (
 /** Replaces parts of a document's body; the document service decides who may. */
 export const editDocument = async (
   agent: Agent,
-  input: { id: string; edits: { old: string; new: string }[] },
+  input: { id: string; edits: DocumentEdit[] },
 ) => {
   if (!z.uuid().safeParse(input.id).success)
     throw apiError(404, 'not_found', 'Document not found');

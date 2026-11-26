@@ -1,6 +1,10 @@
 import { apiError } from '@/http.js';
 import { isArchivable } from './document.rules.js';
-import type { DocumentRow, SummaryRow } from './document.types.js';
+import type {
+  DocumentEdit,
+  DocumentRow,
+  SummaryRow,
+} from './document.types.js';
 
 /** A ticket's key as people read it: TG-12. */
 const keyOf = (item: { number: number; project: { keyPrefix: string } }) =>
@@ -74,10 +78,7 @@ export const toDocument = (row: DocumentRow, canEdit: boolean) => {
  * `edit_mismatch` names the edit and how many matches it had. Slices instead of
  * `String.replace`, so `$&` in `new` stays literal.
  */
-export const applyEdits = (
-  body: string,
-  edits: { old: string; new: string }[],
-) => {
+export const applyEdits = (body: string, edits: DocumentEdit[]) => {
   let text = body;
   for (const [index, edit] of edits.entries()) {
     let count = 0;

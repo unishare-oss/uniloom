@@ -18,6 +18,7 @@ import * as documentRepo from './document.repository.js';
 import { MAX_BODY_LENGTH } from './document.schema.js';
 import { nextStatusError, sourceProposalError } from './document.rules.js';
 import { applyEdits, toDocument, toDocumentSummary } from './document.utils.js';
+import type { DocumentEdit } from './document.types.js';
 
 /** The document, or 404 when it doesn't exist. */
 export const loadDocument = async (id: string) => {
@@ -251,7 +252,7 @@ const EDIT_TRANSACTION = { maxWait: 20_000, timeout: 20_000 };
 export const editDocumentBody = async (
   id: string,
   userId: string,
-  edits: { old: string; new: string }[],
+  edits: DocumentEdit[],
 ) => {
   const document = await loadDocument(id);
   if (document.homeItemId) {
